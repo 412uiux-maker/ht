@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pet Platform — Hello World</title>
+  <style>
+    :root { --brand: #2e7d5b; --bg: #f5f7f6; --card: #ffffff; --text: #1c2421; --muted: #5f6b66; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           background: var(--bg); color: var(--text); display: grid; place-items: center; min-height: 100vh; }
+    .card { background: var(--card); padding: 40px 44px; border-radius: 16px; max-width: 520px; width: 90%;
+            box-shadow: 0 8px 30px rgba(0,0,0,.08); text-align: center; }
+    .emoji { font-size: 56px; }
+    h1 { margin: 12px 0 4px; font-size: 26px; }
+    p.sub { color: var(--muted); margin: 0 0 20px; }
+    .badge { display: inline-block; background: var(--brand); color: #fff; padding: 6px 14px;
+             border-radius: 999px; font-size: 13px; margin-bottom: 20px; }
+    .status { font-size: 14px; color: var(--muted); }
+    .status b { color: var(--brand); }
+    a { color: var(--brand); }
+    .links { margin-top: 18px; font-size: 14px; display: flex; gap: 16px; justify-content: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="emoji">🐾</div>
+    <div class="badge">Pet Platform · Uzbekistan</div>
+    <h1>Salom, dunyo! · Привет, мир!</h1>
+    <p class="sub">Hello World — окружение работает 🎉</p>
+    <p class="status">API health: <b id="health">проверяю…</b></p>
+    <div class="links">
+      <a href="/api/health" target="_blank">/api/health</a>
+      <a href="/api/hello" target="_blank">/api/hello</a>
+    </div>
+  </div>
+  <script>
+    fetch('/api/health').then(r => r.json())
+      .then(d => { document.getElementById('health').textContent = d.status + ' · ' + d.service; })
+      .catch(() => { document.getElementById('health').textContent = 'нет связи с API'; });
+  </script>
+</body>
+</html>
