@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pet Platform — Hello World</title>
+  <title>HappyTails — Hello World</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -32,4 +32,90 @@
             padding: 40px 40px 36px; max-width: 540px; width: 100%; box-shadow: var(--shadow); }
     /* мягкое персиковое радиальное свечение в углу — как подложки 3D в референсе */
     .glow { position: absolute; width: 320px; height: 320px; right: -90px; top: -120px;
-            background: radial-gradient(circle at center, #FFE0CB
+            background: radial-gradient(circle at center, #FFE0CB 0%, rgba(255,224,203,0) 70%);
+            pointer-events: none; }
+
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+    .brand svg { width: 36px; height: 33px; display: block; }
+    .brand b { font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+
+    .badge { display: inline-block; background: var(--surface-2); color: var(--primary-strong);
+             border: 1px solid var(--border); padding: 6px 14px; border-radius: var(--r-pill);
+             font-size: 13px; font-weight: 600; margin-bottom: 18px; }
+
+    h1 { margin: 0 0 6px; font-size: clamp(28px, 6vw, 40px); font-weight: 800;
+         line-height: 1.08; letter-spacing: -.02em; }
+    h1 .hl { color: var(--primary-strong); }
+    p.sub { color: var(--text-muted); margin: 0 0 26px; font-size: 16px; }
+
+    .statuses { display: grid; gap: 10px; margin-bottom: 26px; }
+    .row { display: flex; align-items: center; justify-content: space-between;
+           background: var(--surface-2); border: 1px solid var(--border);
+           border-radius: var(--r-md); padding: 12px 16px; font-size: 14px; }
+    .row span { color: var(--text-muted); }
+    .row b { color: var(--primary-strong); font-weight: 600; }
+
+    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn { font-family: var(--font); font-weight: 600; font-size: 15px; text-decoration: none;
+           padding: 12px 22px; border-radius: var(--r-pill); border: 1px solid transparent;
+           cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
+    .btn-primary { background: var(--grad-warm); color: var(--on-primary); box-shadow: var(--shadow); }
+    .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+    .btn:hover { transform: translateY(-2px); }
+
+    @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="glow"></div>
+    <div class="brand">
+      <svg viewBox="0 0 48 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HappyTails">
+        <defs>
+          <linearGradient id="htWarm" x1="6" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#F8915A"/><stop offset="1" stop-color="#F26B47"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#htWarm)" d="M11 3c0-1 1.1-1.6 2-1.1l9.2 5.6h3.6L35 1.9c.9-.5 2 .1 2 1.1v9.3c2.7 2.4 4.4 5.7 4.4 9.5v9.6c0 5.6-4.8 10.2-10.7 10.2H18.3C12.4 41.6 7.6 37 7.6 31.4v-9.6c0-3.8 1.7-7.1 4.4-9.5V3Z"/>
+        <circle cx="18.4" cy="24.2" r="2.5" fill="#fff"/>
+        <circle cx="29.6" cy="24.2" r="2.5" fill="#fff"/>
+        <path d="M24 28.4c1.6 0 2.6 1.1 2.6 2.2 0 1.3-1.2 2.2-2.6 2.2s-2.6-.9-2.6-2.2c0-1.1 1-2.2 2.6-2.2Z" fill="#fff" fill-opacity=".85"/>
+      </svg>
+      <b>HappyTails</b>
+    </div>
+    <div class="badge">Узбекистан · uz / ru</div>
+    <h1>Salom, dunyo!<br><span class="hl">Привет, мир!</span></h1>
+    <p class="sub">Hello World в стиле дизайн-системы — окружение работает 🎉</p>
+
+    <div class="statuses">
+      <div class="row"><span>API health</span><b id="health">проверяю…</b></div>
+      <div class="row"><span>GSAP</span><b id="gsap">проверяю…</b></div>
+    </div>
+
+    <div class="actions">
+      <a class="btn btn-primary" href="/api/hello" target="_blank">/api/hello</a>
+      <a class="btn btn-ghost" href="/api/health" target="_blank">/api/health</a>
+    </div>
+  </div>
+
+  <!-- GSAP (вендорится из node_modules/gsap/dist) -->
+  <script src="/vendor/gsap.min.js"></script>
+  <script>
+    fetch('/api/health').then(r => r.json())
+      .then(d => { document.getElementById('health').textContent = d.status + ' · ' + d.service; })
+      .catch(() => { document.getElementById('health').textContent = 'нет связи с API'; });
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (window.gsap) {
+      document.getElementById('gsap').textContent = 'v' + gsap.version + ' · работает';
+      if (!reduce) {
+        gsap.from('.card', { y: 24, opacity: 0, duration: 0.7, ease: 'power3.out' });
+        gsap.from('.row', { y: 10, opacity: 0, duration: 0.5, stagger: 0.06, delay: 0.15, ease: 'power2.out' });
+        gsap.to('.brand svg', { y: -4, duration: 1.4, repeat: -1, yoyo: true, ease: 'sine.inOut' });
+      }
+    } else {
+      document.getElementById('gsap').textContent = 'не загрузился';
+    }
+  </script>
+</body>
+</html>
