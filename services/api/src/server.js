@@ -12,6 +12,7 @@ app.use('/api/vets', require('./routes/vets'));
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/pets', require('./routes/pets'));
 app.use('/api/foods', require('./routes/food'));
+app.use('/api/learn', require('./routes/learn'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'petplatform-api', time: new Date().toISOString() });

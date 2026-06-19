@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Обучение — HappyTails</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --coral:#F2784B;--coral-dark:#d95f30;--coral-light:#FEF0EA;
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;
+  --text:#f5f5f5;--text2:#a0a0a0;--text3:#666;
+  --green:#4CAF7D;--violet:#7C5CBF;
+  --r-sm:12px;--r-md:20px;--r-xl:32px;
+  --font:'Onest',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex;flex-direction:column}
+
+/* NAV */
+.top-nav{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--surface)}
+.nav-back{background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;line-height:1;padding:4px}
+.nav-title{font-size:17px;font-weight:700;flex:1}
+.nav-count{font-size:13px;color:var(--text2)}
+
+/* SCROLL BODY */
+.scroll-body{flex:1;overflow-y:auto;padding:16px 20px 100px}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,var(--coral) 0%,#e8522a 100%);
+  border-radius:var(--r-xl);padding:28px 24px;margin-bottom:20px;position:relative;overflow:hidden}
+.hero::after{content:'🎓';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:64px;opacity:.25}
+.hero-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
+.hero h1{font-size:26px;font-weight:800;line-height:1.2;margin-bottom:8px}
+.hero p{font-size:14px;opacity:.85;line-height:1.5}
+
+/* PROGRESS SUMMARY */
+.progress-bar-wrap{background:rgba(255,255,255,.25);border-radius:99px;height:6px;margin-top:12px;overflow:hidden}
+.progress-bar-fill{height:100%;background:#fff;border-radius:99px;transition:width .5s ease}
+.progress-label{font-size:12px;opacity:.85;margin-top:6px}
+
+/* FILTER TABS */
+.filter-tabs{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
+.filter-tabs::-webkit-scrollbar{display:none}
+.filter-btn{flex-shrink:0;padding:8px 18px;border-radius:99px;border:1.5px solid var(--surface3);background:none;color:var(--text2);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
+.filter-btn.active{background:var(--coral);border-color:var(--coral);color:#fff}
+
+/* CARDS GRID */
+.cards{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border-radius:var(--r-md);padding:18px;cursor:pointer;transition:transform .15s,background .15s;border:1.5px solid transparent}
+.card:active{transform:scale(.98)}
+.card.done{border-color:var(--green);}
+.card-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.card-emoji{font-size:32px;flex-shrink:0;line-height:1}
+.card-meta{flex:1;min-width:0}
+.card-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:.04em;text-transform:uppercase}
+.badge-article{background:rgba(242,120,75,.15);color:var(--coral)}
+.badge-guide{background:rgba(124,92,191,.15);color:var(--violet)}
+.badge-checklist{background:rgba(76,175,125,.15);color:var(--green)}
+.badge-done{background:rgba(76,175,125,.2);color:var(--green)}
+.card-title{font-size:16px;font-weight:700;line-height:1.35;margin-bottom:4px}
+.card-subtitle{font-size:13px;color:var(--text2);line-height:1.4}
+.card-footer{display:flex;align-items:center;justify-content:space-between}
+.card-dur{font-size:12px;color:var(--text3)}
+.card-check{font-size:18px}
+
+/* READER SCREEN */
+.reader-body{padding:20px}
+.reader-type-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;margin-bottom:16px;text-transform:uppercase;letter-spacing:.06em}
+.reader-emoji{font-size:48px;margin-bottom:12px;display:block}
+.reader-title{font-size:24px;font-weight:800;line-height:1.3;margin-bottom:8px}
+.reader-subtitle{font-size:15px;color:var(--text2);line-height:1.5;margin-bottom:24px}
+.reader-divider{height:1px;background:var(--surface3);margin-bottom:24px}
+.reader-content{font-size:15px;line-height:1.75;color:var(--text);white-space:pre-wrap;word-break:break-word}
+.reader-content h2{font-size:18px;font-weight:700;margin:20px 0 10px;color:var(--coral)}
+.reader-content ul{padding-left:20px;margin:8px 0}
+.reader-content li{margin-bottom:6px}
+
+/* CHECKLIST SCREEN */
+.checklist-progress{margin-bottom:24px}
+.checklist-bar-wrap{background:var(--surface3);border-radius:99px;height:8px;overflow:hidden;margin-bottom:8px}
+.checklist-bar-fill{height:100%;background:var(--green);border-radius:99px;transition:width .3s ease}
+.checklist-progress-label{font-size:13px;color:var(--text2)}
+.steps-list{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
+.step-item{display:flex;align-items:flex-start;gap:14px;background:var(--surface);border-radius:var(--r-sm);padding:16px;cursor:pointer;transition:background .15s;border:1.5px solid transparent}
+.step-item.checked{background:rgba(76,175,125,.08);border-color:rgba(76,175,125,.3)}
+.step-item:active{transform:scale(.99)}
+.step-checkbox{width:24px;height:24px;border-radius:8px;border:2px solid var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;transition:all .2s}
+.step-item.checked .step-checkbox{background:var(--green);border-color:var(--green)}
+.step-checkmark{color:#fff;font-size:14px;opacity:0;transition:opacity .2s}
+.step-item.checked .step-checkmark{opacity:1}
+.step-text{font-size:15px;line-height:1.5;flex:1}
+.step-item.checked .step-text{color:var(--text2)}
+
+/* BOTTOM ACTION */
+.bottom-action{position:fixed;bottom:0;left:0;right:0;padding:16px 20px 28px;background:linear-gradient(to top,var(--bg) 70%,transparent);z-index:10}
+.btn-primary{width:100%;padding:16px;border-radius:var(--r-md);background:var(--coral);color:#fff;font-family:var(--font);font-size:16px;font-weight:700;border:none;cursor:pointer;transition:background .2s}
+.btn-primary:disabled{background:var(--surface3);color:var(--text3);cursor:default}
+.btn-primary.done-btn{background:var(--green)}
+.btn-secondary{width:100%;padding:14px;border-radius:var(--r-md);background:var(--surface);color:var(--text);font-family:var(--font);font-size:15px;font-weight:600;border:1.5px solid var(--surface3);cursor:pointer;margin-top:10px;transition:background .2s}
+
+/* EMPTY STATE */
+.empty{text-align:center;padding:60px 24px}
+.empty-emoji{font-size:56px;margin-bottom:16px}
+.empty-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.empty-text{font-size:14px;color:var(--text2);line-height:1.5}
+
+/* TOAST */
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface3);color:var(--text);padding:10px 20px;border-radius:99px;font-size:14px;font-weight:600;opacity:0;transition:all .3s;z-index:99;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- SCREEN 1: CATALOG -->
+<div id="screen-catalog" class="screen active">
+  <div class="top-nav">
+    <span class="nav-title">Обучение</span>
+    <span class="nav-count" id="count-label"></span>
+  </div>
+  <div class="scroll-body">
+    <div class="hero">
+      <div class="hero-label">HappyTails Academy</div>
+      <h1>Учитесь<br>вместе с питомцем</h1>
+      <p>Статьи, гайды и чек-листы<br>для заботливых хозяев</p>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="hero-bar" style="width:0%"></div></div>
+      <div class="progress-label" id="hero-label">Загрузка...</div>
+    </div>
+
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="filter-btn active" data-type="">Все</button>
+      <button class="filter-btn" data-type="article">Статьи</button>
+      <button class="filter-btn" data-type="guide">Гайды</button>
+      <button class="filter-btn" data-type="checklist">Чек-листы</button>
+    </div>
+
+    <div class="cards" id="cards-list">
+      <div class="empty"><div class="empty-emoji">📚</div><div class="empty-title">Загружаем...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: READER (article / guide) -->
+<div id="screen-reader" class="screen">
+  <div class="top-nav">
+    <button class="nav-back" id="reader-back">←</button>
+    <span class="nav-title" id="reader-nav-title">Статья</span>
+    <span class="nav-count" id="reader-dur"></span>
+  </div>
+  <div class="scroll-body reader-body" id="reader-body">
+  </div>
+  <div class="bottom-action">
+    <button class="btn-primary" id="reader-done-btn">Отметить как прочитанное ✓</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: CHECKLIST -->
+<div id="screen-checklist" class="screen">
+  <div class="top-nav">
+    <button class="nav-back" id="checklist-back">←</button>
+    <span class="nav-title" id="checklist-nav-title">Чек-лист</span>
+    <span class="nav-count" id="checklist-dur"></span>
+  </div>
+  <div class="scroll-body">
+    <div style="margin-bottom:20px">
+      <span class="reader-emoji" id="cl-emoji"></span>
+      <div class="reader-title" id="cl-title"></div>
+      <div class="reader-subtitle" id="cl-subtitle"></div>
+    </div>
+    <div class="checklist-progress">
+      <div class="checklist-bar-wrap"><div class="checklist-bar-fill" id="cl-bar" style="width:0%"></div></div>
+      <div class="checklist-progress-label" id="cl-prog-label">0 из 0 выполнено</div>
+    </div>
+    <div class="steps-list" id="steps-list"></div>
+    <div style="height:80px"></div>
+  </div>
+  <div class="bottom-action">
+    <button class="btn-primary" id="checklist-done-btn" disabled>Завершить чек-лист ✓</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const OWNER_ID = (() => {
+  let id = localStorage.getItem('ht_owner_id');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('ht_owner_id', id); }
+  return id;
+})();
+
+let allItems = [];
+let currentItem = null;
+let checkedSteps = [];
+let activeFilter = '';
+
+// ── Utils ──────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function typeBadgeClass(type) {
+  return { article: 'badge-article', guide: 'badge-guide', checklist: 'badge-checklist' }[type] || '';
+}
+function typeLabel(type) {
+  return { article: 'Статья', guide: 'Гайд', checklist: 'Чек-лист' }[type] || type;
+}
+
+// ── CATALOG ────────────────────────────────────────────
+async function loadCatalog(type = '') {
+  activeFilter = type;
+  let url = `/api/learn?owner_id=${OWNER_ID}`;
+  if (type) url += `&type=${type}`;
+  try {
+    const r = await fetch(url);
+    allItems = await r.json();
+    renderCatalog();
+  } catch (e) {
+    document.getElementById('cards-list').innerHTML =
+      '<div class="empty"><div class="empty-emoji">⚠️</div><div class="empty-title">Ошибка загрузки</div></div>';
+  }
+}
+
+function renderCatalog() {
+  const completed = allItems.filter(i => i.progress?.status === 'completed').length;
+  const total = allItems.length;
+  const pct = total ? Math.round(completed / total * 100) : 0;
+
+  document.getElementById('hero-bar').style.width = pct + '%';
+  document.getElementById('hero-label').textContent =
+    total ? `Пройдено ${completed} из ${total} материалов` : 'Загрузка...';
+  document.getElementById('count-label').textContent = total ? `${total} материалов` : '';
+
+  if (!allItems.length) {
+    document.getElementById('cards-list').innerHTML =
+      '<div class="empty"><div class="empty-emoji">📭</div><div class="empty-title">Ничего не найдено</div><div class="empty-text">Попробуйте другой фильтр</div></div>';
+    return;
+  }
+
+  document.getElementById('cards-list').innerHTML = allItems.map(item => {
+    const done = item.progress?.status === 'completed';
+    return `
+    <div class="card${done ? ' done' : ''}" onclick="openItem(${item.id})">
+      <div class="card-top">
+        <div class="card-emoji">${item.emoji}</div>
+        <div class="card-meta">
+          <div class="card-badges">
+            <span class="badge ${typeBadgeClass(item.type)}">${typeLabel(item.type)}</span>
+            ${done ? '<span class="badge badge-done">✓ Выполнено</span>' : ''}
+          </div>
+          <div class="card-title">${item.title}</div>
+          ${item.subtitle ? `<div class="card-subtitle">${item.subtitle}</div>` : ''}
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="card-dur">⏱ ${item.duration_min} мин</span>
+        <span class="card-check">${done ? '✅' : '▶'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── OPEN ITEM ──────────────────────────────────────────
+async function openItem(id) {
+  try {
+    const r = await fetch(`/api/learn/${id}?owner_id=${OWNER_ID}`);
+    currentItem = await r.json();
+  } catch (e) { showToast('Ошибка загрузки'); return; }
+
+  if (currentItem.type === 'checklist') {
+    openChecklist();
+  } else {
+    openReader();
+  }
+}
+
+// ── READER ─────────────────────────────────────────────
+function openReader() {
+  const item = currentItem;
+  const isDone = item.progress?.status === 'completed';
+
+  document.getElementById('reader-nav-title').textContent = typeLabel(item.type);
+  document.getElementById('reader-dur').textContent = `${item.duration_min} мин`;
+
+  const typeCls = typeBadgeClass(item.type);
+  document.getElementById('reader-body').innerHTML = `
+    <span class="badge ${typeCls} reader-type-badge" style="margin-bottom:16px">${typeLabel(item.type)}</span>
+    <span class="reader-emoji">${item.emoji}</span>
+    <div class="reader-title">${item.title}</div>
+    ${item.subtitle ? `<div class="reader-subtitle">${item.subtitle}</div>` : ''}
+    <div class="reader-divider"></div>
+    <div class="reader-content">${formatBody(item.body || '')}</div>
+  `;
+
+  const btn = document.getElementById('reader-done-btn');
+  if (isDone) {
+    btn.textContent = '✅ Прочитано';
+    btn.classList.add('done-btn');
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'Отметить как прочитанное ✓';
+    btn.classList.remove('done-btn');
+    btn.disabled = false;
+  }
+
+  showScreen('screen-reader');
+}
+
+function formatBody(text) {
+  return text
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^\* (.+)$/gm, '<li>$1</li>')
+    .replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
+}
+
+document.getElementById('reader-back').onclick = () => { showScreen('screen-catalog'); loadCatalog(activeFilter); };
+
+document.getElementById('reader-done-btn').onclick = async () => {
+  const btn = document.getElementById('reader-done-btn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняем...';
+  try {
+    await fetch(`/api/learn/${currentItem.id}/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ owner_id: OWNER_ID, status: 'completed' })
+    });
+    btn.textContent = '✅ Прочитано';
+    btn.classList.add('done-btn');
+    showToast('Отмечено как прочитанное!');
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Отметить как прочитанное ✓';
+    showToast('Ошибка сохранения');
+  }
+};
+
+// ── CHECKLIST ──────────────────────────────────────────
+function openChecklist() {
+  const item = currentItem;
+  const steps = item.steps || [];
+  const savedChecked = item.progress?.checked_steps || [];
+  checkedSteps = Array.isArray(savedChecked) ? [...savedChecked] : [];
+
+  document.getElementById('checklist-nav-title').textContent = 'Чек-лист';
+  document.getElementById('checklist-dur').textContent = `${item.duration_min} мин`;
+  document.getElementById('cl-emoji').textContent = item.emoji;
+  document.getElementById('cl-title').textContent = item.title;
+  document.getElementById('cl-subtitle').textContent = item.subtitle || '';
+
+  renderSteps(steps);
+  updateChecklistProgress(steps);
+  showScreen('screen-checklist');
+}
+
+function renderSteps(steps) {
+  document.getElementById('steps-list').innerHTML = steps.map((step, i) => {
+    const checked = checkedSteps.includes(i);
+    const text = typeof step === 'object' ? step.text : step;
+    return `
+    <div class="step-item${checked ? ' checked' : ''}" onclick="toggleStep(${i})">
+      <div class="step-checkbox"><span class="step-checkmark">✓</span></div>
+      <div class="step-text">${text}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStep(index) {
+  const steps = currentItem.steps || [];
+  if (checkedSteps.includes(index)) {
+    checkedSteps = checkedSteps.filter(i => i !== index);
+  } else {
+    checkedSteps.push(index);
+  }
+  renderSteps(steps);
+  updateChecklistProgress(steps);
+  saveChecklistProgress(steps);
+}
+
+function updateChecklistProgress(steps) {
+  const total = steps.length;
+  const done = checkedSteps.length;
+  const pct = total ? Math.round(done / total * 100) : 0;
+  document.getElementById('cl-bar').style.width = pct + '%';
+  document.getElementById('cl-prog-label').textContent = `${done} из ${total} выполнено`;
+
+  const btn = document.getElementById('checklist-done-btn');
+  const allDone = currentItem.progress?.status === 'completed';
+  if (allDone) {
+    btn.textContent = '✅ Чек-лист выполнен';
+    btn.classList.add('done-btn');
+    btn.disabled = true;
+  } else {
+    btn.disabled = done < total;
+    btn.textContent = done === total ? 'Завершить чек-лист ✓' : `Выполните все шаги (${done}/${total})`;
+    btn.classList.remove('done-btn');
+  }
+}
+
+async function saveChecklistProgress(steps) {
+  const allDone = checkedSteps.length === steps.length;
+  try {
+    await fetch(`/api/learn/${currentItem.id}/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        owner_id: OWNER_ID,
+        status: allDone ? 'completed' : 'started',
+        checked_steps: checkedSteps
+      })
+    });
+  } catch (e) { /* silent */ }
+}
+
+document.getElementById('checklist-back').onclick = () => { showScreen('screen-catalog'); loadCatalog(activeFilter); };
+
+document.getElementById('checklist-done-btn').onclick = async () => {
+  const steps = currentItem.steps || [];
+  if (checkedSteps.length < steps.length) return;
+  const btn = document.getElementById('checklist-done-btn');
+  btn.disabled = true;
+  btn.textContent = 'Сохраняем...';
+  try {
+    await fetch(`/api/learn/${currentItem.id}/progress`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ owner_id: OWNER_ID, status: 'completed', checked_steps: checkedSteps })
+    });
+    currentItem.progress = { status: 'completed' };
+    btn.textContent = '✅ Чек-лист выполнен';
+    btn.classList.add('done-btn');
+    showToast('Чек-лист выполнен!');
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Завершить чек-лист ✓';
+    showToast('Ошибка сохранения');
+  }
+};
+
+// ── FILTER TABS ────────────────────────────────────────
+document.getElementById('filter-tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadCatalog(btn.dataset.type);
+});
+
+// ── INIT ───────────────────────────────────────────────
+loadCatalog();
+</script>
+</body>
+</html>

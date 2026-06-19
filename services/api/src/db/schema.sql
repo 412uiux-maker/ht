@@ -50,6 +50,36 @@ CREATE TABLE IF NOT EXISTS pets (
 
 CREATE INDEX IF NOT EXISTS pets_owner_idx ON pets(owner_id);
 
+CREATE TABLE IF NOT EXISTS learn_items (
+  id           SERIAL PRIMARY KEY,
+  type         TEXT NOT NULL CHECK (type IN ('article','guide','checklist')),
+  category     TEXT NOT NULL,
+  title        TEXT NOT NULL,
+  subtitle     TEXT,
+  body         TEXT,
+  steps        JSONB,
+  species      TEXT[],
+  duration_min INTEGER DEFAULT 5,
+  emoji        TEXT DEFAULT '📄',
+  sort_order   INTEGER DEFAULT 0,
+  is_published BOOLEAN DEFAULT true,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS learn_progress (
+  id            SERIAL PRIMARY KEY,
+  owner_id      TEXT NOT NULL,
+  item_id       INTEGER REFERENCES learn_items(id) ON DELETE CASCADE,
+  status        TEXT NOT NULL DEFAULT 'started'
+                  CHECK (status IN ('started','completed')),
+  checked_steps JSONB DEFAULT '[]',
+  started_at    TIMESTAMPTZ DEFAULT NOW(),
+  completed_at  TIMESTAMPTZ,
+  UNIQUE(owner_id, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS learn_progress_owner_idx ON learn_progress(owner_id);
+
 CREATE TABLE IF NOT EXISTS foods (
   id            SERIAL PRIMARY KEY,
   name          TEXT NOT NULL,
