@@ -35,11 +35,26 @@ cp .env.example .env
 npm start
 ```
 
-Открыть в браузере: **http://localhost:3000**
+Открыть в браузере: **http://localhost:8080**
 
 Проверка API:
-- http://localhost:3000/api/health
-- http://localhost:3000/api/hello
+- http://localhost:8080/api/health
+- http://localhost:8080/api/hello
+
+## Запуск в Docker
+
+```bash
+# поднять api + postgres
+docker compose up --build
+
+# в фоне
+docker compose up -d --build
+
+# остановить
+docker compose down
+```
+
+Порты по умолчанию: API — **8080**, Postgres — **5433** (на хосте). Меняются через `.env`.
 
 ## Что дальше
 Текущий статус — рабочий каркас и hello-world. Дальнейшая реализация по приложениям — см. `docs/service-spec.md` (объём MVP, §10).

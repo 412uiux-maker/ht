@@ -1,22 +1,32 @@
 const path = require('path');
 const express = require('express');
+const initDb = require('./db/init');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Статика (hello-world страница)
+app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
-// Health-check
+app.use('/api/vets', require('./routes/vets'));
+app.use('/api/consultations', require('./routes/consultations'));
+app.use('/api/pets', require('./routes/pets'));
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'petplatform-api', time: new Date().toISOString() });
 });
 
-// Пример API-эндпоинта
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'Salom, dunyo! / Привет, мир!', from: 'petplatform-api' });
 });
 
-app.listen(PORT, () => {
-  console.log(`petplatform-api running at http://localhost:${PORT}`);
-});
+initDb()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`petplatform-api running at http://localhost:${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('DB init failed:', err);
+    process.exit(1);
+  });

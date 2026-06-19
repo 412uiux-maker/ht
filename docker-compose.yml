@@ -1,0 +1,42 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    image: petplatform-api
+    container_name: petplatform-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      DATABASE_URL: postgresql://petplatform:petplatform@db:5432/petplatform
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
+      PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
+      UZUM_MERCHANT_ID: ${UZUM_MERCHANT_ID:-}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: petplatform-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: petplatform
+      POSTGRES_PASSWORD: petplatform
+      POSTGRES_DB: petplatform
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petplatform -d petplatform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
