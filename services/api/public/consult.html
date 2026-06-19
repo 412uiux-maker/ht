@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Онлайн-консультация — HappyTails</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #F1F2F4; --surface: #FFFFFF; --surface-2: #FBF4EE; --border: #EAEBEE;
+      --text: #23282D; --text-muted: #6C7480;
+      --primary: #F2784B; --primary-600: #E0633A; --primary-strong: #C0511F; --on-primary: #FFFFFF;
+      --grad-warm: linear-gradient(135deg,#F8915A,#F26B47);
+      --grad-peach: linear-gradient(180deg,#FFEAD7,#FCDCC4);
+      --success: #3FA46B; --warning: #E0A21F; --danger: #D9534A;
+      --r-sm: 12px; --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-pill: 999px;
+      --shadow: 0 8px 28px rgba(35,40,45,.08);
+      --shadow-lg: 0 16px 48px rgba(35,40,45,.13);
+      --font: "Onest", system-ui, -apple-system, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:#15171A; --surface:#1E2126; --surface-2:#26221F; --border:#2E323A;
+        --text:#ECEEF0; --text-muted:#9BA2AD;
+        --primary:#F2864B; --on-primary:#1A140F; --danger:#E5746A;
+        --primary-strong:#F2864B;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font); background: var(--bg); color: var(--text);
+      display: flex; flex-direction: column; align-items: center;
+      min-height: 100dvh;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; flex-direction: column; width: 100%; max-width: 540px; min-height: 100dvh; }
+    .screen.active { display: flex; }
+
+    /* ── Topbar ── */
+    .topbar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 20px 12px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 20;
+    }
+    .back-btn {
+      width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-pill);
+      cursor: pointer; font-size: 18px; flex-shrink: 0; transition: background .15s;
+      text-decoration: none; color: var(--text);
+    }
+    .back-btn:hover { background: var(--border); }
+    .topbar-text { flex: 1; min-width: 0; }
+    .topbar-title { font-weight: 700; font-size: 16px; }
+    .topbar-sub   { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+
+    /* ── Status badge ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 11px; border-radius: var(--r-pill);
+      font-size: 12px; font-weight: 600; white-space: nowrap;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .s-pending   { background: #FFF3CD; color: #856404; }
+    .s-active    { background: #D1F2E4; color: #1A7A4A; }
+    .s-completed { background: #E8EDFF; color: #3B5BDB; }
+    .s-active .badge-dot { animation: pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    /* ── Scroll body ── */
+    .scroll-body {
+      flex: 1; overflow-y: auto; padding: 20px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: var(--grad-warm); border-radius: var(--r-xl);
+      padding: 22px 22px 20px; color: white; position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content:''; position: absolute; inset: 0;
+      background: radial-gradient(circle at 75% 20%, rgba(255,255,255,.16), transparent 60%);
+      pointer-events: none;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: rgba(255,255,255,.2); border-radius: var(--r-pill);
+      padding: 4px 12px; font-size: 12px; font-weight: 600; margin-bottom: 10px;
+    }
+    .hero h1 { font-size: 21px; font-weight: 800; line-height: 1.18; letter-spacing: -.02em; margin-bottom: 6px; }
+    .hero p  { font-size: 13px; opacity: .88; line-height: 1.5; }
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+    .hero-pill {
+      background: rgba(255,255,255,.17); border: 1px solid rgba(255,255,255,.22);
+      border-radius: var(--r-pill); padding: 4px 11px; font-size: 12px; font-weight: 500;
+    }
+
+    /* ── Vet card ── */
+    .vet-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 18px; box-shadow: var(--shadow);
+      cursor: pointer; transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .vet-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+    .vc-head { display: flex; align-items: center; gap: 14px; margin-bottom: 11px; }
+    .vc-avatar {
+      width: 54px; height: 54px; background: var(--grad-peach);
+      border-radius: var(--r-lg); display: flex; align-items: center; justify-content: center;
+      font-size: 26px; flex-shrink: 0;
+    }
+    .vc-name     { font-weight: 700; font-size: 16px; }
+    .vc-spec     { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .vc-rating   { font-size: 12px; font-weight: 600; color: var(--warning); margin-top: 3px; }
+    .vc-bio      { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 13px; }
+    .vc-foot     { display: flex; align-items: center; justify-content: space-between; }
+    .vc-price    { font-size: 17px; font-weight: 700; color: var(--primary-strong); font-variant-numeric: tabular-nums; }
+    .vc-price small { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+    .vc-exp {
+      font-size: 12px; font-weight: 500; color: var(--text-muted);
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-pill); padding: 3px 10px;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      font-family: var(--font); font-weight: 600; font-size: 15px;
+      padding: 13px 22px; border-radius: var(--r-pill); border: none;
+      cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, opacity .15s;
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--grad-warm); color: white; box-shadow: 0 4px 16px rgba(242,120,75,.32); width: 100%; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(242,120,75,.4); }
+    .btn-primary:active { transform: none; }
+    .btn-ghost  { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: var(--surface-2); }
+    .btn-sm { font-size: 13px; padding: 9px 16px; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; transform: none !important; }
+
+    /* ── Form ── */
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .field input, .field textarea {
+      font-family: var(--font); font-size: 15px; padding: 12px 15px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r-md); color: var(--text); outline: none;
+      transition: border-color .15s; resize: vertical;
+    }
+    .field input:focus, .field textarea:focus { border-color: var(--primary); }
+    .field input::placeholder, .field textarea::placeholder { color: var(--text-muted); }
+
+    .species-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+    .species-btn {
+      padding: 12px 6px; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r-md); cursor: pointer; font-family: var(--font);
+      font-size: 13px; font-weight: 500; color: var(--text);
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: border-color .15s, background .15s;
+    }
+    .species-btn .em { font-size: 22px; }
+    .species-btn.sel { border-color: var(--primary); background: var(--surface-2); color: var(--primary-strong); font-weight: 600; }
+
+    .vet-mini {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 13px 15px;
+    }
+    .vet-mini .em   { font-size: 26px; }
+    .vet-mini .nm   { font-weight: 700; font-size: 15px; }
+    .vet-mini .sb   { font-size: 12px; color: var(--text-muted); }
+    .vet-mini .pr   { margin-left: auto; font-weight: 700; font-size: 15px; color: var(--primary-strong); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .slot-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+    .slot-btn {
+      padding: 10px 6px; background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r-md); cursor: pointer; font-family: var(--font);
+      font-size: 13px; font-weight: 500; color: var(--text); text-align: center;
+      transition: border-color .15s, background .15s;
+    }
+    .slot-btn .sd { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .slot-btn.sel { border-color: var(--primary); background: var(--surface-2); color: var(--primary-strong); font-weight: 600; }
+
+    .err-msg {
+      font-size: 13px; color: var(--danger); padding: 10px 14px;
+      background: rgba(217,83,74,.08); border-radius: var(--r-md);
+      border: 1px solid rgba(217,83,74,.2); display: none;
+    }
+    .err-msg.show { display: block; }
+
+    /* ── Chat ── */
+    .chat-wrap {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    }
+    .chat-head {
+      display: flex; align-items: center; gap: 12px; padding: 12px 18px;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+    }
+    .ch-avatar {
+      width: 38px; height: 38px; background: var(--grad-peach);
+      border-radius: var(--r-md); display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .ch-name { font-weight: 700; font-size: 15px; }
+    .ch-sub  { font-size: 12px; color: var(--text-muted); }
+
+    .chat-msgs {
+      flex: 1; overflow-y: auto; padding: 14px 18px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .msg-row { display: flex; flex-direction: column; }
+    .msg-who { font-size: 11px; font-weight: 600; color: var(--text-muted); padding: 0 4px; margin-bottom: 3px; }
+    .bubble {
+      max-width: 82%; padding: 9px 14px; border-radius: var(--r-lg);
+      font-size: 15px; line-height: 1.45; word-break: break-word;
+    }
+    .bubble.vet    { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
+    .bubble.client { align-self: flex-end; background: var(--grad-warm); color: white; border-bottom-right-radius: 5px; }
+    .msg-time { font-size: 11px; color: var(--text-muted); padding: 2px 4px; }
+    .msg-time.r { text-align: right; }
+
+    .summary-box {
+      background: var(--surface-2); border: 1.5px solid var(--primary);
+      border-radius: var(--r-xl); padding: 16px; margin: 6px 0;
+    }
+    .summary-label {
+      font-size: 11px; font-weight: 700; color: var(--primary-strong);
+      text-transform: uppercase; letter-spacing: .07em; margin-bottom: 8px;
+    }
+    .summary-text { font-size: 14px; line-height: 1.55; }
+
+    .share-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-md); padding: 9px 13px; margin-bottom: 4px;
+    }
+    .share-url { flex: 1; font-size: 11px; color: var(--text-muted); word-break: break-all; }
+    .copy-btn {
+      font-family: var(--font); font-size: 12px; font-weight: 600;
+      padding: 4px 12px; background: var(--primary); color: white;
+      border: none; border-radius: var(--r-pill); cursor: pointer; flex-shrink: 0;
+      transition: opacity .15s;
+    }
+    .copy-btn:hover { opacity: .85; }
+
+    .chat-actions {
+      display: flex; gap: 8px; padding: 8px 16px;
+      background: var(--surface); border-top: 1px solid var(--border);
+    }
+    .chat-actions .btn { flex: 1; }
+
+    .chat-input-row {
+      display: flex; gap: 8px; align-items: flex-end;
+      padding: 10px 14px; background: var(--surface); border-top: 1px solid var(--border);
+    }
+    .chat-input {
+      flex: 1; font-family: var(--font); font-size: 15px; padding: 9px 14px;
+      background: var(--surface-2); border: 1.5px solid var(--border);
+      border-radius: var(--r-xl); color: var(--text); outline: none;
+      resize: none; max-height: 120px; line-height: 1.4; transition: border-color .15s;
+    }
+    .chat-input:focus { border-color: var(--primary); }
+    .send-btn {
+      width: 42px; height: 42px; background: var(--grad-warm);
+      border: none; border-radius: var(--r-pill); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: white; flex-shrink: 0; transition: transform .15s, opacity .15s;
+    }
+    .send-btn:hover { transform: scale(1.06); }
+    .send-btn:disabled { opacity: .4; transform: none; cursor: not-allowed; }
+
+    /* ── Utility ── */
+    .loading { display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 12px; color: var(--text-muted); }
+    .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+    .empty .big { font-size: 48px; margin-bottom: 12px; }
+
+    .resume-link {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--primary-strong); font-size: 13px; font-weight: 600;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--r-lg); padding: 11px 15px; text-decoration: none;
+      transition: background .15s;
+    }
+    .resume-link:hover { background: var(--border); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .vet-card, .btn, .send-btn { transition: none; }
+      .spinner { animation: none; border-color: var(--primary); }
+      .badge-dot { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════ SCREEN: LIST ═══════════════════════════════ -->
+<div class="screen active" id="screen-list">
+  <div class="topbar">
+    <a class="back-btn" href="/" title="На главную">←</a>
+    <div class="topbar-text">
+      <div class="topbar-title">Ветеринар онлайн</div>
+      <div class="topbar-sub">HappyTails · uz / ru</div>
+    </div>
+  </div>
+  <div class="scroll-body" id="list-body">
+    <div class="loading" id="vets-loading"><div class="spinner"></div><span>Загружаем…</span></div>
+    <div id="list-hero" style="display:none" class="hero">
+      <div class="hero-tag">🩺 Онлайн · 24/7</div>
+      <h1>Спросите ветеринара<br>не выходя из дома</h1>
+      <p>Верифицированные специалисты в чате. Заключение и рекомендации документом.</p>
+      <div class="hero-pills">
+        <div class="hero-pill">✓ Click / Payme / Uzum</div>
+        <div class="hero-pill">✓ Документ-заключение</div>
+        <div class="hero-pill">✓ Фото и анализы</div>
+      </div>
+    </div>
+    <div id="resume-slot"></div>
+    <div id="vets-list" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN: FORM ═══════════════════════════════ -->
+<div class="screen" id="screen-form">
+  <div class="topbar">
+    <button class="back-btn" onclick="show('list')">←</button>
+    <div class="topbar-text">
+      <div class="topbar-title">Запись на консультацию</div>
+    </div>
+  </div>
+  <div class="scroll-body">
+    <div id="form-vet" class="vet-mini" style="display:none"></div>
+    <div class="field">
+      <label for="f-name">Ваше имя</label>
+      <input id="f-name" type="text" placeholder="Например, Камола" autocomplete="name" />
+    </div>
+    <div class="field">
+      <label for="f-pet">Имя питомца</label>
+      <input id="f-pet" type="text" placeholder="Например, Барсик" />
+    </div>
+    <div class="field">
+      <label>Вид питомца</label>
+      <div class="species-row">
+        <button class="species-btn sel" data-v="cat"   onclick="pickSpecies(this)"><span class="em">🐱</span>Кошка</button>
+        <button class="species-btn"     data-v="dog"   onclick="pickSpecies(this)"><span class="em">🐶</span>Собака</button>
+        <button class="species-btn"     data-v="other" onclick="pickSpecies(this)"><span class="em">🐾</span>Другое</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="f-prob">Опишите проблему</label>
+      <textarea id="f-prob" rows="4" placeholder="Расскажите симптомы, как давно появились, что пробовали…"></textarea>
+    </div>
+    <div class="field">
+      <label>Удобное время</label>
+      <div class="slot-grid" id="slots"></div>
+    </div>
+    <div class="err-msg" id="form-err"></div>
+    <button class="btn btn-primary" id="book-btn" onclick="book()">Записаться и перейти в чат</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ SCREEN: CHAT ═══════════════════════════════ -->
+<div class="screen" id="screen-chat">
+  <div class="topbar">
+    <button class="back-btn" onclick="show('list');stopPoll()">←</button>
+    <div class="topbar-text">
+      <div class="topbar-title" id="c-vet-name">Ветеринар</div>
+      <div class="topbar-sub"   id="c-vet-spec">Онлайн-консультация</div>
+    </div>
+    <div id="c-badge"></div>
+  </div>
+  <div class="chat-wrap">
+    <div class="chat-msgs" id="chat-msgs">
+      <div class="loading"><div class="spinner"></div></div>
+    </div>
+    <div class="chat-actions" id="chat-actions" style="display:none">
+      <button class="btn btn-ghost btn-sm" onclick="vetReply()">💬 Ответ от ветеринара</button>
+      <button class="btn btn-ghost btn-sm" onclick="complete()">✅ Завершить</button>
+    </div>
+    <div class="chat-input-row" id="chat-input-row">
+      <textarea class="chat-input" id="msg-in" rows="1" placeholder="Напишите сообщение…"
+        oninput="grow(this)" onkeydown="msgKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="send()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/gsap.min.js"></script>
+<script>
+/* ── State ─────────────────────────────────────────────────── */
+let vet = null, vetMap = {}, species = 'cat', slot = null;
+let cid = null, poll = null, msgLen = 0, done = false;
+const REPLIES = [
+  'Понял, спасибо за описание. Как давно это началось?',
+  'Изменилось ли поведение питомца — аппетит, активность?',
+  'Есть ли возможность прислать фото симптома?',
+  'Это может быть связано с питанием — чем кормите питомца?',
+  'Хорошо, дайте минуту — изучу данные и дам рекомендации.',
+  'Рекомендую измерить температуру. Норма для кошек 38–39°C, для собак 37.5–39°C.',
+  'Нужно сдать общий анализ крови и мочи — это прояснит картину.',
+];
+let ri = 0;
+
+/* ── Screen ────────────────────────────────────────────────── */
+function show(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+/* ── Utils ─────────────────────────────────────────────────── */
+const fmt = n => new Intl.NumberFormat('ru-UZ').format(n) + ' сум';
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), now = new Date();
+  const t = d.toLocaleTimeString('ru', { hour:'2-digit', minute:'2-digit' });
+  return d.toDateString() === now.toDateString()
+    ? t
+    : d.toLocaleDateString('ru', { day:'numeric', month:'short' }) + ' ' + t;
+}
+function badge(s) {
+  const m = { pending:['s-pending','Ожидает'], active:['s-active','В процессе'], completed:['s-completed','Завершена'] };
+  const [cls, lbl] = m[s] || m.pending;
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${lbl}</span>`;
+}
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+function grow(el) { el.style.height='auto'; el.style.height = Math.min(el.scrollHeight,120)+'px'; }
+function msgKey(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+
+/* ── Slots ─────────────────────────────────────────────────── */
+function makeSlots() {
+  const now = new Date(), out = [];
+  for (let d = 0; d <= 1 && out.length < 9; d++) {
+    for (const h of [9,10,11,13,14,15,16,17,19,20]) {
+      const t = new Date(now); t.setDate(t.getDate()+d); t.setHours(h,0,0,0);
+      if (t > now) { out.push(t); if (out.length===9) break; }
+    }
+  }
+  return out;
+}
+function renderSlots() {
+  const slots = makeSlots();
+  slot = slots[0]?.toISOString() || null;
+  document.getElementById('slots').innerHTML = slots.map((s,i) => {
+    const ti = s.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+    const da = s.toLocaleDateString('ru',{weekday:'short',day:'numeric',month:'short'});
+    return `<button class="slot-btn${i===0?' sel':''}" data-iso="${s.toISOString()}" onclick="pickSlot(this)">
+      ${ti}<div class="sd">${da}</div></button>`;
+  }).join('');
+}
+function pickSlot(el) {
+  document.querySelectorAll('.slot-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); slot = el.dataset.iso;
+}
+function pickSpecies(el) {
+  document.querySelectorAll('.species-btn').forEach(b=>b.classList.remove('sel'));
+  el.classList.add('sel'); species = el.dataset.v;
+}
+
+/* ── Vet list ───────────────────────────────────────────────── */
+async function loadVets() {
+  try {
+    const vets = await fetch('/api/vets').then(r=>r.json());
+    vets.forEach(v => vetMap[v.id] = v);
+
+    document.getElementById('vets-loading').style.display = 'none';
+    document.getElementById('list-hero').style.display = '';
+
+    const saved = localStorage.getItem('ht_cid');
+    if (saved) {
+      document.getElementById('resume-slot').innerHTML =
+        `<a class="resume-link" href="#" onclick="event.preventDefault();openChat('${saved}')">
+          ↩ Вернуться к активной консультации
+        </a>`;
+    }
+
+    document.getElementById('vets-list').innerHTML = vets.map(v => `
+      <div class="vet-card" onclick="openForm(${v.id})">
+        <div class="vc-head">
+          <div class="vc-avatar">${v.avatar_emoji}</div>
+          <div>
+            <div class="vc-name">${v.name}</div>
+            <div class="vc-spec">${v.specialty}</div>
+            <div class="vc-rating">★ ${v.rating} <span style="font-weight:400;color:var(--text-muted)">· опыт ${v.experience_yr} лет</span></div>
+          </div>
+        </div>
+        <div class="vc-bio">${v.bio}</div>
+        <div class="vc-foot">
+          <div class="vc-price">${fmt(v.price_uzs)} <small>/ консультация</small></div>
+          <div class="vc-exp">Стаж ${v.experience_yr} л</div>
+        </div>
+      </div>`).join('');
+
+    const red = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+    if (window.gsap && !red) {
+      gsap.from('.hero',     { y:20, opacity:0, duration:.6, ease:'power3.out' });
+      gsap.from('.vet-card', { y:14, opacity:0, duration:.5, stagger:.07, delay:.1, ease:'power2.out' });
+    }
+  } catch {
+    document.getElementById('vets-loading').innerHTML =
+      '<div class="empty"><div class="big">😿</div><p>Не удалось загрузить список.<br>Обновите страницу.</p></div>';
+  }
+}
+
+function openForm(id) {
+  vet = vetMap[id];
+  document.getElementById('form-vet').style.display = '';
+  document.getElementById('form-vet').innerHTML = `
+    <div class="em">${vet.avatar_emoji}</div>
+    <div><div class="nm">${vet.name}</div><div class="sb">${vet.specialty} · ★ ${vet.rating}</div></div>
+    <div class="pr">${fmt(vet.price_uzs)}</div>`;
+  renderSlots();
+  show('form');
+  const red = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if (window.gsap && !red)
+    gsap.from('#screen-form .scroll-body > *', { y:12, opacity:0, duration:.4, stagger:.05, ease:'power2.out' });
+}
+
+/* ── Booking ────────────────────────────────────────────────── */
+async function book() {
+  const name = document.getElementById('f-name').value.trim();
+  const pet  = document.getElementById('f-pet').value.trim();
+  const prob = document.getElementById('f-prob').value.trim();
+  const err  = document.getElementById('form-err');
+  err.classList.remove('show');
+
+  if (!name)            return showErr('Введите ваше имя');
+  if (!pet)             return showErr('Введите имя питомца');
+  if (prob.length < 10) return showErr('Опишите проблему подробнее (минимум 10 символов)');
+
+  const btn = document.getElementById('book-btn');
+  btn.disabled = true; btn.textContent = 'Оформляем запись…';
+
+  try {
+    const res = await fetch('/api/consultations', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ vet_id:vet.id, client_name:name, pet_name:pet,
+                              pet_species:species, problem:prob, slot_time:slot })
+    });
+    if (!res.ok) throw new Error();
+    const c = await res.json();
+    localStorage.setItem('ht_cid', c.id);
+    openChat(c.id);
+  } catch {
+    showErr('Ошибка при создании консультации — попробуйте ещё раз.');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Записаться и перейти в чат';
+  }
+}
+function showErr(msg) { const e = document.getElementById('form-err'); e.textContent=msg; e.classList.add('show'); }
+
+/* ── Chat ───────────────────────────────────────────────────── */
+async function openChat(id) {
+  cid = id; msgLen = 0; done = false;
+  show('chat');
+  document.getElementById('chat-msgs').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  await fetchChat();
+  startPoll();
+}
+function startPoll() { stopPoll(); if (!done) poll = setInterval(fetchChat, 3000); }
+function stopPoll()  { if (poll) { clearInterval(poll); poll = null; } }
+
+async function fetchChat() {
+  try {
+    const r = await fetch('/api/consultations/' + cid);
+    if (!r.ok) return;
+    const { consultation:c, messages:ms } = await r.json();
+    render(c, ms);
+  } catch {}
+}
+
+function render(c, ms) {
+  document.getElementById('c-vet-name').textContent = c.vet_name || 'Ветеринар';
+  document.getElementById('c-vet-spec').textContent = c.specialty || 'Онлайн-консультация';
+  document.getElementById('c-badge').innerHTML = badge(c.status);
+  done = c.status === 'completed';
+
+  if (ms.length !== msgLen) {
+    msgLen = ms.length;
+    const box = document.getElementById('chat-msgs');
+    box.innerHTML = '';
+
+    const link = `${location.origin}/consult.html?id=${c.id}`;
+    const sh = document.createElement('div');
+    sh.className = 'share-row';
+    sh.innerHTML = `<span class="share-url">${link}</span>
+      <button class="copy-btn" onclick="copyLink('${link}',this)">Скопировать</button>`;
+    box.appendChild(sh);
+
+    ms.forEach(m => {
+      const row = document.createElement('div');
+      row.className = 'msg-row';
+      row.innerHTML = (m.sender==='vet' ? `<div class="msg-who">${c.vet_name}</div>` : '') +
+        `<div class="bubble ${m.sender}">${esc(m.text)}</div>
+         <div class="msg-time ${m.sender==='client'?'r':''}">${fmtTime(m.created_at)}</div>`;
+      box.appendChild(row);
+    });
+
+    if (done && c.summary) {
+      const s = document.createElement('div');
+      s.className = 'summary-box';
+      s.innerHTML = `<div class="summary-label">📋 Заключение ветеринара</div>
+        <div class="summary-text">${esc(c.summary)}</div>`;
+      box.appendChild(s);
+    }
+    box.scrollTop = box.scrollHeight;
+  }
+
+  document.getElementById('chat-actions').style.display  = done ? 'none' : 'flex';
+  document.getElementById('chat-input-row').style.display = done ? 'none' : 'flex';
+  if (done) stopPoll();
+}
+
+async function send() {
+  const el = document.getElementById('msg-in');
+  const txt = el.value.trim(); if (!txt) return;
+  el.value = ''; el.style.height = '';
+  document.getElementById('send-btn').disabled = true;
+  try {
+    await fetch('/api/consultations/'+cid+'/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sender:'client', text:txt })
+    });
+    await fetchChat();
+  } finally { document.getElementById('send-btn').disabled = false; el.focus(); }
+}
+async function vetReply() {
+  await fetch('/api/consultations/'+cid+'/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sender:'vet', text: REPLIES[ri++ % REPLIES.length] })
+  });
+  await fetchChat();
+}
+async function complete() {
+  await fetch('/api/consultations/'+cid+'/status', {
+    method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      status: 'completed',
+      summary: 'На основании описанных симптомов рекомендую: 1) наблюдение в течение 48 часов; ' +
+        '2) лёгкая диета, достаточное количество воды; ' +
+        '3) при ухудшении состояния или появлении новых симптомов — очный приём в клинике. ' +
+        'Если симптомы сохраняются более 3 дней — сдать общий анализ крови и мочи.'
+    })
+  });
+  await fetchChat();
+}
+function copyLink(link, btn) {
+  navigator.clipboard.writeText(link).then(() => {
+    btn.textContent = 'Скопировано!';
+    setTimeout(() => btn.textContent = 'Скопировать', 2000);
+  });
+}
+
+/* ── Init ───────────────────────────────────────────────────── */
+const urlId = new URLSearchParams(location.search).get('id');
+if (urlId) { openChat(urlId); } else { loadVets(); }
+</script>
+</body>
+</html>
