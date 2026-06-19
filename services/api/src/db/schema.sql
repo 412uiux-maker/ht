@@ -49,3 +49,19 @@ CREATE TABLE IF NOT EXISTS pets (
 );
 
 CREATE INDEX IF NOT EXISTS pets_owner_idx ON pets(owner_id);
+
+CREATE TABLE IF NOT EXISTS foods (
+  id            SERIAL PRIMARY KEY,
+  name          TEXT NOT NULL,
+  brand         TEXT NOT NULL,
+  species       TEXT[] NOT NULL,
+  life_stages   TEXT[] NOT NULL,
+  weight_class  TEXT[],
+  health_tags   TEXT[],
+  price_uzs     INTEGER NOT NULL,
+  budget_tier   TEXT NOT NULL CHECK (budget_tier IN ('economy','mid','premium')),
+  avatar_emoji  TEXT NOT NULL DEFAULT '🥘',
+  description   TEXT,
+  rating        NUMERIC(2,1) DEFAULT 4.5,
+  is_active     BOOLEAN DEFAULT true
+);

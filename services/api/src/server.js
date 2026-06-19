@@ -11,6 +11,7 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/vets', require('./routes/vets'));
 app.use('/api/consultations', require('./routes/consultations'));
 app.use('/api/pets', require('./routes/pets'));
+app.use('/api/foods', require('./routes/food'));
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'petplatform-api', time: new Date().toISOString() });
