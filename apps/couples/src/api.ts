@@ -41,6 +41,20 @@ const req = async <T>(path: string, opts?: RequestInit): Promise<T> => {
   return r.json()
 }
 
+export type PaymentResult = {
+  success: boolean
+  order_id: string
+  ref: string
+  amount_uzs: number
+  provider: string
+}
+
+const getOwnerId = () => {
+  let id = localStorage.getItem('ht_owner_id')
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('ht_owner_id', id) }
+  return id
+}
+
 export const api = {
   vets: () => req<Vet[]>('/vets'),
   createConsultation: (body: {
@@ -56,5 +70,10 @@ export const api = {
     req<Message>(`/consultations/${id}/messages`, {
       method: 'POST',
       body: JSON.stringify({ sender: 'client', text }),
+    }),
+  simulatePayment: (consultation_id: string, provider: string, amount_uzs: number) =>
+    req<PaymentResult>('/payments/simulate', {
+      method: 'POST',
+      body: JSON.stringify({ consultation_id, provider, amount_uzs, owner_id: getOwnerId() }),
     }),
 }

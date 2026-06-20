@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Vet } from '../api'
+import type { Vet, Consultation } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
 
@@ -7,7 +7,7 @@ interface Props {
   lang: string
   vet: Vet
   onBack: () => void
-  onBooked: (consultationId: string) => void
+  onBooked: (consultation: Consultation) => void
 }
 
 const SPECIES: { key: string; emoji: string; labelKey: keyof ReturnType<typeof buildKeys> }[] = [
@@ -49,7 +49,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
     try {
       localStorage.setItem(REMEMBERED_NAME_KEY, form.client_name.trim())
       const c = await api.createConsultation({ vet_id: vet.id, ...form })
-      onBooked(c.id)
+      onBooked(c)
     } catch {
       setErr(t('error'))
     } finally {

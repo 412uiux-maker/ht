@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS consultation_id UUID;
 
 CREATE TABLE IF NOT EXISTS foods (
   id            SERIAL PRIMARY KEY,
