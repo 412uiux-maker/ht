@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Кабинет ветеринара — HappyTails</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --coral:#F2784B;--coral-dark:#d95f30;
+  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;
+  --text:#f5f5f5;--text2:#a0a0a0;--text3:#666;
+  --green:#4CAF7D;--violet:#7C5CBF;--amber:#F5A623;--blue:#4A90D9;--red:#E5534A;
+  --r-sm:12px;--r-md:18px;--r-xl:28px;
+  --font:'Onest',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ── LOGIN ─────────────────────────────────────────────── */
+#screen-login{align-items:center;justify-content:center;padding:24px}
+.login-card{width:100%;max-width:440px;background:var(--surface);border-radius:var(--r-xl);padding:36px 32px}
+.login-logo{font-size:36px;margin-bottom:4px}
+.login-brand{font-size:22px;font-weight:800;margin-bottom:4px}
+.login-sub{font-size:14px;color:var(--text2);margin-bottom:28px}
+.login-demos{margin-bottom:24px}
+.demo-label{font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.demo-chips{display:flex;flex-wrap:wrap;gap:8px}
+.demo-chip{padding:7px 14px;border-radius:99px;border:1.5px solid var(--surface3);background:none;
+  color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;text-align:left}
+.demo-chip:hover{border-color:var(--coral);color:var(--coral)}
+.demo-chip .dc-name{display:block;font-weight:700;color:var(--text);font-size:13px}
+.demo-chip .dc-spec{display:block;font-size:11px;color:var(--text3);margin-top:1px}
+.divider{height:1px;background:var(--surface3);margin:20px 0;position:relative}
+.divider::after{content:'или';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  background:var(--surface);padding:0 10px;font-size:12px;color:var(--text3)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-size:13px;font-weight:600;color:var(--text2)}
+.field input{background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--r-sm);
+  padding:12px 16px;color:var(--text);font-family:var(--font);font-size:15px;outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--coral)}
+.field input::placeholder{color:var(--text3)}
+.btn-login{width:100%;padding:15px;border-radius:var(--r-md);background:var(--coral);color:#fff;
+  font-family:var(--font);font-size:16px;font-weight:700;border:none;cursor:pointer;transition:background .2s;margin-top:4px}
+.btn-login:hover{background:var(--coral-dark)}
+.btn-login:disabled{background:var(--surface3);color:var(--text3);cursor:default}
+.login-err{font-size:13px;color:var(--red);background:rgba(229,83,74,.1);border:1px solid rgba(229,83,74,.25);
+  border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px;display:none}
+.login-err.show{display:block}
+
+/* ── MAIN LAYOUT ───────────────────────────────────────── */
+.main-wrap{display:flex;flex:1;min-height:100vh}
+
+/* ── SIDEBAR ────────────────────────────────────────────── */
+.sidebar{width:240px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--surface3);
+  display:flex;flex-direction:column;padding:24px 16px}
+.sidebar-profile{display:flex;align-items:center;gap:12px;padding:14px;background:var(--surface2);
+  border-radius:var(--r-md);margin-bottom:24px}
+.s-avatar{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#FFEAD7,#FCDCC4);
+  display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.s-name{font-size:14px;font-weight:700;line-height:1.2}
+.s-spec{font-size:12px;color:var(--text2);margin-top:2px}
+.nav-links{display:flex;flex-direction:column;gap:4px;flex:1}
+.nav-link{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--r-sm);
+  color:var(--text2);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;border:none;
+  background:none;font-family:var(--font);text-align:left;width:100%}
+.nav-link:hover{background:var(--surface2);color:var(--text)}
+.nav-link.active{background:rgba(242,120,75,.12);color:var(--coral)}
+.nav-link .nav-icon{font-size:18px;width:22px;text-align:center}
+.nav-badge{margin-left:auto;font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;
+  background:var(--coral);color:#fff}
+.sidebar-logout{margin-top:auto}
+.btn-logout{width:100%;padding:10px;border-radius:var(--r-sm);background:none;border:1.5px solid var(--surface3);
+  color:var(--text2);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+
+/* ── MAIN CONTENT ───────────────────────────────────────── */
+.main-content{flex:1;overflow-y:auto;padding:28px 32px}
+.page-title{font-size:24px;font-weight:800;margin-bottom:6px}
+.page-sub{font-size:14px;color:var(--text2);margin-bottom:24px}
+
+/* ── STATS GRID ─────────────────────────────────────────── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--surface);border-radius:var(--r-md);padding:18px}
+.stat-card.highlight{background:linear-gradient(135deg,var(--coral) 0%,#e8522a 100%)}
+.stat-icon{font-size:24px;margin-bottom:10px}
+.stat-num{font-size:28px;font-weight:800;line-height:1;margin-bottom:4px}
+.stat-lbl{font-size:12px;color:var(--text2)}
+.stat-card.highlight .stat-lbl{color:rgba(255,255,255,.7)}
+
+/* ── SECTION ────────────────────────────────────────────── */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:17px;font-weight:700}
+.section-link{font-size:13px;color:var(--coral);font-weight:600;cursor:pointer;background:none;border:none;font-family:var(--font)}
+
+/* ── CONSULT CARDS ──────────────────────────────────────── */
+.consult-list{display:flex;flex-direction:column;gap:10px}
+.consult-card{background:var(--surface);border-radius:var(--r-md);padding:16px 18px;
+  cursor:pointer;transition:background .15s;border:1.5px solid transparent;display:flex;align-items:center;gap:14px}
+.consult-card:hover{background:var(--surface2)}
+.consult-card.status-active{border-color:rgba(76,175,125,.35)}
+.consult-card.status-pending{border-color:rgba(245,166,35,.35)}
+.cc-species{font-size:26px;width:40px;text-align:center;flex-shrink:0}
+.cc-info{flex:1;min-width:0}
+.cc-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.cc-name{font-size:15px;font-weight:700}
+.cc-problem{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc-right{text-align:right;flex-shrink:0}
+.cc-time{font-size:12px;color:var(--text3);margin-bottom:6px}
+.status-pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px}
+.s-pending  {background:rgba(245,166,35,.15);color:var(--amber)}
+.s-active   {background:rgba(76,175,125,.15);color:var(--green)}
+.s-completed{background:rgba(74,144,217,.15);color:var(--blue)}
+
+/* ── FILTER TABS ────────────────────────────────────────── */
+.filter-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filter-btn{padding:7px 16px;border-radius:99px;border:1.5px solid var(--surface3);background:none;
+  color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.filter-btn.active{background:var(--coral);border-color:var(--coral);color:#fff}
+
+/* ── CHAT PANEL ─────────────────────────────────────────── */
+.chat-panel{display:flex;flex-direction:column;height:calc(100vh - 56px)}
+.chat-topbar{display:flex;align-items:center;gap:12px;padding:14px 0;margin-bottom:0;border-bottom:1px solid var(--surface3)}
+.chat-back{background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.chat-vet-info{flex:1}
+.chat-vet-name{font-size:16px;font-weight:700}
+.chat-vet-sub{font-size:12px;color:var(--text2)}
+.chat-video-btn{padding:8px 14px;border-radius:99px;background:#7C5CBF;color:#fff;border:none;
+  font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.chat-video-btn:hover{opacity:.85}
+.chat-msgs-wrap{flex:1;overflow-y:auto;padding:16px 0;display:flex;flex-direction:column;gap:6px}
+.msg-row{display:flex;flex-direction:column}
+.msg-who{font-size:11px;font-weight:600;color:var(--text3);padding:0 4px;margin-bottom:3px}
+.bubble{max-width:75%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word}
+.bubble.vet   {align-self:flex-end;background:var(--coral);color:#fff;border-bottom-right-radius:4px}
+.bubble.client{align-self:flex-start;background:var(--surface2);border:1px solid var(--surface3);border-bottom-left-radius:4px}
+.msg-time{font-size:11px;color:var(--text3);padding:2px 4px}
+.msg-time.r{text-align:right}
+.summary-box{background:rgba(76,175,125,.08);border:1.5px solid rgba(76,175,125,.3);
+  border-radius:var(--r-md);padding:14px;margin:8px 0}
+.summary-label{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.summary-text{font-size:13px;line-height:1.55;color:var(--text)}
+.chat-input-area{padding:14px 0;border-top:1px solid var(--surface3)}
+.chat-input-row{display:flex;gap:8px;align-items:flex-end}
+.chat-input{flex:1;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:16px;
+  padding:10px 14px;color:var(--text);font-family:var(--font);font-size:14px;outline:none;
+  resize:none;max-height:120px;line-height:1.4;transition:border-color .15s}
+.chat-input:focus{border-color:var(--coral)}
+.send-btn{width:40px;height:40px;border-radius:99px;background:var(--coral);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;transition:transform .15s}
+.send-btn:hover{transform:scale(1.06)}
+.send-btn:disabled{opacity:.4;transform:none}
+.chat-actions-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chat-action-btn{padding:8px 14px;border-radius:99px;background:var(--surface2);border:1.5px solid var(--surface3);
+  color:var(--text);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.chat-action-btn:hover{border-color:var(--coral);color:var(--coral)}
+.chat-action-btn.complete{border-color:rgba(76,175,125,.4);color:var(--green)}
+.chat-action-btn.complete:hover{background:rgba(76,175,125,.1)}
+
+/* ── PROFILE ────────────────────────────────────────────── */
+.profile-card{background:var(--surface);border-radius:var(--r-xl);padding:28px;margin-bottom:16px}
+.profile-head{display:flex;align-items:center;gap:18px;margin-bottom:20px}
+.profile-avatar{width:72px;height:72px;border-radius:20px;background:linear-gradient(135deg,#FFEAD7,#FCDCC4);
+  display:flex;align-items:center;justify-content:center;font-size:36px}
+.profile-name{font-size:22px;font-weight:800;margin-bottom:4px}
+.profile-spec{font-size:14px;color:var(--text2)}
+.profile-rating{font-size:14px;color:var(--amber);font-weight:700;margin-top:4px}
+.profile-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.info-item{background:var(--surface2);border-radius:var(--r-sm);padding:14px}
+.info-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.info-val{font-size:15px;font-weight:700}
+.demo-creds-box{background:var(--surface);border-radius:var(--r-md);padding:18px;border:1.5px solid rgba(242,120,75,.25)}
+.creds-title{font-size:14px;font-weight:700;color:var(--coral);margin-bottom:12px}
+.creds-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--surface3)}
+.creds-row:last-child{border:none}
+.creds-key{font-size:12px;color:var(--text2)}
+.creds-val{font-size:13px;font-weight:600;font-family:monospace;color:var(--text)}
+
+/* ── EMPTY / LOADING ─────────────────────────────────────── */
+.empty{text-align:center;padding:48px 24px;color:var(--text2)}
+.empty-emoji{font-size:48px;margin-bottom:12px}
+.empty-title{font-size:16px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.spinner{width:28px;height:28px;border:3px solid var(--surface3);border-top-color:var(--coral);
+  border-radius:50%;animation:spin .7s linear infinite;margin:40px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface3);color:var(--text);padding:10px 20px;border-radius:99px;
+  font-size:14px;font-weight:600;opacity:0;transition:all .3s;z-index:99;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media(max-width:768px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .sidebar{display:none}
+  .main-content{padding:20px 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SCREEN: LOGIN ═══════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-card">
+    <div class="login-logo">🩺</div>
+    <div class="login-brand">HappyTails Vendor</div>
+    <div class="login-sub">Кабинет ветеринара</div>
+
+    <div class="login-demos">
+      <div class="demo-label">Демо-аккаунты — нажмите для входа</div>
+      <div class="demo-chips">
+        <button class="demo-chip" onclick="quickLogin('aziz@happytails.uz')">
+          <span class="dc-name">👨‍⚕️ Азиз Каримов</span>
+          <span class="dc-spec">Терапевт · 8 лет</span>
+        </button>
+        <button class="demo-chip" onclick="quickLogin('malika@happytails.uz')">
+          <span class="dc-name">👩‍⚕️ Малика Юсупова</span>
+          <span class="dc-spec">Хирург-ортопед · 11 лет</span>
+        </button>
+        <button class="demo-chip" onclick="quickLogin('sanzhar@happytails.uz')">
+          <span class="dc-name">🧑‍⚕️ Санжар Назаров</span>
+          <span class="dc-spec">Дерматолог · 5 лет</span>
+        </button>
+        <button class="demo-chip" onclick="quickLogin('dilnoza@happytails.uz')">
+          <span class="dc-name">👩‍⚕️ Дилноза Рашидова</span>
+          <span class="dc-spec">Педиатрия питомцев · 6 лет</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="login-err" id="login-err"></div>
+    <div class="field">
+      <label for="f-email">Email</label>
+      <input id="f-email" type="email" placeholder="aziz@happytails.uz" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="f-pass">Пароль</label>
+      <input id="f-pass" type="password" placeholder="demo123" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn-login" id="login-btn" onclick="doLogin()">Войти в кабинет</button>
+  </div>
+</div>
+
+<!-- ═══════════ SCREEN: MAIN (sidebar layout) ═══════════ -->
+<div id="screen-main" class="screen">
+  <div class="main-wrap">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-profile">
+        <div class="s-avatar" id="s-avatar">👨‍⚕️</div>
+        <div>
+          <div class="s-name" id="s-name">Ветеринар</div>
+          <div class="s-spec" id="s-spec">Специализация</div>
+        </div>
+      </div>
+      <nav class="nav-links">
+        <button class="nav-link active" data-page="dashboard" onclick="switchPage(this)">
+          <span class="nav-icon">📊</span> Дашборд
+        </button>
+        <button class="nav-link" data-page="consults" onclick="switchPage(this)">
+          <span class="nav-icon">💬</span> Пациенты
+          <span class="nav-badge" id="pending-badge" style="display:none"></span>
+        </button>
+        <button class="nav-link" data-page="profile" onclick="switchPage(this)">
+          <span class="nav-icon">👤</span> Профиль
+        </button>
+      </nav>
+      <div class="sidebar-logout">
+        <button class="btn-logout" onclick="logout()">← Выйти</button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content" id="main-content">
+      <div class="spinner"></div>
+    </main>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────
+let vendor = null;
+let currentPage = 'dashboard';
+let allConsults = [];
+let currentConsult = null;
+let filterStatus = '';
+let chatPoll = null;
+let chatMsgLen = 0;
+
+const SPECIES_EMOJI = { cat:'🐱', dog:'🐶', rabbit:'🐰', parrot:'🦜', hamster:'🐹', fish:'🐟', other:'🐾' };
+const STATUS_LABEL  = { pending:'Ожидает', active:'В процессе', completed:'Завершена' };
+
+const VET_REPLIES = [
+  'Понял, спасибо за описание. Уточните: как давно начались симптомы?',
+  'Изменилось ли поведение питомца — аппетит, активность, сон?',
+  'Есть ли возможность сделать фото симптома и прислать?',
+  'Чем кормите питомца? Это поможет исключить пищевую причину.',
+  'Хорошо, анализирую данные. Дайте минуту.',
+  'Рекомендую измерить температуру. Норма для кошек 38–39°C, для собак 37.5–39°C.',
+  'Судя по симптомам, рекомендую сдать общий анализ крови и мочи.',
+  'Это может быть реакция на стресс — когда последний раз меняли обстановку?',
+];
+let replyIdx = 0;
+
+// ── Utils ─────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function fmt(n) { return n ? n.toLocaleString('ru-RU') : '0'; }
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), now = new Date();
+  const t = d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});
+  return d.toDateString() === now.toDateString()
+    ? t
+    : d.toLocaleDateString('ru',{day:'numeric',month:'short'}) + ' ' + t;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+function statusPill(s) {
+  return `<span class="status-pill s-${s}">${STATUS_LABEL[s] || s}</span>`;
+}
+function grow(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
+
+// ── Auth ──────────────────────────────────────────────────
+function quickLogin(email) {
+  document.getElementById('f-email').value = email;
+  document.getElementById('f-pass').value = 'demo123';
+  doLogin();
+}
+
+async function doLogin() {
+  const email = document.getElementById('f-email').value.trim();
+  const pass  = document.getElementById('f-pass').value;
+  const err   = document.getElementById('login-err');
+  err.classList.remove('show');
+  if (!email || !pass) { err.textContent='Введите email и пароль'; err.classList.add('show'); return; }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Входим…';
+
+  try {
+    const r = await fetch('/api/vendor/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    const data = await r.json();
+    if (!r.ok) { err.textContent = data.error || 'Ошибка входа'; err.classList.add('show'); return; }
+    vendor = data;
+    localStorage.setItem('ht_vendor', JSON.stringify(vendor));
+    openMainScreen();
+  } catch { err.textContent='Ошибка соединения'; err.classList.add('show'); }
+  finally { btn.disabled=false; btn.textContent='Войти в кабинет'; }
+}
+
+function logout() {
+  vendor = null;
+  localStorage.removeItem('ht_vendor');
+  stopChatPoll();
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-login').classList.add('active');
+  document.getElementById('f-email').value='';
+  document.getElementById('f-pass').value='';
+}
+
+// ── Main screen ───────────────────────────────────────────
+function openMainScreen() {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-main').classList.add('active');
+  document.getElementById('s-avatar').textContent = vendor.avatar_emoji || '👨‍⚕️';
+  document.getElementById('s-name').textContent   = vendor.name;
+  document.getElementById('s-spec').textContent   = vendor.specialty;
+  renderDashboard();
+}
+
+function switchPage(btn) {
+  document.querySelectorAll('.nav-link').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  currentPage = btn.dataset.page;
+  stopChatPoll();
+  if (currentPage === 'dashboard') renderDashboard();
+  else if (currentPage === 'consults') renderConsultsList();
+  else if (currentPage === 'profile') renderProfile();
+}
+
+// ── Dashboard ─────────────────────────────────────────────
+async function renderDashboard() {
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = '<div class="spinner"></div>';
+  try {
+    const [stats, consults] = await Promise.all([
+      fetch(`/api/vendor/stats?vet_id=${vendor.vet_id}`).then(r=>r.json()),
+      fetch(`/api/vendor/consultations?vet_id=${vendor.vet_id}`).then(r=>r.json()),
+    ]);
+    allConsults = consults;
+    updatePendingBadge(stats);
+
+    const pending  = parseInt(stats.pending)  || 0;
+    const active   = parseInt(stats.active)   || 0;
+    const completed= parseInt(stats.completed)|| 0;
+    const today    = parseInt(stats.today)    || 0;
+    const income   = stats.income || 0;
+
+    const recent = consults.filter(c=>c.status!=='completed').slice(0,5);
+
+    mc.innerHTML = `
+      <div class="page-title">Добрый день, ${vendor.name.split(' ')[0]}! 👋</div>
+      <div class="page-sub">Вот ваша сводка за сегодня</div>
+
+      <div class="stats-grid">
+        <div class="stat-card highlight">
+          <div class="stat-icon">💰</div>
+          <div class="stat-num">${fmt(income)}</div>
+          <div class="stat-lbl">Доход (сум)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📋</div>
+          <div class="stat-num">${stats.total || 0}</div>
+          <div class="stat-lbl">Всего консультаций</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🟢</div>
+          <div class="stat-num">${active}</div>
+          <div class="stat-lbl">Активные</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-num">${stats.rating}</div>
+          <div class="stat-lbl">Рейтинг</div>
+        </div>
+      </div>
+
+      ${pending > 0 ? `
+      <div style="background:rgba(245,166,35,.1);border:1.5px solid rgba(245,166,35,.3);border-radius:var(--r-md);padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px">
+        <span style="font-size:22px">⏳</span>
+        <div>
+          <div style="font-weight:700;font-size:14px">Ожидают ответа: ${pending}</div>
+          <div style="font-size:12px;color:var(--text2)">Новые пациенты ждут вашего ответа</div>
+        </div>
+        <button onclick="switchPage(document.querySelector('[data-page=consults]'))" style="margin-left:auto;padding:8px 16px;border-radius:99px;background:var(--amber);color:#fff;border:none;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer">Открыть →</button>
+      </div>` : ''}
+
+      <div class="section-head">
+        <div class="section-title">Активные пациенты</div>
+        <button class="section-link" onclick="switchPage(document.querySelector('[data-page=consults]'))">Все →</button>
+      </div>
+      ${recent.length ? `<div class="consult-list">${recent.map(consultCard).join('')}</div>`
+        : '<div class="empty"><div class="empty-emoji">🎉</div><div class="empty-title">Нет активных консультаций</div></div>'}
+    `;
+    mc.querySelectorAll('.consult-card').forEach(c => {
+      c.addEventListener('click', () => openChat(c.dataset.id));
+    });
+  } catch(e) {
+    mc.innerHTML = '<div class="empty"><div class="empty-emoji">⚠️</div><div class="empty-title">Ошибка загрузки</div></div>';
+  }
+}
+
+// ── Consultations list ────────────────────────────────────
+async function renderConsultsList(status = '') {
+  filterStatus = status;
+  const mc = document.getElementById('main-content');
+  mc.innerHTML = '<div class="spinner"></div>';
+  try {
+    let url = `/api/vendor/consultations?vet_id=${vendor.vet_id}`;
+    if (status) url += `&status=${status}`;
+    allConsults = await fetch(url).then(r=>r.json());
+
+    mc.innerHTML = `
+      <div class="page-title">Пациенты</div>
+      <div class="page-sub">${allConsults.length} консультаций</div>
+      <div class="filter-row">
+        <button class="filter-btn${!status?' active':''}" onclick="renderConsultsList('')">Все</button>
+        <button class="filter-btn${status==='pending'?' active':''}" onclick="renderConsultsList('pending')">⏳ Ожидают</button>
+        <button class="filter-btn${status==='active'?' active':''}" onclick="renderConsultsList('active')">🟢 Активные</button>
+        <button class="filter-btn${status==='completed'?' active':''}" onclick="renderConsultsList('completed')">✅ Завершённые</button>
+      </div>
+      ${allConsults.length
+        ? `<div class="consult-list">${allConsults.map(consultCard).join('')}</div>`
+        : '<div class="empty"><div class="empty-emoji">📭</div><div class="empty-title">Консультаций нет</div></div>'}
+    `;
+    mc.querySelectorAll('.consult-card').forEach(c => {
+      c.addEventListener('click', () => openChat(c.dataset.id));
+    });
+  } catch {
+    mc.innerHTML = '<div class="empty"><div class="empty-emoji">⚠️</div><div class="empty-title">Ошибка загрузки</div></div>';
+  }
+}
+
+function consultCard(c) {
+  const sp = SPECIES_EMOJI[c.pet_species] || '🐾';
+  const prob = c.problem.length > 60 ? c.problem.slice(0,60)+'…' : c.problem;
+  return `<div class="consult-card status-${c.status}" data-id="${c.id}">
+    <div class="cc-species">${sp}</div>
+    <div class="cc-info">
+      <div class="cc-top">
+        <span class="cc-name">${esc(c.client_name)}</span>
+        <span style="font-size:13px;color:var(--text2)">· ${esc(c.pet_name)}</span>
+      </div>
+      <div class="cc-problem">${esc(prob)}</div>
+    </div>
+    <div class="cc-right">
+      <div class="cc-time">${fmtTime(c.created_at)}</div>
+      ${statusPill(c.status)}
+    </div>
+  </div>`;
+}
+
+// ── Chat (vet view) ───────────────────────────────────────
+async function openChat(id) {
+  currentConsult = allConsults.find(c => c.id === id) || { id };
+  chatMsgLen = 0;
+  renderChatShell();
+  await fetchChatData();
+  startChatPoll();
+}
+
+function renderChatShell() {
+  const c = currentConsult;
+  const sp = SPECIES_EMOJI[c.pet_species] || '🐾';
+  document.getElementById('main-content').innerHTML = `
+    <div class="chat-panel">
+      <div class="chat-topbar">
+        <button class="chat-back" onclick="backFromChat()">←</button>
+        <div class="chat-vet-info">
+          <div class="chat-vet-name">${sp} ${esc(c.pet_name || '...')} · ${esc(c.client_name || '...')}</div>
+          <div class="chat-vet-sub" id="chat-status-line">Загрузка…</div>
+        </div>
+        <button class="chat-video-btn" onclick="openVideo()">📹 Видео</button>
+      </div>
+      <div class="chat-msgs-wrap" id="chat-msgs"></div>
+      <div class="chat-input-area" id="chat-input-area">
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="vet-msg" rows="1" placeholder="Напишите ответ пациенту…"
+            oninput="grow(this)" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendVetMsg()}"></textarea>
+          <button class="send-btn" id="vet-send" onclick="sendVetMsg()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="chat-actions-row">
+          <button class="chat-action-btn" onclick="sendQuickReply()">💬 Быстрый ответ</button>
+          <button class="chat-action-btn complete" id="complete-btn" onclick="completeConsult()">✅ Завершить с заключением</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function fetchChatData() {
+  try {
+    const r = await fetch('/api/consultations/' + currentConsult.id);
+    if (!r.ok) return;
+    const { consultation: c, messages: ms } = await r.json();
+    currentConsult = { ...currentConsult, ...c };
+    renderChatMessages(c, ms);
+  } catch {}
+}
+
+function renderChatMessages(c, ms) {
+  const isDone = c.status === 'completed';
+  document.getElementById('chat-status-line').textContent =
+    `${STATUS_LABEL[c.status] || c.status} · ${esc(c.pet_species || '')} · ${fmtTime(c.created_at)}`;
+
+  if (ms.length === chatMsgLen) return;
+  chatMsgLen = ms.length;
+
+  const box = document.getElementById('chat-msgs');
+  if (!box) return;
+  box.innerHTML = ms.map(m => `
+    <div class="msg-row">
+      ${m.sender === 'client' ? `<div class="msg-who">${esc(c.client_name)}</div>` : '<div class="msg-who">Вы (ветеринар)</div>'}
+      <div class="bubble ${m.sender}">${esc(m.text)}</div>
+      <div class="msg-time ${m.sender==='vet'?'r':''}">${fmtTime(m.created_at)}</div>
+    </div>`).join('');
+
+  if (isDone && c.summary) {
+    box.innerHTML += `<div class="summary-box">
+      <div class="summary-label">📋 Ваше заключение</div>
+      <div class="summary-text">${esc(c.summary)}</div></div>`;
+  }
+  box.scrollTop = box.scrollHeight;
+
+  const inputArea = document.getElementById('chat-input-area');
+  if (inputArea) inputArea.style.display = isDone ? 'none' : '';
+  if (isDone) stopChatPoll();
+}
+
+async function sendVetMsg() {
+  const el = document.getElementById('vet-msg');
+  const txt = el.value.trim(); if (!txt) return;
+  el.value = ''; el.style.height = '';
+  document.getElementById('vet-send').disabled = true;
+  try {
+    await fetch('/api/consultations/' + currentConsult.id + '/messages', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ sender:'vet', text:txt })
+    });
+    await fetchChatData();
+  } finally { const s = document.getElementById('vet-send'); if(s) s.disabled=false; }
+}
+
+async function sendQuickReply() {
+  const txt = VET_REPLIES[replyIdx++ % VET_REPLIES.length];
+  await fetch('/api/consultations/' + currentConsult.id + '/messages', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ sender:'vet', text:txt })
+  });
+  await fetchChatData();
+}
+
+async function completeConsult() {
+  const summary = `На основании описанных симптомов рекомендую:\n` +
+    `1) Наблюдение в течение 48 часов;\n` +
+    `2) Лёгкая диета, достаточное количество воды;\n` +
+    `3) При ухудшении — очный приём в клинике;\n` +
+    `4) Если симптомы сохраняются более 3 дней — общий анализ крови и мочи.\n\n` +
+    `С уважением, ${vendor.name}`;
+  const btn = document.getElementById('complete-btn');
+  if(btn) { btn.disabled=true; btn.textContent='Сохраняем…'; }
+  try {
+    await fetch('/api/consultations/' + currentConsult.id + '/status', {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ status:'completed', summary })
+    });
+    await fetchChatData();
+    showToast('✅ Консультация завершена');
+  } catch { if(btn){btn.disabled=false;btn.textContent='✅ Завершить с заключением';} }
+}
+
+function openVideo() {
+  window.open(`/video.html?id=${currentConsult.id}&role=vet`, '_blank');
+}
+
+function backFromChat() {
+  stopChatPoll();
+  if (currentPage === 'dashboard') renderDashboard();
+  else renderConsultsList(filterStatus);
+}
+
+function startChatPoll() { stopChatPoll(); chatPoll = setInterval(fetchChatData, 3000); }
+function stopChatPoll()  { if(chatPoll){clearInterval(chatPoll);chatPoll=null;} }
+
+// ── Profile ───────────────────────────────────────────────
+function renderProfile() {
+  const mc = document.getElementById('main-content');
+  const v = vendor;
+  mc.innerHTML = `
+    <div class="page-title">Профиль</div>
+    <div class="page-sub">Ваши данные в HappyTails</div>
+    <div class="profile-card">
+      <div class="profile-head">
+        <div class="profile-avatar">${v.avatar_emoji || '👨‍⚕️'}</div>
+        <div>
+          <div class="profile-name">${esc(v.name)}</div>
+          <div class="profile-spec">${esc(v.specialty)}</div>
+          <div class="profile-rating">★ ${v.rating} · Стаж ${v.experience_yr} лет</div>
+        </div>
+      </div>
+      <div class="profile-info-grid">
+        <div class="info-item">
+          <div class="info-lbl">Цена консультации</div>
+          <div class="info-val">${fmt(v.price_uzs)} сум</div>
+        </div>
+        <div class="info-item">
+          <div class="info-lbl">Email</div>
+          <div class="info-val" style="font-size:13px">${esc(v.email)}</div>
+        </div>
+        <div class="info-item" style="grid-column:1/-1">
+          <div class="info-lbl">О себе</div>
+          <div class="info-val" style="font-size:13px;font-weight:400;line-height:1.5">${esc(v.bio || '—')}</div>
+        </div>
+      </div>
+    </div>
+    <div class="demo-creds-box">
+      <div class="creds-title">🔑 Демо-данные для входа</div>
+      <div class="creds-row"><span class="creds-key">Email</span><span class="creds-val">${esc(v.email)}</span></div>
+      <div class="creds-row"><span class="creds-key">Пароль</span><span class="creds-val">demo123</span></div>
+      <div class="creds-row"><span class="creds-key">Роль</span><span class="creds-val">Ветеринар (vendor)</span></div>
+    </div>
+  `;
+}
+
+// ── Pending badge ─────────────────────────────────────────
+function updatePendingBadge(stats) {
+  const p = parseInt(stats?.pending) || 0;
+  const badge = document.getElementById('pending-badge');
+  if (!badge) return;
+  badge.textContent = p;
+  badge.style.display = p > 0 ? '' : 'none';
+}
+
+// ── Init ──────────────────────────────────────────────────
+const saved = localStorage.getItem('ht_vendor');
+if (saved) {
+  try {
+    vendor = JSON.parse(saved);
+    openMainScreen();
+  } catch { localStorage.removeItem('ht_vendor'); }
+}
+</script>
+</body>
+</html>

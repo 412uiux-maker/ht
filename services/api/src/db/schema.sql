@@ -80,6 +80,14 @@ CREATE TABLE IF NOT EXISTS learn_progress (
 
 CREATE INDEX IF NOT EXISTS learn_progress_owner_idx ON learn_progress(owner_id);
 
+CREATE TABLE IF NOT EXISTS vendor_credentials (
+  id         SERIAL PRIMARY KEY,
+  vet_id     INTEGER UNIQUE REFERENCES vets(id) ON DELETE CASCADE,
+  email      TEXT UNIQUE NOT NULL,
+  password   TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS good_deeds (
   id                 SERIAL PRIMARY KEY,
   title              TEXT NOT NULL,

@@ -34,6 +34,14 @@ const SEED_FOODS = [
   ['Large Robust',     'Pro Plan',     ['dog'],      ['adult','senior'],  ['large'],           ['joints','skin'],              168000,  'premium', '💪', 'Курица для крупных пород. Глюкозамин, хондроитин, омега-3 для здоровых суставов.',           4.8],
 ];
 
+// Demo credentials linked to SEED_VETS by position (0-indexed)
+const SEED_VENDOR_CREDS = [
+  { email: 'aziz@happytails.uz',    password: 'demo123', vet_index: 0 },
+  { email: 'malika@happytails.uz',  password: 'demo123', vet_index: 1 },
+  { email: 'sanzhar@happytails.uz', password: 'demo123', vet_index: 2 },
+  { email: 'dilnoza@happytails.uz', password: 'demo123', vet_index: 3 },
+];
+
 const SEED_DEEDS = [
   {
     title: 'Помощь приюту «Пушистый дом»',
@@ -375,6 +383,22 @@ async function initDb() {
       );
     }
     console.log('DB seeded:', SEED_DEEDS.length, 'good deeds');
+  }
+
+  const { rows: vcr } = await pool.query('SELECT COUNT(*) FROM vendor_credentials');
+  if (vcr[0].count === '0') {
+    // Fetch vet IDs in insertion order
+    const { rows: vetRows } = await pool.query('SELECT id FROM vets ORDER BY id');
+    for (const cred of SEED_VENDOR_CREDS) {
+      const vet = vetRows[cred.vet_index];
+      if (!vet) continue;
+      await pool.query(
+        `INSERT INTO vendor_credentials (vet_id, email, password) VALUES ($1,$2,$3)
+         ON CONFLICT DO NOTHING`,
+        [vet.id, cred.email, cred.password]
+      );
+    }
+    console.log('DB seeded:', SEED_VENDOR_CREDS.length, 'vendor credentials');
   }
 
   const { rows: vr } = await pool.query('SELECT COUNT(*) FROM vets');
