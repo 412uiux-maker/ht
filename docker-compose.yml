@@ -28,7 +28,7 @@ services:
     container_name: petplatform-couples
     restart: unless-stopped
     ports:
-      - "3001:80"
+      - "5001:80"
     depends_on:
       - api
 
@@ -40,7 +40,7 @@ services:
     container_name: petplatform-vendor
     restart: unless-stopped
     ports:
-      - "3002:80"
+      - "5002:80"
     depends_on:
       - api
 

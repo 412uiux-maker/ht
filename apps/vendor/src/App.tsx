@@ -12,7 +12,9 @@ type Screen =
 
 export default function App() {
   const [session, setSessionState] = useState<VendorSession | null>(() => getSession())
-  const [screen, setScreen] = useState<Screen>({ name: session ? 'dashboard' : 'login' })
+  const [screen, setScreen] = useState<Screen>(
+    session ? { name: 'dashboard' } : { name: 'login' }
+  )
 
   const handleLogin = (s: VendorSession) => {
     setSession(s)
