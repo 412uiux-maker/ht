@@ -1,0 +1,51 @@
+export type VendorSession = {
+  vet_id: number
+  name: string
+  specialty: string
+  bio: string
+  price_uzs: number
+  rating: number
+  avatar_emoji: string
+  experience_yr: number
+}
+
+export type ConsultStatus = 'pending' | 'active' | 'completed'
+
+export type Consultation = {
+  id: string
+  vet_id: number
+  client_name: string
+  pet_name: string
+  pet_species: string
+  problem: string
+  status: ConsultStatus
+  summary: string | null
+  created_at: string
+}
+
+export type Message = {
+  id: number
+  consultation_id: string
+  sender: 'client' | 'vet'
+  text: string
+  created_at: string
+}
+
+export type Stats = {
+  total: number
+  active: number
+  pending: number
+  completed: number
+  income: number
+  rating: number
+}
+
+const VENDOR_KEY = 'ht_vendor'
+export const getSession = (): VendorSession | null => {
+  const s = localStorage.getItem(VENDOR_KEY)
+  return s ? JSON.parse(s) : null
+}
+export const setSession = (data: VendorSession): void =>
+  localStorage.setItem(VENDOR_KEY, JSON.stringify(data))
+export const clearSession = (): void =>
+  localStorage.removeItem(VENDOR_KEY)

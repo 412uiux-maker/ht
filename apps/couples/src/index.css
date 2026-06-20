@@ -1,0 +1,38 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F1F2F4;
+  --surface: #FFFFFF;
+  --surface-2: #FBF4EE;
+  --border: #EAEBEE;
+  --text: #23282D;
+  --text-muted: #6C7480;
+  --primary: #F2784B;
+  --primary-strong: #C0511F;
+  --on-primary: #FFFFFF;
+  --grad-warm: linear-gradient(135deg, #F8915A, #F26B47);
+  --success: #3FA46B;
+  --warning: #E0A21F;
+  --danger: #D9534A;
+  --r-sm: 12px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-pill: 999px;
+  --shadow: 0 8px 28px rgba(35,40,45,.08);
+  --font: 'Onest', system-ui, sans-serif;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button { cursor: pointer; font-family: var(--font); }
+input, select, textarea { font-family: var(--font); }
+
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }

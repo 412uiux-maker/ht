@@ -440,6 +440,52 @@ async function initDb() {
     }
     console.log('DB seeded:', SEED_FOODS.length, 'foods');
   }
+
+  const { rows: au } = await pool.query('SELECT COUNT(*) FROM admin_users');
+  if (au[0].count === '0') {
+    await pool.query(`
+      INSERT INTO admin_users (email, password, name, role) VALUES
+      ('admin@happytails.uz', 'admin123', 'Главный администратор', 'admin'),
+      ('moder@happytails.uz', 'moder123', 'Модератор Контента', 'moderator'),
+      ('support@happytails.uz', 'supp123', 'Агент Поддержки', 'support')
+    `);
+    console.log('DB seeded: 3 admin users');
+  }
+
+  const { rows: vv } = await pool.query('SELECT COUNT(*) FROM vendor_verification');
+  if (vv[0].count === '0') {
+    const { rows: vetRows } = await pool.query('SELECT id FROM vets ORDER BY id');
+    for (const vet of vetRows) {
+      await pool.query(
+        'INSERT INTO vendor_verification (vet_id, status) VALUES ($1,$2) ON CONFLICT (vet_id) DO NOTHING',
+        [vet.id, 'pending']
+      );
+    }
+    console.log('DB seeded: vendor_verification entries');
+  }
+
+  const { rows: or } = await pool.query('SELECT COUNT(*) FROM orders');
+  if (or[0].count === '0') {
+    const { rows: vetRows } = await pool.query('SELECT id, price_uzs FROM vets LIMIT 4');
+    const demoOrders = [
+      { owner: 'owner-demo-001', status: 'created',   provider: 'click'  },
+      { owner: 'owner-demo-002', status: 'paid',      provider: 'payme'  },
+      { owner: 'owner-demo-003', status: 'completed', provider: 'click'  },
+      { owner: 'owner-demo-004', status: 'refunded',  provider: 'uzum'   },
+      { owner: 'owner-demo-005', status: 'cancelled', provider: 'click'  },
+      { owner: 'owner-demo-006', status: 'completed', provider: 'payme'  },
+    ];
+    for (let i = 0; i < demoOrders.length; i++) {
+      const o = demoOrders[i];
+      const vet = vetRows[i % vetRows.length];
+      if (!vet) continue;
+      await pool.query(
+        `INSERT INTO orders (owner_id, vet_id, status, price_uzs, provider) VALUES ($1,$2,$3,$4,$5)`,
+        [o.owner, vet.id, o.status, vet.price_uzs, o.provider]
+      );
+    }
+    console.log('DB seeded: 6 demo orders');
+  }
 }
 
 module.exports = initDb;

@@ -117,6 +117,56 @@ CREATE TABLE IF NOT EXISTS deed_participations (
 CREATE INDEX IF NOT EXISTS deed_participations_owner_idx ON deed_participations(owner_id);
 CREATE INDEX IF NOT EXISTS deed_participations_deed_idx ON deed_participations(deed_id);
 
+CREATE TABLE IF NOT EXISTS admin_users (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email      TEXT UNIQUE NOT NULL,
+  password   TEXT NOT NULL,
+  name       TEXT NOT NULL,
+  role       TEXT NOT NULL DEFAULT 'moderator'
+             CHECK (role IN ('moderator','support','admin')),
+  is_active  BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          SERIAL PRIMARY KEY,
+  actor_id    UUID REFERENCES admin_users(id),
+  actor_role  TEXT NOT NULL,
+  action      TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id   TEXT,
+  detail      JSONB DEFAULT '{}',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS audit_log_action_idx ON audit_log(action);
+CREATE INDEX IF NOT EXISTS audit_log_created_idx ON audit_log(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS vendor_verification (
+  id          SERIAL PRIMARY KEY,
+  vet_id      INTEGER UNIQUE REFERENCES vets(id),
+  status      TEXT DEFAULT 'pending' CHECK (status IN ('pending','verified','rejected')),
+  comment     TEXT,
+  doc_type    TEXT,
+  doc_ref     TEXT,
+  reviewed_at TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id     TEXT NOT NULL,
+  service_type TEXT NOT NULL DEFAULT 'vet_online',
+  vet_id       INTEGER REFERENCES vets(id),
+  pet_id       UUID,
+  scheduled_at TIMESTAMPTZ,
+  status       TEXT NOT NULL DEFAULT 'created'
+               CHECK (status IN ('created','paid','accepted','in_progress','completed','cancelled','refunded')),
+  price_uzs    INTEGER,
+  provider     TEXT CHECK (provider IN ('click','payme','uzum')),
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
+
 CREATE TABLE IF NOT EXISTS foods (
   id            SERIAL PRIMARY KEY,
   name          TEXT NOT NULL,
