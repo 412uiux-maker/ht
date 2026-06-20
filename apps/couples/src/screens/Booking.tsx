@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { api, Vet } from '../api'
+import type { Vet } from '../api'
+import { api } from '../api'
 import { t } from '../i18n'
 
 interface Props {
@@ -9,11 +10,32 @@ interface Props {
   onBooked: (consultationId: string) => void
 }
 
-const SPECIES = ['cat', 'dog', 'rabbit', 'parrot', 'other'] as const
+const SPECIES: { key: string; emoji: string; labelKey: keyof ReturnType<typeof buildKeys> }[] = [
+  { key: 'cat',     emoji: '🐱', labelKey: 'book.cat' },
+  { key: 'dog',     emoji: '🐶', labelKey: 'book.dog' },
+  { key: 'rabbit',  emoji: '🐰', labelKey: 'book.rabbit' },
+  { key: 'parrot',  emoji: '🦜', labelKey: 'book.parrot' },
+  { key: 'hamster', emoji: '🐹', labelKey: 'book.hamster' },
+  { key: 'other',   emoji: '🐾', labelKey: 'book.other' },
+]
+
+function buildKeys() {
+  return {
+    'book.cat': '', 'book.dog': '', 'book.rabbit': '',
+    'book.parrot': '', 'book.hamster': '', 'book.other': '',
+  }
+}
+
+const REMEMBERED_NAME_KEY = 'ht_client_name'
 
 export default function Booking({ lang, vet, onBack, onBooked }: Props) {
   void lang
-  const [form, setForm] = useState({ client_name: '', pet_name: '', pet_species: 'cat', problem: '' })
+  const [form, setForm] = useState({
+    client_name: localStorage.getItem(REMEMBERED_NAME_KEY) || '',
+    pet_name: '',
+    pet_species: 'cat',
+    problem: '',
+  })
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState('')
 
@@ -25,6 +47,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
     setSubmitting(true)
     setErr('')
     try {
+      localStorage.setItem(REMEMBERED_NAME_KEY, form.client_name.trim())
       const c = await api.createConsultation({ vet_id: vet.id, ...form })
       onBooked(c.id)
     } catch {
@@ -38,6 +61,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
     width: '100%', padding: '12px 14px', borderRadius: 'var(--r-md)',
     border: '1.5px solid var(--border)', background: 'var(--surface)',
     fontSize: 15, color: 'var(--text)', outline: 'none', minHeight: 48,
+    fontFamily: 'inherit',
   }
 
   return (
@@ -51,8 +75,9 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
         <button
           onClick={onBack}
           style={{
-            width: 44, height: 44, borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)',
-            background: 'transparent', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 44, height: 44, borderRadius: 'var(--r-md)',
+            border: '1.5px solid var(--border)', background: 'transparent',
+            fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
           ←
@@ -60,30 +85,32 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('book.title')}</span>
       </header>
 
-      <div style={{ flex: 1, padding: '16px', overflow: 'auto' }}>
+      <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
         {/* Vet card */}
         <div style={{
-          background: 'var(--surface-2)', borderRadius: 'var(--r-lg)',
-          padding: '14px 16px', marginBottom: 20,
-          display: 'flex', alignItems: 'center', gap: 12,
+          background: 'var(--grad-warm)', borderRadius: 'var(--r-lg)',
+          padding: '16px', marginBottom: 24, color: '#fff',
+          display: 'flex', alignItems: 'center', gap: 14,
         }}>
           <div style={{
-            fontSize: 36, width: 52, height: 52, borderRadius: 'var(--r-md)',
-            background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 40, width: 60, height: 60, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,.2)', display: 'flex',
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             {vet.avatar_emoji}
           </div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>{vet.name}</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{vet.specialty}</div>
-            <div style={{ color: 'var(--primary)', fontWeight: 600, fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>
-              {vet.price_uzs.toLocaleString('ru-RU')} {t('home.price')}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 2 }}>{vet.name}</div>
+            <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 6 }}>{vet.specialty}</div>
+            <div style={{ fontWeight: 700, fontSize: 15, fontVariantNumeric: 'tabular-nums' }}>
+              {vet.price_uzs.toLocaleString('ru-RU')} сум
             </div>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Client name */}
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>
               {t('book.client_name')}
@@ -97,6 +124,8 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
               placeholder={t('book.client_name')}
             />
           </div>
+
+          {/* Pet name */}
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>
               {t('book.pet_name')}
@@ -110,32 +139,53 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
               placeholder={t('book.pet_name')}
             />
           </div>
+
+          {/* Species picker */}
           <div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 10, color: 'var(--text-muted)' }}>
               {t('book.pet_species')}
             </label>
-            <select
-              style={{ ...input }}
-              value={form.pet_species}
-              onChange={(e) => set('pet_species', e.target.value)}
-              required
-            >
-              {SPECIES.map((s) => (
-                <option key={s} value={s}>{t(`book.${s}` as Parameters<typeof t>[0])}</option>
-              ))}
-            </select>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+              {SPECIES.map(({ key, emoji, labelKey }) => {
+                const active = form.pet_species === key
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => set('pet_species', key)}
+                    style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: 4, padding: '12px 8px', borderRadius: 'var(--r-md)',
+                      border: `2px solid ${active ? 'var(--primary)' : 'var(--border)'}`,
+                      background: active ? 'var(--surface-2)' : 'var(--surface)',
+                      cursor: 'pointer', minHeight: 72, transition: 'all .15s',
+                    }}
+                  >
+                    <span style={{ fontSize: 28 }}>{emoji}</span>
+                    <span style={{
+                      fontSize: 12, fontWeight: active ? 700 : 500,
+                      color: active ? 'var(--primary)' : 'var(--text-muted)',
+                    }}>
+                      {t(labelKey as Parameters<typeof t>[0])}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
+
+          {/* Problem */}
           <div>
             <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: 'var(--text-muted)' }}>
               {t('book.problem')}
             </label>
             <textarea
-              style={{ ...input, minHeight: 100, resize: 'vertical' }}
+              style={{ ...input, minHeight: 110, resize: 'vertical' }}
               required
               value={form.problem}
               onChange={(e) => set('problem', e.target.value)}
-              placeholder={t('book.problem')}
-              rows={3}
+              placeholder={t('book.problem_hint')}
+              rows={4}
             />
           </div>
 
@@ -152,11 +202,11 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
             type="submit"
             disabled={submitting}
             style={{
-              padding: '14px', borderRadius: 'var(--r-pill)',
+              padding: '15px', borderRadius: 'var(--r-pill)',
               background: submitting ? 'var(--border)' : 'var(--primary)',
               color: submitting ? 'var(--text-muted)' : 'var(--on-primary)',
-              border: 'none', fontWeight: 700, fontSize: 16, minHeight: 52,
-              transition: 'background .2s',
+              border: 'none', fontWeight: 700, fontSize: 16, minHeight: 54,
+              transition: 'background .2s', fontFamily: 'inherit',
             }}
           >
             {submitting ? t('book.submitting') : t('book.submit')}
