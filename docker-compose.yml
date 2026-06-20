@@ -20,6 +20,42 @@ services:
       db:
         condition: service_healthy
 
+  couples:
+    build:
+      context: .
+      dockerfile: apps/couples/Dockerfile
+    image: petplatform-couples
+    container_name: petplatform-couples
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
+  vendor:
+    build:
+      context: .
+      dockerfile: apps/vendor/Dockerfile
+    image: petplatform-vendor
+    container_name: petplatform-vendor
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    image: petplatform-admin
+    container_name: petplatform-admin
+    restart: unless-stopped
+    ports:
+      - "3003:80"
+    depends_on:
+      - api
+
   db:
     image: postgres:16-alpine
     container_name: petplatform-db
