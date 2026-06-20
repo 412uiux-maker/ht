@@ -34,6 +34,51 @@ const SEED_FOODS = [
   ['Large Robust',     'Pro Plan',     ['dog'],      ['adult','senior'],  ['large'],           ['joints','skin'],              168000,  'premium', '💪', 'Курица для крупных пород. Глюкозамин, хондроитин, омега-3 для здоровых суставов.',           4.8],
 ];
 
+const SEED_DEEDS = [
+  {
+    title: 'Помощь приюту «Пушистый дом»',
+    subtitle: '120 животных ждут вашей помощи',
+    description: 'Приют «Пушистый дом» в Ташкенте ежемесячно кормит и лечит более 120 кошек и собак. Нам нужна помощь с кормом, ветпрепаратами и оплатой аренды. Каждые 50 000 сум — это недельный корм для одного животного.',
+    category: 'shelter', emoji: '🏠', sort_order: 1, goal_amount: 5000000, raised_amount: 2850000, participants_count: 47,
+    deadline: '2026-07-31',
+  },
+  {
+    title: 'Стерилизация бездомных кошек',
+    subtitle: 'Цель: 50 кошек в июне',
+    description: 'Городская программа TNVR (поймать—стерилизовать—вакцинировать—вернуть) в Чиланзарском районе. Стерилизация одной кошки стоит 180 000 сум. Сбор поможет снизить популяцию бездомных животных без насилия.',
+    category: 'sterilization', emoji: '⚕️', sort_order: 2, goal_amount: 9000000, raised_amount: 4320000, participants_count: 31,
+    deadline: '2026-06-30',
+  },
+  {
+    title: 'Корм для животных Ташкента',
+    subtitle: 'Ежемесячная закупка корма',
+    description: 'Волонтёрская группа «Доброе сердце» кормит бездомных животных в 12 точках Ташкента каждый день. Помогите с закупкой корма на июль — это 80 кг сухого корма для кошек и 60 кг для собак.',
+    category: 'feeding', emoji: '🥣', sort_order: 3, goal_amount: 2500000, raised_amount: 1150000, participants_count: 22,
+    deadline: '2026-07-01',
+  },
+  {
+    title: 'Спасение собак с улицы',
+    subtitle: '8 собак ждут передержки',
+    description: 'Срочный сбор: 8 собак попали в опасную ситуацию (трасса, травмы) и нуждаются в передержке и лечении. Нужна помощь волонтёрами на передержку и средства на ветпомощь. Закрыто!',
+    category: 'rescue', emoji: '🚨', sort_order: 4, goal_amount: 3200000, raised_amount: 3200000, participants_count: 38,
+    status: 'completed',
+  },
+  {
+    title: 'Котята ищут дом',
+    subtitle: 'Помогите найти хозяев для 24 котят',
+    description: 'Весенний помёт: 24 котёнка в возрасте 2–3 месяцев ищут любящий дом. Все осмотрены ветеринаром, привиты от панлейкопении. Нужна помощь с распространением объявлений и временной передержкой.',
+    category: 'adoption', emoji: '🐱', sort_order: 5, goal_amount: null, raised_amount: 0, participants_count: 15,
+    deadline: '2026-08-01',
+  },
+  {
+    title: 'Вакцинация уличных животных',
+    subtitle: 'Цель: 200 животных от бешенства',
+    description: 'Совместная акция с городской ветслужбой: массовая вакцинация бездомных кошек и собак от бешенства в Юнусабадском и Мирзо-Улугбекском районах. Одна доза вакцины — 22 000 сум.',
+    category: 'other', emoji: '💉', sort_order: 6, goal_amount: 4400000, raised_amount: 1980000, participants_count: 19,
+    deadline: '2026-07-15',
+  },
+];
+
 const SEED_LEARN = [
   // ── Чек-листы ──────────────────────────────────────────────────────────────
   {
@@ -316,6 +361,21 @@ const SEED_LEARN = [
 async function initDb() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   await pool.query(schema);
+
+  const { rows: dr } = await pool.query('SELECT COUNT(*) FROM good_deeds');
+  if (dr[0].count === '0') {
+    for (const d of SEED_DEEDS) {
+      await pool.query(
+        `INSERT INTO good_deeds (title, subtitle, description, category, emoji, sort_order,
+                                 goal_amount, raised_amount, participants_count, deadline, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+        [d.title, d.subtitle, d.description, d.category, d.emoji, d.sort_order || 0,
+         d.goal_amount || null, d.raised_amount || 0, d.participants_count || 0,
+         d.deadline || null, d.status || 'active']
+      );
+    }
+    console.log('DB seeded:', SEED_DEEDS.length, 'good deeds');
+  }
 
   const { rows: vr } = await pool.query('SELECT COUNT(*) FROM vets');
   if (vr[0].count === '0') {

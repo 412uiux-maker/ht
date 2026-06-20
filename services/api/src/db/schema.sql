@@ -80,6 +80,35 @@ CREATE TABLE IF NOT EXISTS learn_progress (
 
 CREATE INDEX IF NOT EXISTS learn_progress_owner_idx ON learn_progress(owner_id);
 
+CREATE TABLE IF NOT EXISTS good_deeds (
+  id                 SERIAL PRIMARY KEY,
+  title              TEXT NOT NULL,
+  subtitle           TEXT,
+  description        TEXT,
+  category           TEXT NOT NULL CHECK (category IN ('shelter','rescue','sterilization','feeding','adoption','other')),
+  goal_amount        INTEGER,
+  raised_amount      INTEGER DEFAULT 0,
+  participants_count INTEGER DEFAULT 0,
+  emoji              TEXT DEFAULT '🤝',
+  deadline           DATE,
+  status             TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','completed','paused')),
+  sort_order         INTEGER DEFAULT 0,
+  created_at         TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS deed_participations (
+  id         SERIAL PRIMARY KEY,
+  owner_id   TEXT NOT NULL,
+  deed_id    INTEGER REFERENCES good_deeds(id) ON DELETE CASCADE,
+  type       TEXT NOT NULL CHECK (type IN ('donate','volunteer','share')),
+  amount_uzs INTEGER,
+  message    TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS deed_participations_owner_idx ON deed_participations(owner_id);
+CREATE INDEX IF NOT EXISTS deed_participations_deed_idx ON deed_participations(deed_id);
+
 CREATE TABLE IF NOT EXISTS foods (
   id            SERIAL PRIMARY KEY,
   name          TEXT NOT NULL,
