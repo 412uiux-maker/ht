@@ -10,6 +10,20 @@ async function req<T>(path: string, opts?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  sendCode: (phone: string) =>
+    req<{ sent: boolean; _dev_code?: string }>('/api/vendor/auth/send-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    }),
+
+  verifyCode: (phone: string, code: string) =>
+    req<VendorSession>('/api/vendor/auth/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, code })
+    }),
+
   login: (email: string, password: string) =>
     req<VendorSession>('/api/vendor/login', {
       method: 'POST',
@@ -33,6 +47,13 @@ export const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sender: 'vet', text })
+    }),
+
+  accept: (id: string) =>
+    req<Consultation>(`/api/consultations/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'active' })
     }),
 
   complete: (id: string, summary: string) =>

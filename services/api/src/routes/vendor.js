@@ -2,6 +2,57 @@ const express = require('express');
 const pool = require('../db');
 const router = express.Router();
 
+// In-memory OTP store: phone → { code, expires }
+const otpStore = new Map();
+
+// POST /api/vendor/auth/send-code  { phone }
+router.post('/auth/send-code', async (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: 'phone required' });
+  const normalized = phone.replace(/\s/g, '');
+  try {
+    const { rows: [cred] } = await pool.query(
+      'SELECT vet_id FROM vendor_credentials WHERE phone = $1',
+      [normalized]
+    );
+    if (!cred) return res.status(404).json({ error: 'Номер не зарегистрирован' });
+    const code = String(Math.floor(1000 + Math.random() * 9000));
+    otpStore.set(normalized, { code, expires: Date.now() + 5 * 60 * 1000 });
+    console.log(`[OTP] ${normalized} → ${code}`);
+    // TODO: replace with real SMS gateway (Click SMS, SMSC, etc.)
+    res.json({ sent: true, _dev_code: code });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/vendor/auth/verify-code  { phone, code }
+router.post('/auth/verify-code', async (req, res) => {
+  const { phone, code } = req.body;
+  if (!phone || !code) return res.status(400).json({ error: 'phone and code required' });
+  const normalized = phone.replace(/\s/g, '');
+  const stored = otpStore.get(normalized);
+  if (!stored) return res.status(400).json({ error: 'Сначала запросите код' });
+  if (Date.now() > stored.expires) {
+    otpStore.delete(normalized);
+    return res.status(400).json({ error: 'Код истёк, запросите новый' });
+  }
+  if (stored.code !== String(code)) return res.status(400).json({ error: 'Неверный код' });
+  otpStore.delete(normalized);
+  try {
+    const { rows: [row] } = await pool.query(
+      `SELECT vc.vet_id, v.name, v.specialty, v.avatar_emoji, v.rating, v.experience_yr, v.bio, v.price_uzs
+       FROM vendor_credentials vc JOIN vets v ON v.id = vc.vet_id
+       WHERE vc.phone = $1`,
+      [normalized]
+    );
+    if (!row) return res.status(404).json({ error: 'Ветеринар не найден' });
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /api/vendor/login  { email, password }
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;

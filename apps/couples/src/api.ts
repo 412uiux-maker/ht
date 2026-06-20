@@ -12,6 +12,20 @@ export type Vet = {
   is_available: boolean
 }
 
+export type Pet = {
+  id: string
+  owner_id: string
+  species: string
+  name: string
+  breed: string | null
+  sex: string
+  birth_date: string | null
+  weight_kg: number | null
+  notes: string | null
+  avatar_emoji: string
+  created_at: string
+}
+
 export type Message = {
   id: number
   consultation_id: string
@@ -49,7 +63,7 @@ export type PaymentResult = {
   provider: string
 }
 
-const getOwnerId = () => {
+export const getOwnerId = () => {
   let id = localStorage.getItem('ht_owner_id')
   if (!id) { id = crypto.randomUUID(); localStorage.setItem('ht_owner_id', id) }
   return id
@@ -57,6 +71,7 @@ const getOwnerId = () => {
 
 export const api = {
   vets: () => req<Vet[]>('/vets'),
+  pets: (ownerId: string) => req<Pet[]>(`/pets?owner_id=${encodeURIComponent(ownerId)}`),
   createConsultation: (body: {
     vet_id: number
     client_name: string

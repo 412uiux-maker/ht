@@ -3,154 +3,431 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Добрые дела — HappyTails</title>
+<title>Волонтёр — HappyTails</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --coral:#F2784B;--coral-dark:#d95f30;--coral-light:#FEF0EA;
-  --bg:#0f0f0f;--surface:#1a1a1a;--surface2:#242424;--surface3:#2e2e2e;
-  --text:#f5f5f5;--text2:#a0a0a0;--text3:#666;
-  --green:#4CAF7D;--violet:#7C5CBF;--amber:#F5A623;--blue:#4A90D9;
-  --r-sm:12px;--r-md:20px;--r-xl:32px;
-  --font:'Onest',sans-serif;
+:root {
+  --coral: #F2784B; --coral-dk: #d95f30; --coral-bg: rgba(242,120,75,.14);
+  --bg: #0f0f0f; --s1: #1a1a1a; --s2: #222222; --s3: #2e2e2e; --s4: #3a3a3a;
+  --text: #f0f0f0; --t2: #9a9a9a; --t3: #5a5a5a;
+  --green: #4CAF7D; --green-bg: rgba(76,175,125,.14);
+  --violet: #7C5CBF; --violet-bg: rgba(124,92,191,.14);
+  --amber: #F5A623; --amber-bg: rgba(245,166,35,.14);
+  --blue: #4A90D9; --blue-bg: rgba(74,144,217,.14);
+  --r-sm: 12px; --r-md: 18px; --r-lg: 24px; --r-xl: 32px; --r-pill: 999px;
+  --font: 'Onest', sans-serif;
+  --shadow-card: 0 4px 20px rgba(0,0,0,.35);
+  --shadow-hover: 0 10px 36px rgba(0,0,0,.5);
 }
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
-.screen{display:none;min-height:100vh}
-.screen.active{display:flex;flex-direction:column}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+}
 
-/* NAV */
-.top-nav{display:flex;align-items:center;gap:12px;padding:16px 20px;background:var(--surface)}
-.nav-back{background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px;line-height:1}
-.nav-title{font-size:17px;font-weight:700;flex:1}
-.nav-badge{font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;background:rgba(76,175,125,.15);color:var(--green)}
+.screen {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  max-width: 540px;
+  min-height: 100dvh;
+}
+.screen.active { display: flex; }
 
-/* SCROLL */
-.scroll-body{flex:1;overflow-y:auto;padding:16px 20px 100px}
+/* ── NAV ─────────────────────────────────────────── */
+.top-nav {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 20px;
+  background: color-mix(in srgb, var(--s1) 90%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--s3);
+  position: sticky; top: 0; z-index: 20;
+  flex-shrink: 0;
+}
+.nav-back {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--s2); border: 1px solid var(--s3);
+  border-radius: var(--r-pill); font-size: 17px; flex-shrink: 0;
+  cursor: pointer; text-decoration: none; color: var(--text);
+  transition: background .15s;
+}
+.nav-back:hover { background: var(--s3); }
+.nav-title { font-size: 17px; font-weight: 700; flex: 1; }
+.nav-badge {
+  font-size: 12px; font-weight: 700; padding: 4px 11px;
+  border-radius: var(--r-pill);
+  background: var(--green-bg); color: var(--green);
+  border: 1px solid rgba(76,175,125,.25);
+  white-space: nowrap;
+}
 
-/* HERO */
-.hero{background:linear-gradient(135deg,#2ecc71 0%,#27ae60 100%);
-  border-radius:var(--r-xl);padding:28px 24px;margin-bottom:20px;position:relative;overflow:hidden}
-.hero::after{content:'🐾';position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:80px;opacity:.18}
-.hero-label{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
-.hero h1{font-size:26px;font-weight:800;line-height:1.2;margin-bottom:6px}
-.hero p{font-size:14px;opacity:.85;line-height:1.5;margin-bottom:16px}
-.hero-stats{display:flex;gap:20px}
-.hero-stat{text-align:center}
-.hero-stat-num{font-size:22px;font-weight:800}
-.hero-stat-lbl{font-size:11px;opacity:.75;margin-top:2px}
+/* ── SCROLL BODY ──────────────────────────────────── */
+.scroll-body { flex: 1; overflow-y: auto; padding: 16px 16px 120px; }
 
-/* FILTER TABS */
-.filter-tabs{display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
-.filter-tabs::-webkit-scrollbar{display:none}
-.filter-btn{flex-shrink:0;padding:8px 18px;border-radius:99px;border:1.5px solid var(--surface3);
-  background:none;color:var(--text2);font-family:var(--font);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s}
-.filter-btn.active{background:var(--green);border-color:var(--green);color:#fff}
+/* ── HERO ─────────────────────────────────────────── */
+.hero {
+  background: linear-gradient(140deg, #1f6b45 0%, #155235 100%);
+  border-radius: var(--r-xl);
+  padding: 28px 24px 24px;
+  margin-bottom: 20px;
+  position: relative; overflow: hidden;
+}
+.hero::after {
+  content: '🐾';
+  position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+  font-size: 84px; opacity: .10; pointer-events: none;
+}
+.hero-kicker {
+  font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: rgba(255,255,255,.55); margin-bottom: 10px;
+}
+.hero h1 {
+  font-size: 28px; font-weight: 800; line-height: 1.2;
+  margin-bottom: 6px; color: #fff;
+}
+.hero-sub {
+  font-size: 14px; color: rgba(255,255,255,.7); line-height: 1.5; margin-bottom: 20px;
+}
+.hero-divider {
+  height: 1px; background: rgba(255,255,255,.12); margin-bottom: 18px;
+}
+.hero-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; }
+.hero-stat { text-align: center; }
+.hero-stat + .hero-stat { border-left: 1px solid rgba(255,255,255,.12); }
+.hero-stat-num {
+  font-size: 24px; font-weight: 800; color: #fff;
+  line-height: 1.1;
+}
+.hero-stat-lbl {
+  font-size: 11px; color: rgba(255,255,255,.55); margin-top: 3px;
+}
 
-/* DEED CARDS */
-.cards{display:flex;flex-direction:column;gap:14px}
-.deed-card{background:var(--surface);border-radius:var(--r-md);padding:20px;cursor:pointer;
-  transition:transform .15s;border:1.5px solid transparent}
-.deed-card:active{transform:scale(.98)}
-.deed-card.completed{border-color:var(--green);opacity:.8}
-.deed-card-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:14px}
-.deed-emoji{font-size:38px;flex-shrink:0;line-height:1}
-.deed-info{flex:1;min-width:0}
-.deed-badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
-.badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;letter-spacing:.04em}
-.badge-shelter{background:rgba(74,144,217,.15);color:var(--blue)}
-.badge-rescue{background:rgba(242,120,75,.15);color:var(--coral)}
-.badge-sterilization{background:rgba(124,92,191,.15);color:var(--violet)}
-.badge-feeding{background:rgba(245,166,35,.15);color:var(--amber)}
-.badge-adoption{background:rgba(46,204,113,.15);color:var(--green)}
-.badge-other{background:rgba(160,160,160,.12);color:var(--text2)}
-.badge-done{background:rgba(76,175,125,.2);color:var(--green)}
-.deed-title{font-size:16px;font-weight:700;line-height:1.35;margin-bottom:4px}
-.deed-subtitle{font-size:13px;color:var(--text2)}
+/* ── FILTER TABS ──────────────────────────────────── */
+.filter-tabs {
+  display: flex; gap: 7px; margin-bottom: 18px;
+  overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.filter-tabs::-webkit-scrollbar { display: none; }
+.filter-btn {
+  flex-shrink: 0; padding: 8px 16px;
+  border-radius: var(--r-pill); border: 1.5px solid var(--s3);
+  background: none; color: var(--t2);
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .18s; white-space: nowrap;
+}
+.filter-btn:hover { border-color: var(--s4); color: var(--text); }
+.filter-btn.active {
+  background: var(--green); border-color: var(--green); color: #fff;
+}
 
-/* PROGRESS BAR */
-.deed-progress{margin-bottom:12px}
-.progress-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
-.progress-raised{font-size:15px;font-weight:700}
-.progress-goal{font-size:12px;color:var(--text2)}
-.bar-wrap{background:var(--surface3);border-radius:99px;height:6px;overflow:hidden}
-.bar-fill{height:100%;background:var(--green);border-radius:99px;transition:width .6s ease}
-.bar-fill.full{background:var(--green)}
+/* ── DEED CARD ────────────────────────────────────── */
+.cards { display: flex; flex-direction: column; gap: 12px; }
 
-/* DEED FOOTER */
-.deed-footer{display:flex;align-items:center;justify-content:space-between}
-.deed-meta{display:flex;gap:14px}
-.meta-item{font-size:12px;color:var(--text3)}
-.deed-participated{font-size:12px;font-weight:700;color:var(--green)}
+.deed-card {
+  background: var(--s1); border-radius: var(--r-lg);
+  border: 1.5px solid transparent;
+  padding: 18px; cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.deed-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  border-color: var(--s3);
+}
+.deed-card:active { transform: scale(.985); }
+.deed-card.completed { opacity: .75; border-color: rgba(76,175,125,.25); }
+.deed-card.urgent { border-color: rgba(245,166,35,.3); }
 
-/* ── DETAIL SCREEN ── */
-.detail-hero{background:var(--surface);border-radius:var(--r-xl);padding:28px 24px;margin-bottom:16px}
-.detail-emoji{font-size:52px;margin-bottom:14px;display:block}
-.detail-title{font-size:24px;font-weight:800;line-height:1.3;margin-bottom:6px}
-.detail-subtitle{font-size:15px;color:var(--text2);margin-bottom:16px}
-.detail-desc{font-size:14px;line-height:1.7;color:rgba(245,245,245,.85)}
+/* card header */
+.deed-card-header {
+  display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;
+}
+.deed-icon {
+  width: 52px; height: 52px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; flex-shrink: 0;
+}
+.deed-icon-shelter   { background: var(--blue-bg); }
+.deed-icon-rescue    { background: var(--coral-bg); }
+.deed-icon-sterilization { background: var(--violet-bg); }
+.deed-icon-feeding   { background: var(--amber-bg); }
+.deed-icon-adoption  { background: var(--green-bg); }
+.deed-icon-other     { background: var(--s2); }
 
-/* STATS ROW */
-.stats-row{display:flex;gap:12px;margin-bottom:16px}
-.stat-card{flex:1;background:var(--surface);border-radius:var(--r-sm);padding:14px;text-align:center}
-.stat-num{font-size:20px;font-weight:800;color:var(--green)}
-.stat-lbl{font-size:11px;color:var(--text2);margin-top:3px}
+.deed-info { flex: 1; min-width: 0; }
+.deed-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+.badge {
+  font-size: 11px; font-weight: 700; padding: 3px 9px;
+  border-radius: var(--r-pill); letter-spacing: .03em; white-space: nowrap;
+}
+.badge-shelter       { background: var(--blue-bg);   color: var(--blue); }
+.badge-rescue        { background: var(--coral-bg);  color: var(--coral); }
+.badge-sterilization { background: var(--violet-bg); color: var(--violet); }
+.badge-feeding       { background: var(--amber-bg);  color: var(--amber); }
+.badge-adoption      { background: var(--green-bg);  color: var(--green); }
+.badge-other         { background: var(--s2);        color: var(--t2); }
+.badge-done  { background: rgba(76,175,125,.18); color: var(--green); }
+.badge-mine  { background: rgba(76,175,125,.18); color: var(--green); }
 
-/* PROGRESS SECTION */
-.progress-section{background:var(--surface);border-radius:var(--r-md);padding:20px;margin-bottom:16px}
-.section-title{font-size:15px;font-weight:700;margin-bottom:14px}
-.big-bar-wrap{background:var(--surface3);border-radius:99px;height:10px;overflow:hidden;margin-bottom:10px}
-.big-bar-fill{height:100%;background:var(--green);border-radius:99px;transition:width .8s ease}
-.big-bar-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--text2)}
-.big-bar-raised{font-size:22px;font-weight:800;color:var(--green);margin-bottom:4px}
+.deed-title { font-size: 16px; font-weight: 700; line-height: 1.35; margin-bottom: 3px; }
+.deed-subtitle { font-size: 13px; color: var(--t2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* PARTICIPATE SECTION */
-.participate-section{background:var(--surface);border-radius:var(--r-md);padding:20px;margin-bottom:16px}
-.part-options{display:flex;flex-direction:column;gap:12px}
-.part-option{border-radius:var(--r-sm);border:1.5px solid var(--surface3);padding:16px;cursor:pointer;transition:border-color .2s}
-.part-option.selected{border-color:var(--green)}
-.part-option.done{border-color:rgba(76,175,125,.4);opacity:.7;cursor:default}
-.part-option-top{display:flex;align-items:center;gap:12px}
-.part-icon{font-size:24px;width:40px;text-align:center}
-.part-info{flex:1}
-.part-title{font-size:15px;font-weight:700}
-.part-desc{font-size:12px;color:var(--text2);margin-top:2px}
-.part-check{font-size:18px;color:var(--green)}
+/* progress */
+.deed-progress { margin-bottom: 14px; }
+.progress-amounts {
+  display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 7px;
+}
+.amount-raised { font-size: 15px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.amount-pct    { font-size: 12px; font-weight: 600; color: var(--t3); }
+.bar-track {
+  background: var(--s3); border-radius: var(--r-pill); height: 8px; overflow: hidden; margin-bottom: 5px;
+}
+.bar-fill {
+  height: 100%; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, #3d9e6a, var(--green));
+  transition: width .7s cubic-bezier(.22,1,.36,1);
+}
+.bar-fill.full { background: var(--green); }
+.amount-goal { font-size: 11px; color: var(--t3); font-variant-numeric: tabular-nums; }
 
-/* DONATE INPUT */
-.donate-input-wrap{margin-top:12px;display:none}
-.donate-input-wrap.show{display:block}
-.donate-amounts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.amount-chip{padding:7px 16px;border-radius:99px;border:1.5px solid var(--surface3);
-  background:none;color:var(--text2);font-family:var(--font);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
-.amount-chip.active{background:var(--coral);border-color:var(--coral);color:#fff}
-.amount-input{width:100%;background:var(--surface2);border:1.5px solid var(--surface3);border-radius:var(--r-sm);
-  padding:12px 16px;color:var(--text);font-family:var(--font);font-size:15px;font-weight:600;outline:none}
-.amount-input:focus{border-color:var(--coral)}
-.amount-hint{font-size:12px;color:var(--text3);margin-top:6px}
+/* card footer */
+.deed-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 13px; border-top: 1px solid var(--s2);
+}
+.deed-meta { display: flex; gap: 7px; flex-wrap: wrap; }
+.meta-chip {
+  font-size: 12px; font-weight: 600; padding: 3px 9px;
+  border-radius: var(--r-pill); background: var(--s2); color: var(--t2);
+}
+.meta-chip.urgent { background: var(--amber-bg); color: var(--amber); }
+.deed-cta {
+  width: 32px; height: 32px; border-radius: var(--r-pill);
+  background: var(--s2); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; color: var(--t2);
+  transition: background .15s, color .15s;
+}
+.deed-card:hover .deed-cta { background: var(--green-bg); color: var(--green); }
+.deed-cta.participated { background: var(--green-bg); color: var(--green); font-weight: 700; font-size: 13px; }
 
-/* BOTTOM ACTION */
-.bottom-action{position:fixed;bottom:0;left:0;right:0;padding:16px 20px 28px;
-  background:linear-gradient(to top,var(--bg) 70%,transparent);z-index:10}
-.btn-primary{width:100%;padding:16px;border-radius:var(--r-md);background:var(--green);
-  color:#fff;font-family:var(--font);font-size:16px;font-weight:700;border:none;cursor:pointer;transition:background .2s}
-.btn-primary:disabled{background:var(--surface3);color:var(--text3);cursor:default}
-.btn-primary.coral{background:var(--coral)}
-.btn-primary.coral:hover{background:var(--coral-dark)}
+/* ── DETAIL SCREEN ────────────────────────────────── */
 
-/* EMPTY */
-.empty{text-align:center;padding:60px 24px}
-.empty-emoji{font-size:56px;margin-bottom:16px}
-.empty-title{font-size:18px;font-weight:700;margin-bottom:8px}
-.empty-text{font-size:14px;color:var(--text2);line-height:1.5}
+/* Hero */
+.detail-hero {
+  border-radius: var(--r-xl); overflow: hidden;
+  padding: 28px 22px 26px; margin-bottom: 12px;
+  position: relative;
+}
+.detail-hero::before {
+  content: ''; position: absolute; right: -24px; top: -24px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(255,255,255,.05); pointer-events: none;
+}
+.detail-hero-shelter     { background: linear-gradient(135deg, #1c3a5e 0%, #0e1f35 100%); }
+.detail-hero-rescue      { background: linear-gradient(135deg, #5e2a1c 0%, #35160e 100%); }
+.detail-hero-sterilization { background: linear-gradient(135deg, #3b2260 0%, #200e37 100%); }
+.detail-hero-feeding     { background: linear-gradient(135deg, #5e4018 0%, #35240e 100%); }
+.detail-hero-adoption    { background: linear-gradient(135deg, #1a5c38 0%, #0e3320 100%); }
+.detail-hero-other       { background: linear-gradient(135deg, #252525 0%, #181818 100%); }
 
-/* TOAST */
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(20px);
-  background:var(--surface3);color:var(--text);padding:10px 20px;border-radius:99px;
-  font-size:14px;font-weight:600;opacity:0;transition:all .3s;z-index:99;white-space:nowrap}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.detail-hero-emoji { font-size: 56px; display: block; line-height: 1; margin-bottom: 16px; }
+.detail-hero-badges { display: flex; gap: 6px; margin-bottom: 12px; }
+.detail-hero-title {
+  font-size: 24px; font-weight: 800; line-height: 1.25; color: #fff;
+  margin-bottom: 6px; text-wrap: balance;
+}
+.detail-hero-subtitle { font-size: 14px; color: rgba(255,255,255,.6); line-height: 1.5; }
+
+/* Description */
+.detail-desc-card {
+  background: var(--s1); border-radius: var(--r-lg);
+  padding: 18px 20px; margin-bottom: 12px;
+  font-size: 14px; color: rgba(240,240,240,.78); line-height: 1.75;
+}
+
+/* Impact: stats + progress combined */
+.detail-impact {
+  background: var(--s1); border-radius: var(--r-lg);
+  padding: 20px; margin-bottom: 12px;
+}
+.detail-impact-stats {
+  display: flex; margin-bottom: 20px;
+  padding-bottom: 18px; border-bottom: 1px solid var(--s3);
+}
+.detail-impact-stat { flex: 1; text-align: center; }
+.detail-impact-stat + .detail-impact-stat { border-left: 1px solid var(--s3); }
+.detail-impact-num {
+  font-size: 22px; font-weight: 800; line-height: 1.1;
+  margin-bottom: 4px; font-variant-numeric: tabular-nums;
+}
+.detail-impact-num.accent { color: var(--green); }
+.detail-impact-lbl { font-size: 11px; color: var(--t2); }
+
+.detail-progress-lbl { font-size: 12px; font-weight: 600; color: var(--t2); margin-bottom: 8px; }
+.detail-raised {
+  font-size: 28px; font-weight: 800; color: var(--green);
+  font-variant-numeric: tabular-nums; margin-bottom: 12px;
+}
+.detail-bar-track {
+  background: var(--s3); border-radius: var(--r-pill); height: 10px; overflow: hidden; margin-bottom: 8px;
+}
+.detail-bar-fill {
+  height: 100%; border-radius: var(--r-pill);
+  background: linear-gradient(90deg, #3d9e6a, var(--green));
+  transition: width .9s cubic-bezier(.22,1,.36,1);
+}
+.detail-bar-meta {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--t3); font-variant-numeric: tabular-nums;
+}
+.detail-remaining { color: var(--amber); font-weight: 600; }
+
+/* Participation */
+.part-heading {
+  font-size: 17px; font-weight: 700; margin-bottom: 12px;
+}
+.part-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+
+.part-option {
+  background: var(--s1); border: 1.5px solid var(--s3);
+  border-radius: var(--r-lg); padding: 15px 16px;
+  cursor: pointer; transition: border-color .18s, background .18s;
+}
+.part-option:hover:not(.done) { border-color: var(--s4); }
+.part-option.selected { border-color: var(--green); background: rgba(76,175,125,.07); }
+.part-option.done { border-color: rgba(76,175,125,.3); cursor: default; }
+
+.part-option-top { display: flex; align-items: center; gap: 13px; }
+.part-icon-wrap {
+  width: 44px; height: 44px; border-radius: var(--r-md); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  background: var(--s2); transition: background .18s;
+}
+.part-option.selected .part-icon-wrap { background: rgba(76,175,125,.2); }
+.part-option.done     .part-icon-wrap { background: rgba(76,175,125,.12); }
+
+.part-info { flex: 1; min-width: 0; }
+.part-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+.part-desc { font-size: 12px; color: var(--t2); line-height: 1.4; }
+.part-check {
+  width: 26px; height: 26px; border-radius: var(--r-pill); flex-shrink: 0;
+  background: var(--green-bg); color: var(--green);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700;
+}
+
+/* Volunteer expansion */
+.vol-expand {
+  margin-top: 14px; padding-top: 14px;
+  border-top: 1px solid rgba(76,175,125,.18);
+  display: none; animation: expandIn .2s ease;
+}
+.vol-expand.show { display: block; }
+@keyframes expandIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .vol-expand { animation: none; } }
+
+.vol-tasks { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.vol-task {
+  padding: 5px 12px; border-radius: var(--r-pill);
+  background: var(--s3); color: var(--t2);
+  font-size: 12px; font-weight: 600;
+}
+.vol-info {
+  display: flex; flex-direction: column; gap: 0;
+  background: var(--s2); border-radius: var(--r-md); overflow: hidden;
+}
+.vol-info-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 11px 14px;
+}
+.vol-info-row + .vol-info-row { border-top: 1px solid var(--s3); }
+.vol-info-icon { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; margin-top: 1px; }
+.vol-info-text { font-size: 12px; color: var(--t2); line-height: 1.5; }
+.vol-info-text b { color: var(--text); font-weight: 600; }
+
+/* Donate input */
+.donate-input-wrap { margin-top: 14px; display: none; }
+.donate-input-wrap.show { display: block; }
+.donate-amounts { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 10px; }
+.amount-chip {
+  padding: 7px 14px; border-radius: var(--r-pill); border: 1.5px solid var(--s3);
+  background: none; color: var(--t2);
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .18s; font-variant-numeric: tabular-nums;
+}
+.amount-chip:hover { border-color: var(--s4); color: var(--text); }
+.amount-chip.active { background: var(--coral); border-color: var(--coral); color: #fff; }
+.amount-input {
+  width: 100%; background: var(--s2); border: 1.5px solid var(--s3);
+  border-radius: var(--r-md); padding: 12px 16px;
+  color: var(--text); font-family: var(--font); font-size: 16px; font-weight: 600;
+  outline: none; transition: border-color .15s; font-variant-numeric: tabular-nums;
+}
+.amount-input:focus { border-color: var(--coral); }
+.amount-hint { font-size: 12px; color: var(--t3); margin-top: 7px; }
+
+/* Completed card */
+.completed-card {
+  background: var(--green-bg); border: 1.5px solid rgba(76,175,125,.25);
+  border-radius: var(--r-lg); padding: 28px 20px; text-align: center; margin-bottom: 14px;
+}
+.completed-card-icon { font-size: 40px; margin-bottom: 12px; }
+.completed-card-title { font-size: 18px; font-weight: 800; color: var(--green); margin-bottom: 8px; }
+.completed-card-sub { font-size: 13px; color: var(--t2); line-height: 1.6; }
+
+/* ── BOTTOM ACTION ────────────────────────────────── */
+.bottom-action {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 540px;
+  padding: 14px 16px 32px;
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
+  z-index: 10;
+}
+.btn-primary {
+  width: 100%; padding: 16px; border-radius: var(--r-pill);
+  background: var(--green); color: #fff;
+  font-family: var(--font); font-size: 16px; font-weight: 700;
+  border: none; cursor: pointer; transition: background .2s, transform .15s;
+  letter-spacing: -.01em;
+}
+.btn-primary:active { transform: scale(.98); }
+.btn-primary:disabled { background: var(--s3); color: var(--t3); cursor: default; transform: none; }
+.btn-primary.coral { background: var(--coral); }
+.btn-primary.coral:hover { background: var(--coral-dk); }
+
+/* ── EMPTY ────────────────────────────────────────── */
+.empty { text-align: center; padding: 64px 24px; }
+.empty-emoji { font-size: 52px; margin-bottom: 14px; }
+.empty-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.empty-text { font-size: 14px; color: var(--t2); line-height: 1.55; }
+
+/* ── TOAST ────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%) translateY(12px);
+  background: var(--s3); color: var(--text); padding: 10px 20px;
+  border-radius: var(--r-pill); font-size: 14px; font-weight: 600;
+  opacity: 0; transition: all .25s; z-index: 99; white-space: nowrap;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  .deed-card, .part-option, .filter-btn { transition: none; }
+  .bar-fill, .big-bar-fill { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -158,19 +435,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 <!-- SCREEN 1: CATALOG -->
 <div id="screen-catalog" class="screen active">
   <div class="top-nav">
-    <span class="nav-title">Добрые дела</span>
-    <span class="nav-badge" id="active-count">...</span>
+    <a class="nav-back" href="/" aria-label="На главную">←</a>
+    <span class="nav-title">Волонтёр</span>
+    <span class="nav-badge" id="active-count">…</span>
   </div>
-  <div class="scroll-body">
+  <div class="scroll-body" id="catalog-scroll">
 
-    <div class="hero">
-      <div class="hero-label">HappyTails Community</div>
+    <div class="hero" id="hero-block">
+      <div class="hero-kicker">HappyTails Community</div>
       <h1>Помогаем<br>вместе</h1>
-      <p>Поддержите приюты, спасательные<br>операции и бездомных животных</p>
+      <p class="hero-sub">Поддержите приюты, помогите животным найти дом</p>
+      <div class="hero-divider"></div>
       <div class="hero-stats">
         <div class="hero-stat">
           <div class="hero-stat-num" id="total-raised">—</div>
-          <div class="hero-stat-lbl">собрано (сум)</div>
+          <div class="hero-stat-lbl">собрано, сум</div>
         </div>
         <div class="hero-stat">
           <div class="hero-stat-num" id="total-participants">—</div>
@@ -183,7 +462,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       </div>
     </div>
 
-    <div class="filter-tabs" id="filter-tabs">
+    <div class="filter-tabs" id="filter-tabs" role="group" aria-label="Фильтр по категории">
       <button class="filter-btn active" data-cat="">Все</button>
       <button class="filter-btn" data-cat="shelter">Приюты</button>
       <button class="filter-btn" data-cat="rescue">Спасение</button>
@@ -192,16 +471,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
       <button class="filter-btn" data-cat="adoption">Питомцы в дом</button>
     </div>
 
-    <div class="cards" id="cards-list">
-      <div class="empty"><div class="empty-emoji">💚</div><div class="empty-title">Загружаем...</div></div>
+    <div class="cards" id="cards-list" role="list">
+      <div class="empty">
+        <div class="empty-emoji">💚</div>
+        <div class="empty-title">Загружаем…</div>
+      </div>
     </div>
+
   </div>
 </div>
 
 <!-- SCREEN 2: DETAIL -->
 <div id="screen-detail" class="screen">
   <div class="top-nav">
-    <button class="nav-back" id="detail-back">←</button>
+    <button class="nav-back" id="detail-back" aria-label="Назад">←</button>
     <span class="nav-title">Инициатива</span>
   </div>
   <div class="scroll-body" id="detail-body"></div>
@@ -210,8 +493,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="/vendor/gsap.min.js"></script>
 <script>
 const OWNER_ID = (() => {
   let id = localStorage.getItem('ht_owner_id');
@@ -230,7 +514,19 @@ const CAT_LABELS = {
   feeding: 'Кормление', adoption: 'Питомцы в дом', other: 'Другое'
 };
 
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 function fmt(n) { return n ? n.toLocaleString('ru-RU') : '0'; }
+
+function isUrgent(deadline) {
+  if (!deadline) return false;
+  const days = (new Date(deadline) - Date.now()) / 86400000;
+  return days >= 0 && days <= 7;
+}
+
+function fmtDate(d) {
+  return new Date(d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -242,7 +538,7 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2500);
+  setTimeout(() => t.classList.remove('show'), 2800);
 }
 
 function pct(raised, goal) {
@@ -259,9 +555,9 @@ async function loadDeeds(category = '') {
     const r = await fetch(url);
     allDeeds = await r.json();
     renderCatalog();
-  } catch (e) {
+  } catch {
     document.getElementById('cards-list').innerHTML =
-      '<div class="empty"><div class="empty-emoji">⚠️</div><div class="empty-title">Ошибка загрузки</div></div>';
+      '<div class="empty"><div class="empty-emoji">⚠️</div><div class="empty-title">Ошибка загрузки</div><div class="empty-text">Проверьте подключение</div></div>';
   }
 }
 
@@ -270,10 +566,10 @@ function renderCatalog() {
   document.getElementById('active-count').textContent = active.length + ' активных';
 
   const totalRaised = allDeeds.reduce((s, d) => s + (d.raised_amount || 0), 0);
-  const totalParts = allDeeds.reduce((s, d) => s + (d.participants_count || 0), 0);
-  document.getElementById('total-raised').textContent = totalRaised >= 1000000
-    ? (totalRaised / 1000000).toFixed(1) + 'M'
-    : fmt(totalRaised);
+  const totalParts  = allDeeds.reduce((s, d) => s + (d.participants_count || 0), 0);
+
+  document.getElementById('total-raised').textContent =
+    totalRaised >= 1_000_000 ? (totalRaised / 1_000_000).toFixed(1) + 'M' : fmt(totalRaised);
   document.getElementById('total-participants').textContent = totalParts;
   document.getElementById('total-deeds').textContent = allDeeds.length;
 
@@ -287,15 +583,19 @@ function renderCatalog() {
     const p = pct(d.raised_amount, d.goal_amount);
     const participated = d.my_types && d.my_types.length > 0;
     const done = d.status === 'completed';
+    const urgent = isUrgent(d.deadline);
+
     return `
-    <div class="deed-card${done ? ' completed' : ''}" onclick="openDeed(${d.id})">
-      <div class="deed-card-top">
-        <div class="deed-emoji">${d.emoji}</div>
+    <div class="deed-card${done ? ' completed' : ''}${urgent ? ' urgent' : ''}"
+         onclick="openDeed(${d.id})" role="listitem" tabindex="0"
+         onkeydown="if(event.key==='Enter')openDeed(${d.id})">
+      <div class="deed-card-header">
+        <div class="deed-icon deed-icon-${d.category}">${d.emoji}</div>
         <div class="deed-info">
           <div class="deed-badges">
             <span class="badge badge-${d.category}">${CAT_LABELS[d.category] || d.category}</span>
             ${done ? '<span class="badge badge-done">✓ Завершено</span>' : ''}
-            ${participated ? '<span class="badge badge-done">✓ Участвую</span>' : ''}
+            ${participated && !done ? '<span class="badge badge-mine">✓ Участвую</span>' : ''}
           </div>
           <div class="deed-title">${d.title}</div>
           <div class="deed-subtitle">${d.subtitle || ''}</div>
@@ -303,21 +603,47 @@ function renderCatalog() {
       </div>
       ${d.goal_amount ? `
       <div class="deed-progress">
-        <div class="progress-row">
-          <span class="progress-raised">${fmt(d.raised_amount)} сум</span>
-          <span class="progress-goal">из ${fmt(d.goal_amount)}</span>
+        <div class="progress-amounts">
+          <span class="amount-raised">${fmt(d.raised_amount)} сум</span>
+          <span class="amount-pct">${p}%</span>
         </div>
-        <div class="bar-wrap"><div class="bar-fill${p >= 100 ? ' full' : ''}" style="width:${p}%"></div></div>
+        <div class="bar-track"><div class="bar-fill${p >= 100 ? ' full' : ''}" style="width:0%" data-target="${p}"></div></div>
+        <div class="amount-goal">из ${fmt(d.goal_amount)} сум</div>
       </div>` : ''}
       <div class="deed-footer">
         <div class="deed-meta">
-          <span class="meta-item">👥 ${d.participants_count} участников</span>
-          ${d.deadline ? `<span class="meta-item">📅 до ${new Date(d.deadline).toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}</span>` : ''}
+          <span class="meta-chip">👥 ${d.participants_count}</span>
+          ${d.deadline ? `<span class="meta-chip${urgent ? ' urgent' : ''}">📅 до ${fmtDate(d.deadline)}</span>` : ''}
         </div>
-        ${participated ? '<span class="deed-participated">✓ Участвую</span>' : '<span style="font-size:18px">→</span>'}
+        <div class="deed-cta${participated ? ' participated' : ''}">${participated ? '✓' : '→'}</div>
       </div>
     </div>`;
   }).join('');
+
+  animateCatalog();
+}
+
+function animateCatalog() {
+  // Animate progress bars after DOM paint
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.bar-fill[data-target]').forEach(bar => {
+        const target = bar.dataset.target + '%';
+        if (reduce) { bar.style.width = target; }
+        else if (window.gsap) {
+          gsap.to(bar, { width: target, duration: 0.7, ease: 'power2.out', delay: 0.1 });
+        } else {
+          bar.style.width = target;
+        }
+      });
+    });
+  });
+
+  if (reduce || !window.gsap) return;
+  gsap.from('.deed-card', {
+    y: 16, opacity: 0, duration: 0.45, stagger: 0.07, ease: 'power2.out',
+    clearProps: 'transform,opacity'
+  });
 }
 
 // ── DETAIL ───────────────────────────────────────────────
@@ -325,111 +651,172 @@ async function openDeed(id) {
   try {
     const r = await fetch(`/api/deeds/${id}?owner_id=${OWNER_ID}`);
     currentDeed = await r.json();
-  } catch (e) { showToast('Ошибка загрузки'); return; }
+  } catch { showToast('Ошибка загрузки'); return; }
   renderDetail();
   showScreen('screen-detail');
+  // Update nav title to deed name
+  const navTitle = document.querySelector('#screen-detail .nav-title');
+  if (navTitle && currentDeed) {
+    const short = currentDeed.title.length > 26
+      ? currentDeed.title.slice(0, 24) + '…'
+      : currentDeed.title;
+    navTitle.textContent = short;
+  }
 }
+
+const VOL_TASKS = {
+  shelter:        ['🐾 Уход', '🚗 Транспорт', '🏠 Передержка', '🧹 Уборка'],
+  rescue:         ['🏠 Передержка', '🚗 Транспорт', '💊 Ветпомощь', '📋 Документы'],
+  sterilization:  ['🚗 Транспорт', '🏠 Восстановление', '💊 Уход после операции'],
+  feeding:        ['🍲 Закупка корма', '🚗 Доставка', '📍 Выезды'],
+  adoption:       ['🏠 Передержка', '📸 Фотосессии', '📋 Оформление'],
+  other:          ['🐾 Уход', '🚗 Транспорт', '📋 Документы'],
+};
 
 function renderDetail() {
   const d = currentDeed;
   const p = pct(d.raised_amount, d.goal_amount);
   const isDone = d.status === 'completed';
+  const remaining = d.goal_amount ? d.goal_amount - d.raised_amount : 0;
 
-  const myDonate  = d.my_types.includes('donate');
-  const myVol     = d.my_types.includes('volunteer');
-  const myShare   = d.my_types.includes('share');
+  const myDonate = d.my_types.includes('donate');
+  const myVol    = d.my_types.includes('volunteer');
+  const myShare  = d.my_types.includes('share');
+
+  const volTasks = (VOL_TASKS[d.category] || VOL_TASKS.other)
+    .map(t => `<span class="vol-task">${t}</span>`).join('');
+
+  const urgentBadge = isUrgent(d.deadline)
+    ? `<span class="badge" style="background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,166,35,.25)">⚡ Срочно</span>`
+    : '';
 
   document.getElementById('detail-body').innerHTML = `
-    <div class="detail-hero">
-      <span class="detail-emoji">${d.emoji}</span>
-      <div class="deed-badges" style="margin-bottom:10px">
+    <!-- Hero -->
+    <div class="detail-hero detail-hero-${d.category}">
+      <span class="detail-hero-emoji">${d.emoji}</span>
+      <div class="detail-hero-badges">
         <span class="badge badge-${d.category}">${CAT_LABELS[d.category] || d.category}</span>
         ${isDone ? '<span class="badge badge-done">✓ Завершено</span>' : ''}
+        ${urgentBadge}
       </div>
-      <div class="detail-title">${d.title}</div>
-      <div class="detail-subtitle">${d.subtitle || ''}</div>
-      <div class="detail-desc">${d.description || ''}</div>
+      <div class="detail-hero-title">${d.title}</div>
+      ${d.subtitle ? `<div class="detail-hero-subtitle">${d.subtitle}</div>` : ''}
     </div>
 
-    <div class="stats-row">
-      <div class="stat-card">
-        <div class="stat-num">👥 ${d.participants_count}</div>
-        <div class="stat-lbl">участников</div>
+    <!-- Description -->
+    ${d.description ? `<div class="detail-desc-card">${d.description}</div>` : ''}
+
+    <!-- Impact: stats + progress -->
+    <div class="detail-impact">
+      <div class="detail-impact-stats">
+        <div class="detail-impact-stat">
+          <div class="detail-impact-num">${d.participants_count}</div>
+          <div class="detail-impact-lbl">участников</div>
+        </div>
+        ${d.goal_amount ? `<div class="detail-impact-stat">
+          <div class="detail-impact-num accent">${p}%</div>
+          <div class="detail-impact-lbl">выполнено</div>
+        </div>` : ''}
+        ${d.deadline ? `<div class="detail-impact-stat">
+          <div class="detail-impact-num" style="font-size:15px">${fmtDate(d.deadline)}</div>
+          <div class="detail-impact-lbl">${isUrgent(d.deadline) ? '⚡ дедлайн' : 'дедлайн'}</div>
+        </div>` : ''}
       </div>
-      ${d.deadline ? `<div class="stat-card">
-        <div class="stat-num" style="font-size:15px">📅 ${new Date(d.deadline).toLocaleDateString('ru-RU',{day:'numeric',month:'long'})}</div>
-        <div class="stat-lbl">дедлайн</div>
+      ${d.goal_amount ? `
+      <div class="detail-progress-lbl">Собрано</div>
+      <div class="detail-raised">${fmt(d.raised_amount)} сум</div>
+      <div class="detail-bar-track"><div class="detail-bar-fill" id="detail-bar" style="width:0%"></div></div>
+      <div class="detail-bar-meta">
+        ${p >= 100
+          ? `<span style="color:var(--green);font-weight:600">🎉 Цель достигнута!</span>`
+          : `<span class="detail-remaining">осталось ${fmt(remaining)} сум</span>`}
+        <span>из ${fmt(d.goal_amount)}</span>
       </div>` : ''}
     </div>
 
-    ${d.goal_amount ? `
-    <div class="progress-section">
-      <div class="section-title">Прогресс сбора</div>
-      <div class="big-bar-raised">${fmt(d.raised_amount)} сум</div>
-      <div class="big-bar-wrap"><div class="big-bar-fill" style="width:${p}%"></div></div>
-      <div class="big-bar-labels">
-        <span>${p}% выполнено</span>
-        <span>цель: ${fmt(d.goal_amount)} сум</span>
-      </div>
-    </div>` : ''}
-
+    <!-- Participation -->
     ${!isDone ? `
-    <div class="participate-section" id="participate-section">
-      <div class="section-title">Как помочь</div>
-      <div class="part-options">
+    <div class="part-heading">Как помочь</div>
+    <div class="part-options">
 
-        <div class="part-option${myDonate ? ' done' : ''}" id="opt-donate" onclick="selectType('donate')">
-          <div class="part-option-top">
-            <div class="part-icon">💳</div>
-            <div class="part-info">
-              <div class="part-title">Донат</div>
-              <div class="part-desc">Перевести деньги на нужды инициативы</div>
-            </div>
-            ${myDonate ? '<span class="part-check">✓</span>' : ''}
+      <div class="part-option${myDonate ? ' done' : ''}" id="opt-donate" onclick="selectType('donate')">
+        <div class="part-option-top">
+          <div class="part-icon-wrap">💳</div>
+          <div class="part-info">
+            <div class="part-title">Донат</div>
+            <div class="part-desc">Перевести деньги на нужды инициативы</div>
           </div>
-          ${!myDonate ? `<div class="donate-input-wrap" id="donate-input-wrap">
-            <div class="donate-amounts">
-              <button class="amount-chip" onclick="setAmount(event,10000)">10 000</button>
-              <button class="amount-chip" onclick="setAmount(event,50000)">50 000</button>
-              <button class="amount-chip" onclick="setAmount(event,100000)">100 000</button>
-              <button class="amount-chip" onclick="setAmount(event,500000)">500 000</button>
-            </div>
-            <input class="amount-input" id="amount-input" type="number" min="1000" step="1000"
-              placeholder="Сумма в UZS" oninput="onAmountInput(this.value)">
-            <div class="amount-hint">Минимум 1 000 сум</div>
-          </div>` : ''}
+          ${myDonate ? '<div class="part-check">✓</div>' : ''}
         </div>
-
-        <div class="part-option${myVol ? ' done' : ''}" id="opt-volunteer" onclick="selectType('volunteer')">
-          <div class="part-option-top">
-            <div class="part-icon">🙋</div>
-            <div class="part-info">
-              <div class="part-title">Волонтёр</div>
-              <div class="part-desc">Помочь физически — выгул, передержка, транспорт</div>
-            </div>
-            ${myVol ? '<span class="part-check">✓</span>' : ''}
+        ${!myDonate ? `<div class="donate-input-wrap" id="donate-input-wrap">
+          <div class="donate-amounts">
+            <button class="amount-chip" onclick="setAmount(event,10000)">10 000</button>
+            <button class="amount-chip" onclick="setAmount(event,50000)">50 000</button>
+            <button class="amount-chip" onclick="setAmount(event,100000)">100 000</button>
+            <button class="amount-chip" onclick="setAmount(event,500000)">500 000</button>
           </div>
-        </div>
-
-        <div class="part-option${myShare ? ' done' : ''}" id="opt-share" onclick="selectType('share')">
-          <div class="part-option-top">
-            <div class="part-icon">📢</div>
-            <div class="part-info">
-              <div class="part-title">Репост</div>
-              <div class="part-desc">Рассказать друзьям — это тоже помощь</div>
-            </div>
-            ${myShare ? '<span class="part-check">✓</span>' : ''}
-          </div>
-        </div>
-
+          <input class="amount-input" id="amount-input" type="number" min="1000" step="1000"
+            placeholder="Сумма в UZS" oninput="onAmountInput(this.value)">
+          <div class="amount-hint">Минимум 1 000 сум</div>
+        </div>` : ''}
       </div>
+
+      <div class="part-option${myVol ? ' done' : ''}" id="opt-volunteer" onclick="selectType('volunteer')">
+        <div class="part-option-top">
+          <div class="part-icon-wrap">🙋</div>
+          <div class="part-info">
+            <div class="part-title">Стать волонтёром</div>
+            <div class="part-desc">Физическая помощь — нажмите, чтобы узнать подробности</div>
+          </div>
+          ${myVol ? '<div class="part-check">✓</div>' : ''}
+        </div>
+        ${!myVol ? `
+        <div class="vol-expand" id="vol-expand">
+          <div class="vol-tasks">${volTasks}</div>
+          <div class="vol-info">
+            <div class="vol-info-row">
+              <div class="vol-info-icon">📞</div>
+              <div class="vol-info-text"><b>Что дальше:</b> организатор свяжется с вами в течение 24 часов и расскажет о доступных задачах</div>
+            </div>
+            <div class="vol-info-row">
+              <div class="vol-info-icon">🕐</div>
+              <div class="vol-info-text"><b>Занятость:</b> от 2 часов в неделю, гибкий график по договорённости</div>
+            </div>
+            <div class="vol-info-row">
+              <div class="vol-info-icon">📍</div>
+              <div class="vol-info-text"><b>Локация:</b> Ташкент, возможна удалённая помощь</div>
+            </div>
+          </div>
+        </div>` : ''}
+      </div>
+
+      <div class="part-option${myShare ? ' done' : ''}" id="opt-share" onclick="selectType('share')">
+        <div class="part-option-top">
+          <div class="part-icon-wrap">📢</div>
+          <div class="part-info">
+            <div class="part-title">Репост</div>
+            <div class="part-desc">Рассказать друзьям — это тоже помощь</div>
+          </div>
+          ${myShare ? '<div class="part-check">✓</div>' : ''}
+        </div>
+      </div>
+
     </div>` : `
-    <div style="background:rgba(76,175,125,.1);border:1.5px solid rgba(76,175,125,.3);border-radius:var(--r-md);padding:20px;text-align:center;margin-bottom:16px">
-      <div style="font-size:32px;margin-bottom:8px">🎉</div>
-      <div style="font-size:16px;font-weight:700;color:var(--green)">Инициатива завершена!</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:6px">Благодаря участникам цель была достигнута</div>
+    <div class="completed-card">
+      <div class="completed-card-icon">🎉</div>
+      <div class="completed-card-title">Инициатива завершена!</div>
+      <div class="completed-card-sub">Благодаря участникам цель была достигнута. Спасибо всем!</div>
     </div>`}
   `;
+
+  // Animate detail bar
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const bar = document.getElementById('detail-bar');
+    if (!bar) return;
+    const target = p + '%';
+    if (reduce || !window.gsap) { bar.style.width = target; }
+    else gsap.to(bar, { width: target, duration: 1.0, ease: 'power2.out', delay: 0.2 });
+  }));
 
   const btn = document.getElementById('detail-action-btn');
   if (isDone) {
@@ -443,17 +830,33 @@ function renderDetail() {
 
   selectedType = null;
   donateAmount = 0;
+
+  if (!reduce && window.gsap) {
+    gsap.from('.detail-hero, .detail-desc-card, .detail-impact, .part-heading, .part-option, .completed-card', {
+      y: 14, opacity: 0, duration: 0.4, stagger: 0.07, ease: 'power2.out',
+      clearProps: 'transform,opacity'
+    });
+  }
 }
 
 function selectType(type) {
   const deed = currentDeed;
-  const myDonate  = deed.my_types.includes('donate');
-  const myVol     = deed.my_types.includes('volunteer');
-  const myShare   = deed.my_types.includes('share');
+  if (type === 'donate'    && deed.my_types.includes('donate'))    return;
+  if (type === 'volunteer' && deed.my_types.includes('volunteer')) return;
+  if (type === 'share'     && deed.my_types.includes('share'))     return;
 
-  if (type === 'donate' && myDonate) return;
-  if (type === 'volunteer' && myVol) return;
-  if (type === 'share' && myShare) return;
+  // Toggle: clicking the already-selected type deselects it
+  if (selectedType === type) {
+    selectedType = null;
+    const opt = document.getElementById(`opt-${type}`);
+    if (opt) opt.classList.remove('selected');
+    const wrap = document.getElementById('donate-input-wrap');
+    if (wrap) wrap.classList.remove('show');
+    const vol = document.getElementById('vol-expand');
+    if (vol) vol.classList.remove('show');
+    updateActionBtn();
+    return;
+  }
 
   selectedType = type;
 
@@ -461,12 +864,14 @@ function selectType(type) {
     const el = document.getElementById(`opt-${t}`);
     if (el && !deed.my_types.includes(t)) el.classList.remove('selected');
   });
-
   const opt = document.getElementById(`opt-${type}`);
   if (opt) opt.classList.add('selected');
 
   const wrap = document.getElementById('donate-input-wrap');
   if (wrap) wrap.classList.toggle('show', type === 'donate');
+
+  const vol = document.getElementById('vol-expand');
+  if (vol) vol.classList.toggle('show', type === 'volunteer');
 
   updateActionBtn();
 }
@@ -505,7 +910,7 @@ async function doParticipate() {
   const btn = document.getElementById('detail-action-btn');
   btn.disabled = true;
   const prev = btn.textContent;
-  btn.textContent = 'Отправляем...';
+  btn.textContent = 'Отправляем…';
 
   const body = { owner_id: OWNER_ID, type: selectedType };
   if (selectedType === 'donate') body.amount_uzs = donateAmount;
@@ -516,10 +921,7 @@ async function doParticipate() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    if (r.status === 409) {
-      showToast('Вы уже участвуете таким образом');
-      btn.disabled = false; btn.textContent = prev; return;
-    }
+    if (r.status === 409) { showToast('Вы уже участвуете таким образом'); btn.disabled = false; btn.textContent = prev; return; }
     if (!r.ok) throw new Error(await r.text());
     const updated = await r.json();
 
@@ -537,7 +939,7 @@ async function doParticipate() {
   }
 }
 
-// ── FILTER TABS ─────────────────────────────────────────
+// ── FILTER TABS ──────────────────────────────────────────
 document.getElementById('filter-tabs').addEventListener('click', e => {
   const btn = e.target.closest('.filter-btn');
   if (!btn) return;
@@ -552,7 +954,16 @@ document.getElementById('detail-back').onclick = () => {
 };
 
 // ── INIT ────────────────────────────────────────────────
-loadDeeds();
+function checkHash() {
+  const id = Number(location.hash.replace('#', ''));
+  if (id) openDeed(id);
+}
+loadDeeds().then(checkHash);
+window.addEventListener('hashchange', checkHash);
+
+if (!reduce && window.gsap) {
+  gsap.from('#hero-block', { y: 20, opacity: 0, duration: 0.65, ease: 'power3.out', clearProps: 'transform,opacity' });
+}
 </script>
 </body>
 </html>

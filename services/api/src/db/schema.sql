@@ -85,8 +85,10 @@ CREATE TABLE IF NOT EXISTS vendor_credentials (
   vet_id     INTEGER UNIQUE REFERENCES vets(id) ON DELETE CASCADE,
   email      TEXT UNIQUE NOT NULL,
   password   TEXT NOT NULL,
+  phone      TEXT UNIQUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE vendor_credentials ADD COLUMN IF NOT EXISTS phone TEXT UNIQUE;
 
 CREATE TABLE IF NOT EXISTS good_deeds (
   id                 SERIAL PRIMARY KEY,

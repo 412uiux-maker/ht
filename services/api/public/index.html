@@ -3,119 +3,666 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HappyTails — Hello World</title>
+  <title>HappyTails — Dev Hub</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    /* Токены из DESIGN.md (стиль референса HappyTails) */
     :root {
-      --bg: #F1F2F4; --surface: #FFFFFF; --surface-2: #FBF4EE; --border: #EAEBEE;
-      --text: #23282D; --text-muted: #6C7480;
-      --primary: #F2784B; --primary-strong: #C0511F; --on-primary: #FFFFFF;
-      --grad-warm: linear-gradient(135deg,#F8915A,#F26B47);
-      --grad-peach: linear-gradient(180deg,#FFEAD7,#FCDCC4);
-      --r-md: 16px; --r-lg: 24px; --r-xl: 32px; --r-pill: 999px;
+      --bg: #F1F2F4;
+      --surface: #FFFFFF;
+      --surface-2: #FBF4EE;
+      --border: #EAEBEE;
+      --text: #23282D;
+      --text-muted: #6C7480;
+      --primary: #F2784B;
+      --primary-600: #E0633A;
+      --primary-strong: #C0511F;
+      --on-primary: #FFFFFF;
+      --grad-warm: linear-gradient(135deg, #F8915A, #F26B47);
+      --success: #3FA46B;
+      --danger: #D9534A;
+      --r-sm: 12px;
+      --r-md: 16px;
+      --r-lg: 24px;
+      --r-xl: 32px;
+      --r-pill: 999px;
       --shadow: 0 8px 28px rgba(35,40,45,.08);
+      --shadow-lg: 0 20px 56px rgba(35,40,45,.13);
       --font: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     }
+
     @media (prefers-color-scheme: dark) {
-      :root { --bg:#15171A; --surface:#1E2126; --surface-2:#26221F; --border:#2E323A;
-              --text:#ECEEF0; --text-muted:#9BA2AD; --primary:#F2864B; }
+      :root {
+        --bg: #15171A;
+        --surface: #1E2126;
+        --surface-2: #26221F;
+        --border: #2E323A;
+        --text: #ECEEF0;
+        --text-muted: #9BA2AD;
+        --primary: #F2864B;
+        --primary-strong: #F2864B;
+        --on-primary: #1A140F;
+        --shadow: 0 8px 28px rgba(0,0,0,.22);
+        --shadow-lg: 0 20px 56px rgba(0,0,0,.32);
+      }
     }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: var(--font); background: var(--bg); color: var(--text);
-           display: grid; place-items: center; min-height: 100vh; padding: 24px; }
 
-    .card { position: relative; overflow: hidden; background: var(--surface);
-            border: 1px solid var(--border); border-radius: var(--r-xl);
-            padding: 40px 40px 36px; max-width: 540px; width: 100%; box-shadow: var(--shadow); }
-    /* мягкое персиковое радиальное свечение в углу — как подложки 3D в референсе */
-    .glow { position: absolute; width: 320px; height: 320px; right: -90px; top: -120px;
-            background: radial-gradient(circle at center, #FFE0CB 0%, rgba(255,224,203,0) 70%);
-            pointer-events: none; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.5;
+    }
 
-    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 22px; }
-    .brand svg { width: 36px; height: 33px; display: block; }
-    .brand b { font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+    /* ── NAV ───────────────────────────────────────────────── */
+    .nav {
+      position: sticky; top: 0; z-index: 40;
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1100px; margin: 0 auto; padding: 0 24px;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: inherit; flex-shrink: 0;
+    }
+    .nav-brand svg { width: 30px; height: 28px; display: block; }
+    .nav-brand-name { font-weight: 800; font-size: 17px; letter-spacing: -.02em; }
+    .nav-locale {
+      font-size: 12px; color: var(--text-muted); font-weight: 500;
+      white-space: nowrap;
+    }
+    .nav-status {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      padding: 5px 12px; border-radius: var(--r-pill);
+      font-size: 12px; font-weight: 600; color: var(--primary-strong);
+      white-space: nowrap; flex-shrink: 0;
+      transition: border-color .2s;
+    }
+    .nav-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-muted); flex-shrink: 0;
+      transition: background .3s;
+    }
+    .nav-dot.ok  { background: var(--success); }
+    .nav-dot.err { background: var(--danger); }
 
-    .badge { display: inline-block; background: var(--surface-2); color: var(--primary-strong);
-             border: 1px solid var(--border); padding: 6px 14px; border-radius: var(--r-pill);
-             font-size: 13px; font-weight: 600; margin-bottom: 18px; }
+    /* ── WRAP ──────────────────────────────────────────────── */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
-    h1 { margin: 0 0 6px; font-size: clamp(28px, 6vw, 40px); font-weight: 800;
-         line-height: 1.08; letter-spacing: -.02em; }
-    h1 .hl { color: var(--primary-strong); }
-    p.sub { color: var(--text-muted); margin: 0 0 26px; font-size: 16px; }
+    /* ── HERO ──────────────────────────────────────────────── */
+    .hero {
+      margin-top: 28px;
+      border-radius: var(--r-xl);
+      background: var(--grad-warm);
+      padding: 52px 56px 48px;
+      color: #fff;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 100% 50%, rgba(255,255,255,.10) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-paw {
+      position: absolute; right: 52px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 96px; line-height: 1;
+      opacity: .10; pointer-events: none;
+      user-select: none;
+    }
+    .hero-kicker {
+      display: inline-block;
+      font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+      opacity: .75; margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: clamp(30px, 4.5vw, 48px); font-weight: 800;
+      line-height: 1.06; letter-spacing: -.025em;
+      margin-bottom: 12px;
+      text-wrap: balance;
+    }
+    .hero-sub {
+      font-size: 16px; opacity: .85; line-height: 1.55;
+      margin-bottom: 32px; max-width: 480px;
+    }
+    .hero-pills {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .hero-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.28);
+      padding: 7px 16px; border-radius: var(--r-pill);
+      font-size: 13px; font-weight: 600;
+      backdrop-filter: blur(4px);
+    }
+    .hero-pill-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: rgba(255,255,255,.5); flex-shrink: 0;
+      transition: background .3s;
+    }
+    .hero-pill-dot.ok  { background: #86efac; }
+    .hero-pill-dot.err { background: #fca5a5; }
 
-    .statuses { display: grid; gap: 10px; margin-bottom: 26px; }
-    .row { display: flex; align-items: center; justify-content: space-between;
-           background: var(--surface-2); border: 1px solid var(--border);
-           border-radius: var(--r-md); padding: 12px 16px; font-size: 14px; }
-    .row span { color: var(--text-muted); }
-    .row b { color: var(--primary-strong); font-weight: 600; }
+    /* ── SECTIONS ──────────────────────────────────────────── */
+    .section { padding-top: 52px; }
+    .section:last-child { padding-bottom: 72px; }
 
-    .actions { display: flex; gap: 12px; flex-wrap: wrap; }
-    .btn { font-family: var(--font); font-weight: 600; font-size: 15px; text-decoration: none;
-           padding: 12px 22px; border-radius: var(--r-pill); border: 1px solid transparent;
-           cursor: pointer; transition: transform .15s ease, box-shadow .15s ease; }
-    .btn-primary { background: var(--grad-warm); color: var(--on-primary); box-shadow: var(--shadow); }
-    .btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
-    .btn:hover { transform: translateY(-2px); }
+    .section-head { margin-bottom: 24px; }
+    .section-title {
+      font-size: 20px; font-weight: 800; letter-spacing: -.015em;
+    }
+    .section-sub {
+      font-size: 14px; color: var(--text-muted); margin-top: 4px;
+    }
 
-    @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+    /* ── APP DIRECTION CARDS ───────────────────────────────── */
+    .apps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 860px) {
+      .apps-grid { grid-template-columns: 1fr; }
+    }
+
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 28px 26px 24px;
+      display: flex; flex-direction: column;
+      text-decoration: none; color: inherit;
+      box-shadow: var(--shadow);
+      transition: transform .2s ease, box-shadow .2s ease;
+      position: relative; overflow: hidden;
+    }
+    .app-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+    }
+    .app-card:focus-visible {
+      outline: 2px solid var(--primary); outline-offset: 2px;
+    }
+    .app-card-icon {
+      font-size: 36px; line-height: 1;
+      margin-bottom: 18px;
+    }
+    .app-card-name {
+      font-size: 18px; font-weight: 800;
+      letter-spacing: -.015em; margin-bottom: 6px;
+    }
+    .app-card-desc {
+      font-size: 14px; color: var(--text-muted); line-height: 1.55;
+      flex: 1; margin-bottom: 22px;
+    }
+    .app-card-footer {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .status-badge {
+      font-size: 11px; font-weight: 700; letter-spacing: .03em;
+      padding: 3px 10px; border-radius: var(--r-pill);
+      white-space: nowrap;
+    }
+    .status-badge.proto {
+      background: #FFF8E1; color: #92670A;
+      border: 1px solid #F5E0A0;
+    }
+    .status-badge.soon {
+      background: var(--surface-2); color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .app-card-link {
+      font-size: 13px; font-weight: 700;
+      color: var(--primary-strong); text-decoration: none;
+      display: flex; align-items: center; gap: 3px;
+    }
+    .app-card-link::after { content: ' →'; }
+
+    /* ── PROTO GRID ────────────────────────────────────────── */
+    .proto-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .proto-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 18px;
+      display: flex; align-items: flex-start; gap: 14px;
+      text-decoration: none; color: inherit;
+      transition: transform .15s ease, box-shadow .15s ease;
+    }
+    .proto-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+    .proto-card:focus-visible {
+      outline: 2px solid var(--primary); outline-offset: 2px;
+    }
+    .proto-icon {
+      width: 46px; height: 46px; border-radius: var(--r-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .proto-info { flex: 1; min-width: 0; }
+    .proto-name {
+      font-size: 15px; font-weight: 700;
+      margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .proto-desc { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-bottom: 10px; }
+    .proto-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      font-size: 11px; font-weight: 600; padding: 2px 8px;
+      border-radius: var(--r-pill); white-space: nowrap;
+    }
+    .tag-warm   { background: #FFF3E0; color: #B75E1C; }
+    .tag-dark   { background: #23282D; color: #9BA2AD; }
+    .tag-mobile  { background: #EEF4FF; color: #3451B2; }
+    .tag-desktop { background: #ECFDF5; color: #15803D; }
+
+    /* ── API SECTION ───────────────────────────────────────── */
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 680px) {
+      .api-grid { grid-template-columns: 1fr; }
+    }
+
+    .api-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 20px 20px 18px;
+    }
+    .api-card-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .api-routes { display: flex; flex-direction: column; gap: 9px; }
+    .api-row {
+      display: flex; align-items: center; gap: 9px;
+      font-size: 13px;
+    }
+    .method {
+      font-size: 10px; font-weight: 700; letter-spacing: .04em;
+      padding: 2px 7px; border-radius: 6px; flex-shrink: 0;
+      font-family: var(--font);
+    }
+    .m-get   { background: #D1F2E4; color: #155E3D; }
+    .m-post  { background: #EEF4FF; color: #3451B2; }
+    .m-patch { background: #FFF8E1; color: #92670A; }
+    .api-path {
+      color: var(--primary-strong); font-weight: 600;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 12.5px;
+      text-decoration: none; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    a.api-path:hover { text-decoration: underline; }
+    .api-note {
+      font-size: 11px; color: var(--text-muted);
+      white-space: nowrap; flex-shrink: 0;
+    }
+
+    /* ── DIVIDER ───────────────────────────────────────────── */
+    .divider {
+      height: 1px; background: var(--border);
+      margin: 52px 0 0;
+    }
+
+    /* ── REDUCED MOTION ────────────────────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .app-card, .proto-card { transition: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="glow"></div>
-    <div class="brand">
-      <svg viewBox="0 0 48 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="HappyTails">
+
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav class="nav" aria-label="Главная навигация">
+  <div class="nav-inner">
+    <a class="nav-brand" href="/" aria-label="HappyTails — на главную">
+      <svg viewBox="0 0 48 44" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <defs>
-          <linearGradient id="htWarm" x1="6" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+          <linearGradient id="htG" x1="6" y1="2" x2="42" y2="42" gradientUnits="userSpaceOnUse">
             <stop stop-color="#F8915A"/><stop offset="1" stop-color="#F26B47"/>
           </linearGradient>
         </defs>
-        <path fill="url(#htWarm)" d="M11 3c0-1 1.1-1.6 2-1.1l9.2 5.6h3.6L35 1.9c.9-.5 2 .1 2 1.1v9.3c2.7 2.4 4.4 5.7 4.4 9.5v9.6c0 5.6-4.8 10.2-10.7 10.2H18.3C12.4 41.6 7.6 37 7.6 31.4v-9.6c0-3.8 1.7-7.1 4.4-9.5V3Z"/>
+        <path fill="url(#htG)" d="M11 3c0-1 1.1-1.6 2-1.1l9.2 5.6h3.6L35 1.9c.9-.5 2 .1 2 1.1v9.3c2.7 2.4 4.4 5.7 4.4 9.5v9.6c0 5.6-4.8 10.2-10.7 10.2H18.3C12.4 41.6 7.6 37 7.6 31.4v-9.6c0-3.8 1.7-7.1 4.4-9.5V3Z"/>
         <circle cx="18.4" cy="24.2" r="2.5" fill="#fff"/>
         <circle cx="29.6" cy="24.2" r="2.5" fill="#fff"/>
         <path d="M24 28.4c1.6 0 2.6 1.1 2.6 2.2 0 1.3-1.2 2.2-2.6 2.2s-2.6-.9-2.6-2.2c0-1.1 1-2.2 2.6-2.2Z" fill="#fff" fill-opacity=".85"/>
       </svg>
-      <b>HappyTails</b>
-    </div>
-    <div class="badge">Узбекистан · uz / ru</div>
-    <h1>Salom, dunyo!<br><span class="hl">Привет, мир!</span></h1>
-    <p class="sub">Hello World в стиле дизайн-системы — окружение работает 🎉</p>
+      <span class="nav-brand-name">HappyTails</span>
+    </a>
 
-    <div class="statuses">
-      <div class="row"><span>API health</span><b id="health">проверяю…</b></div>
-      <div class="row"><span>GSAP</span><b id="gsap">проверяю…</b></div>
-    </div>
+    <span class="nav-locale" aria-hidden="true">Узбекистан · uz / ru</span>
 
-    <div class="actions">
-      <a class="btn btn-primary" href="/api/hello" target="_blank">/api/hello</a>
-      <a class="btn btn-ghost" href="/api/health" target="_blank">/api/health</a>
+    <div class="nav-status" role="status" aria-live="polite">
+      <span class="nav-dot" id="nav-dot" aria-hidden="true"></span>
+      <span id="nav-label">API…</span>
     </div>
   </div>
+</nav>
 
-  <!-- GSAP (вендорится из node_modules/gsap/dist) -->
-  <script src="/vendor/gsap.min.js"></script>
-  <script>
-    fetch('/api/health').then(r => r.json())
-      .then(d => { document.getElementById('health').textContent = d.status + ' · ' + d.service; })
-      .catch(() => { document.getElementById('health').textContent = 'нет связи с API'; });
+<!-- ── HERO ─────────────────────────────────────────────────── -->
+<div class="wrap">
+  <section class="hero" id="hero" aria-labelledby="hero-heading">
+    <div class="hero-paw" aria-hidden="true">🐾</div>
+    <p class="hero-kicker">HappyTails · Dev Hub · Ташкент</p>
+    <h1 id="hero-heading">Salom, dunyo!<br>Привет, мир!</h1>
+    <p class="hero-sub">Все направления, прототипы и API-маршруты — в одном месте.</p>
+    <div class="hero-pills" role="status" aria-live="polite">
+      <div class="hero-pill">
+        <span class="hero-pill-dot" id="dot-api" aria-hidden="true"></span>
+        <span>API — <span id="api-text">проверяю…</span></span>
+      </div>
+      <div class="hero-pill">
+        <span class="hero-pill-dot" id="dot-gsap" aria-hidden="true"></span>
+        <span>GSAP — <span id="gsap-text">проверяю…</span></span>
+      </div>
+    </div>
+  </section>
+</div>
 
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (window.gsap) {
-      document.getElementById('gsap').textContent = 'v' + gsap.version + ' · работает';
-      if (!reduce) {
-        gsap.from('.card', { y: 24, opacity: 0, duration: 0.7, ease: 'power3.out' });
-        gsap.from('.row', { y: 10, opacity: 0, duration: 0.5, stagger: 0.06, delay: 0.15, ease: 'power2.out' });
-        gsap.to('.brand svg', { y: -4, duration: 1.4, repeat: -1, yoyo: true, ease: 'sine.inOut' });
-      }
-    } else {
-      document.getElementById('gsap').textContent = 'не загрузился';
+<!-- ── DIRECTIONS ────────────────────────────────────────────── -->
+<div class="wrap">
+  <section class="section" aria-labelledby="apps-heading">
+    <div class="section-head">
+      <h2 class="section-title" id="apps-heading">Три приложения</h2>
+      <p class="section-sub">Клиент · Подрядчик · Оператор</p>
+    </div>
+    <div class="apps-grid">
+
+      <a class="app-card" href="http://localhost:5001" target="_blank" rel="noopener">
+        <div class="app-card-icon" aria-hidden="true">🐾</div>
+        <div class="app-card-name">Couples</div>
+        <p class="app-card-desc">Telegram Mini App для владельцев питомцев — поиск ветеринара, запись, оплата и чат.</p>
+        <div class="app-card-footer">
+          <span class="status-badge proto">React · :5001</span>
+          <span class="app-card-link">Открыть</span>
+        </div>
+      </a>
+
+      <a class="app-card" href="http://localhost:5002" target="_blank" rel="noopener">
+        <div class="app-card-icon" aria-hidden="true">👨‍⚕️</div>
+        <div class="app-card-name">Vendor</div>
+        <p class="app-card-desc">Web-кабинет ветеринара — заявки, чат с клиентом, финансы, расписание, верификация.</p>
+        <div class="app-card-footer">
+          <span class="status-badge proto">React · :5002</span>
+          <span class="app-card-link">Открыть</span>
+        </div>
+      </a>
+
+      <a class="app-card" href="/vendor.html">
+        <div class="app-card-icon" aria-hidden="true">⚙️</div>
+        <div class="app-card-name">Admin</div>
+        <p class="app-card-desc">Панель оператора — верификация подрядчиков, модерация заказов, аудит платежей.</p>
+        <div class="app-card-footer">
+          <span class="status-badge soon">В разработке</span>
+          <span class="app-card-link">Прототип</span>
+        </div>
+      </a>
+
+    </div>
+  </section>
+</div>
+
+<!-- ── PROTOTYPES ─────────────────────────────────────────────── -->
+<div class="wrap">
+  <section class="section" aria-labelledby="proto-heading">
+    <div class="section-head">
+      <h2 class="section-title" id="proto-heading">HTML-прототипы</h2>
+      <p class="section-sub">Клиентские экраны до переноса в React</p>
+    </div>
+    <div class="proto-grid">
+
+      <a class="proto-card" href="/consult.html">
+        <div class="proto-icon" aria-hidden="true">🩺</div>
+        <div class="proto-info">
+          <div class="proto-name">Консультация</div>
+          <div class="proto-desc">Поиск врача, запись, оплата, чат</div>
+          <div class="proto-tags">
+            <span class="tag tag-warm">светлая</span>
+            <span class="tag tag-mobile">mobile</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="proto-card" href="/pets.html">
+        <div class="proto-icon" aria-hidden="true">🐶</div>
+        <div class="proto-info">
+          <div class="proto-name">Мои питомцы</div>
+          <div class="proto-desc">Профили животных, вакцины, история визитов</div>
+          <div class="proto-tags">
+            <span class="tag tag-warm">светлая</span>
+            <span class="tag tag-mobile">mobile</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="proto-card" href="/food.html">
+        <div class="proto-icon" aria-hidden="true">🥩</div>
+        <div class="proto-info">
+          <div class="proto-name">Подбор корма</div>
+          <div class="proto-desc">Персональные рекомендации по питанию</div>
+          <div class="proto-tags">
+            <span class="tag tag-warm">светлая</span>
+            <span class="tag tag-mobile">mobile</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="proto-card" href="/learn.html">
+        <div class="proto-icon" aria-hidden="true">🎓</div>
+        <div class="proto-info">
+          <div class="proto-name">Обучение</div>
+          <div class="proto-desc">Курсы и статьи о здоровье питомцев</div>
+          <div class="proto-tags">
+            <span class="tag tag-dark">тёмная</span>
+            <span class="tag tag-mobile">mobile</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="proto-card" href="/deeds.html">
+        <div class="proto-icon" aria-hidden="true">💚</div>
+        <div class="proto-info">
+          <div class="proto-name">Добрые дела</div>
+          <div class="proto-desc">Помощь животным, фонды, волонтёры</div>
+          <div class="proto-tags">
+            <span class="tag tag-dark">тёмная</span>
+            <span class="tag tag-mobile">mobile</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="proto-card" href="/vendor.html">
+        <div class="proto-icon" aria-hidden="true">🏥</div>
+        <div class="proto-info">
+          <div class="proto-name">Кабинет врача</div>
+          <div class="proto-desc">Дашборд, пациенты, чат, видеозвонок</div>
+          <div class="proto-tags">
+            <span class="tag tag-dark">тёмная</span>
+            <span class="tag tag-desktop">desktop</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </section>
+</div>
+
+<!-- ── API ────────────────────────────────────────────────────── -->
+<div class="wrap">
+  <div class="divider" role="separator"></div>
+  <section class="section" aria-labelledby="api-heading">
+    <div class="section-head">
+      <h2 class="section-title" id="api-heading">Backend API</h2>
+      <p class="section-sub">Express · PostgreSQL · порт :8080</p>
+    </div>
+    <div class="api-grid">
+
+      <div class="api-card">
+        <div class="api-card-title">Система</div>
+        <div class="api-routes">
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <a class="api-path" href="/api/health" target="_blank">/api/health</a>
+            <span class="api-note">статус</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <a class="api-path" href="/api/hello" target="_blank">/api/hello</a>
+            <span class="api-note">hello</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <a class="api-path" href="/api/vets" target="_blank">/api/vets</a>
+            <span class="api-note">ветеринары</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-card-title">Консультации</div>
+        <div class="api-routes">
+          <div class="api-row">
+            <span class="method m-post">POST</span>
+            <span class="api-path">/api/consultations</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <span class="api-path">/api/consultations/:id</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-post">POST</span>
+            <span class="api-path">/api/consultations/:id/messages</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-patch">PATCH</span>
+            <span class="api-path">/api/consultations/:id/status</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-card-title">Vendor</div>
+        <div class="api-routes">
+          <div class="api-row">
+            <span class="method m-post">POST</span>
+            <span class="api-path">/api/vendor/login</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <span class="api-path">/api/vendor/profile</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <span class="api-path">/api/vendor/consultations</span>
+          </div>
+          <div class="api-row">
+            <span class="method m-get">GET</span>
+            <span class="api-path">/api/vendor/stats</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="api-card">
+        <div class="api-card-title">Оплата</div>
+        <div class="api-routes">
+          <div class="api-row">
+            <span class="method m-post">POST</span>
+            <span class="api-path">/api/payments/simulate</span>
+            <span class="api-note">Click · Payme · Uzum</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</div>
+
+<script src="/vendor/gsap.min.js"></script>
+<script>
+  // ── API status ────────────────────────────────────────────
+  fetch('/api/health')
+    .then(r => r.json())
+    .then(d => {
+      const label = d.status + ' · ' + d.service;
+      document.getElementById('api-text').textContent = label;
+      document.getElementById('nav-label').textContent = label;
+      document.getElementById('dot-api').className = 'hero-pill-dot ok';
+      document.getElementById('nav-dot').className = 'nav-dot ok';
+    })
+    .catch(() => {
+      document.getElementById('api-text').textContent = 'нет связи';
+      document.getElementById('nav-label').textContent = 'нет связи';
+      document.getElementById('dot-api').className = 'hero-pill-dot err';
+      document.getElementById('nav-dot').className = 'nav-dot err';
+    });
+
+  // ── GSAP ──────────────────────────────────────────────────
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (window.gsap) {
+    document.getElementById('gsap-text').textContent = 'v' + gsap.version + ' · ок';
+    document.getElementById('dot-gsap').className = 'hero-pill-dot ok';
+
+    if (!reduce) {
+      // Hero entrance
+      gsap.from('#hero', {
+        y: 28, opacity: 0, duration: 0.7, ease: 'power3.out',
+        clearProps: 'transform,opacity'
+      });
+
+      // App cards stagger
+      gsap.from('.app-card', {
+        y: 20, opacity: 0, duration: 0.55,
+        stagger: 0.09, delay: 0.18, ease: 'power2.out',
+        clearProps: 'transform,opacity'
+      });
+
+      // Proto cards stagger
+      gsap.from('.proto-card', {
+        y: 14, opacity: 0, duration: 0.45,
+        stagger: 0.06, delay: 0.32, ease: 'power2.out',
+        clearProps: 'transform,opacity'
+      });
+
+      // API cards
+      gsap.from('.api-card', {
+        y: 10, opacity: 0, duration: 0.4,
+        stagger: 0.07, delay: 0.45, ease: 'power2.out',
+        clearProps: 'transform,opacity'
+      });
+
+      // Logo float
+      gsap.to('.nav-brand svg', {
+        y: -3, duration: 1.8, repeat: -1, yoyo: true, ease: 'sine.inOut'
+      });
     }
-  </script>
+  } else {
+    document.getElementById('gsap-text').textContent = 'не загрузился';
+  }
+</script>
 </body>
 </html>

@@ -14,10 +14,34 @@ const SPECIES_EMOJI: Record<string, string> = {
   cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾',
 }
 
-const STATUS_PILL: Record<string, { label: () => string; bg: string; color: string }> = {
-  pending:   { label: () => t('chat.status_pending'),   bg: '#FFF3CD', color: '#856404' },
-  active:    { label: () => t('chat.status_active'),    bg: '#D1F2E4', color: '#1A7A4A' },
-  completed: { label: () => t('chat.status_completed'), bg: '#E8EDFF', color: '#3B5BDB' },
+function fmtTime(dt: string) {
+  return new Date(dt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+}
+
+function fmtDay(dt: string, lang: string) {
+  const d = new Date(dt)
+  d.setHours(0, 0, 0, 0)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const diff = Math.round((now.getTime() - d.getTime()) / 86400000)
+  if (diff === 0) return lang === 'uz' ? 'Bugun' : 'Сегодня'
+  if (diff === 1) return lang === 'uz' ? 'Kecha' : 'Вчера'
+  return new Date(dt).toLocaleDateString(lang === 'uz' ? 'uz-UZ' : 'ru-RU', { day: 'numeric', month: 'long' })
+}
+
+interface GroupedMsg { msg: Message; isFirst: boolean; isLast: boolean }
+
+function groupMessages(msgs: Message[]): GroupedMsg[] {
+  return msgs.map((msg, i) => ({
+    msg,
+    isFirst: i === 0 || msgs[i - 1].sender !== msg.sender,
+    isLast:  i === msgs.length - 1 || msgs[i + 1].sender !== msg.sender,
+  }))
+}
+
+function bubbleRadius(isMe: boolean, isLast: boolean) {
+  if (isMe) return isLast ? '18px 18px 4px 18px' : '18px 18px 14px 18px'
+  return isLast ? '18px 18px 18px 4px' : '18px 18px 18px 14px'
 }
 
 export default function Chat({ lang, consultationId, vet, onBack }: Props) {
@@ -27,12 +51,15 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
   const [loading, setLoading] = useState(true)
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  // Ref to track current status without closure issues
+  const [hover, setHover] = useState(0)
+  const [rating, setRating] = useState(0)
+  const [rated, setRated] = useState(false)
+
+  const bottomRef  = useRef<HTMLDivElement>(null)
+  const taRef      = useRef<HTMLTextAreaElement>(null)
   const consultRef = useRef<Consultation | null>(null)
 
   const fetchData = async () => {
-    // Don't re-fetch if already completed
     if (consultRef.current?.status === 'completed') return
     try {
       const data = await api.getConsultation(consultationId)
@@ -60,6 +87,7 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
     if (!txt || sending) return
     setSending(true)
     setText('')
+    if (taRef.current) taRef.current.style.height = 'auto'
     try {
       await api.sendMessage(consultationId, txt)
       await fetchData()
@@ -72,23 +100,35 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
   }
 
-  const status = consultation?.status || 'pending'
-  const pill = STATUS_PILL[status] ?? STATUS_PILL.pending
-  const isDone = status === 'completed'
+  const onTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(e.target.value)
+    const ta = e.target
+    ta.style.height = 'auto'
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px'
+  }
+
+  const status  = consultation?.status ?? 'pending'
+  const isDone  = status === 'completed'
+  const isActive = status === 'active'
   const petEmoji = consultation ? (SPECIES_EMOJI[consultation.pet_species] ?? '🐾') : '🐾'
+  void petEmoji
+  const grouped  = groupMessages(messages)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      {/* Topbar */}
+
+      {/* ── HEADER ─────────────────────────────────── */}
       <header style={{
         display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px',
-        background: 'var(--surface)', borderBottom: '1px solid var(--border)',
+        background: 'var(--surface)',
+        borderBottom: `2px solid ${isActive ? 'var(--success)' : 'var(--border)'}`,
         position: 'sticky', top: 0, zIndex: 20, flexShrink: 0,
       }}>
         <button
           onClick={onBack}
+          aria-label={t('back')}
           style={{
-            width: 44, height: 44, borderRadius: 'var(--r-md)',
+            width: 40, height: 40, borderRadius: 'var(--r-md)',
             border: '1.5px solid var(--border)', background: 'transparent',
             fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
@@ -97,185 +137,323 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
           ←
         </button>
 
-        {/* Vet info */}
-        <div style={{
-          width: 40, height: 40, borderRadius: 'var(--r-md)',
-          background: 'var(--surface-2)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
-        }}>
-          {vet.avatar_emoji}
+        {/* Avatar + online dot */}
+        <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div style={{
+            width: 44, height: 44, borderRadius: 'var(--r-md)',
+            background: 'var(--grad-warm)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 24,
+          }}>
+            {vet.avatar_emoji}
+          </div>
+          {isActive && (
+            <div style={{
+              position: 'absolute', bottom: 1, right: 1,
+              width: 11, height: 11, borderRadius: '50%',
+              background: 'var(--success)',
+              border: '2px solid var(--surface)',
+            }} />
+          )}
         </div>
+
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{
+            fontWeight: 700, fontSize: 14,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
             {vet.name}
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {vet.specialty}
+          <div style={{
+            fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            color: isActive ? 'var(--success)' : 'var(--text-muted)',
+            fontWeight: isActive ? 600 : 400,
+          }}>
+            {isActive ? t('chat.status_active') : vet.specialty}
           </div>
         </div>
 
-        {/* Status + video */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {status === 'active' && (
+          {isActive && (
             <a
               href={`http://localhost:8080/video.html?id=${consultationId}&role=client`}
               target="_blank"
               rel="noreferrer"
-              title={t('chat.video')}
+              aria-label={t('chat.video')}
               style={{
                 width: 40, height: 40, borderRadius: 'var(--r-md)',
-                background: 'var(--surface-2)', border: '1.5px solid var(--border)',
+                background: 'var(--grad-warm)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 18, textDecoration: 'none',
+                boxShadow: '0 2px 8px rgba(242,120,75,.25)',
               }}
             >
               📹
             </a>
           )}
-          <span style={{
-            padding: '4px 10px', borderRadius: 'var(--r-pill)',
-            fontSize: 11, fontWeight: 600,
-            background: pill.bg, color: pill.color,
-            whiteSpace: 'nowrap',
-          }}>
-            {pill.label()}
-          </span>
+          {!isActive && (
+            <span style={{
+              padding: '5px 10px', borderRadius: 'var(--r-pill)',
+              fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
+              background: isDone ? 'var(--surface-2)' : '#FFF3CD',
+              color:      isDone ? 'var(--text-muted)' : '#856404',
+            }}>
+              {isDone ? t('chat.status_completed') : t('chat.status_pending')}
+            </span>
+          )}
         </div>
       </header>
 
-      {/* Messages */}
+      {/* ── MESSAGES ───────────────────────────────── */}
       <div style={{
-        flex: 1, overflow: 'auto', padding: '12px 16px',
-        display: 'flex', flexDirection: 'column', gap: 10,
+        flex: 1, overflow: 'auto', padding: '12px 16px 8px',
+        display: 'flex', flexDirection: 'column',
+        background: 'var(--bg)',
       }}>
+
         {loading && (
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0' }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0', fontSize: 14 }}>
             {t('loading')}
           </div>
         )}
 
-        {/* Pending waiting state */}
+        {/* Waiting state */}
         {!loading && status === 'pending' && messages.length === 0 && (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            padding: '40px 16px', textAlign: 'center',
-          }}>
-            <div style={{ fontSize: 56, marginBottom: 16 }}>{petEmoji}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 20px', gap: 20, textAlign: 'center' }}>
             <div style={{
-              width: 48, height: 48, borderRadius: '50%',
-              border: '3px solid var(--primary)', borderTopColor: 'transparent',
-              animation: 'spin 1s linear infinite', marginBottom: 16,
-            }} />
-            <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>
-              {t('chat.waiting')}
+              background: 'var(--surface)', borderRadius: 'var(--r-lg)',
+              padding: '16px 20px', width: '100%', maxWidth: 300,
+              display: 'flex', alignItems: 'center', gap: 14,
+              boxShadow: 'var(--shadow)',
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 'var(--r-md)',
+                background: 'var(--grad-warm)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, flexShrink: 0,
+              }}>
+                {vet.avatar_emoji}
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>{vet.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{vet.specialty}</div>
+              </div>
             </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-              {t('chat.waiting_hint')}
+
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{
+                  width: 9, height: 9, borderRadius: '50%',
+                  background: 'var(--primary)',
+                  animation: `dot-pulse 1.4s ease-in-out ${i * 0.2}s infinite`,
+                }} />
+              ))}
             </div>
-            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{t('chat.waiting')}</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('chat.waiting_hint')}</div>
+            </div>
+
+            <style>{`
+              @keyframes dot-pulse {
+                0%, 80%, 100% { opacity: .3; transform: scale(.75); }
+                40% { opacity: 1; transform: scale(1.15); }
+              }
+            `}</style>
           </div>
         )}
 
-        {messages.map((msg) => {
+        {/* Message list */}
+        {grouped.map(({ msg, isFirst, isLast }, i) => {
           const isMe = msg.sender === 'client'
+          const prevMsg = messages[i - 1]
+          const isDifferentDay = !prevMsg ||
+            new Date(msg.created_at).toDateString() !== new Date(prevMsg.created_at).toDateString()
+
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-              {!isMe && (
-                <div style={{
-                  width: 28, height: 28, borderRadius: '50%',
-                  background: 'var(--surface-2)', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  fontSize: 14, marginRight: 8, flexShrink: 0, alignSelf: 'flex-end',
-                }}>
-                  {vet.avatar_emoji}
+            <div key={msg.id}>
+              {isDifferentDay && (
+                <div style={{ textAlign: 'center', margin: `${isFirst && i === 0 ? 0 : 12}px 0 8px` }}>
+                  <span style={{
+                    fontSize: 11, fontWeight: 600, color: 'var(--text-muted)',
+                    background: 'var(--surface)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--r-pill)', padding: '3px 12px',
+                  }}>
+                    {fmtDay(msg.created_at, lang)}
+                  </span>
                 </div>
               )}
-              <div style={{ maxWidth: '72%' }}>
-                <div style={{
-                  padding: '10px 14px',
-                  borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                  background: isMe ? 'var(--primary)' : 'var(--surface)',
-                  color: isMe ? 'var(--on-primary)' : 'var(--text)',
-                  border: isMe ? 'none' : '1px solid var(--border)',
-                  fontSize: 14, lineHeight: 1.55,
-                }}>
-                  {msg.text}
-                </div>
-                <div style={{
-                  fontSize: 10, color: 'var(--text-muted)', marginTop: 3,
-                  textAlign: isMe ? 'right' : 'left',
-                }}>
-                  {new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+
+              <div style={{
+                display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start',
+                alignItems: 'flex-end',
+                marginBottom: isLast ? 10 : 2,
+                marginTop: isFirst && !isDifferentDay ? 2 : 0,
+              }}>
+                {/* Vet avatar — only on last bubble in group */}
+                {!isMe && (
+                  <div style={{ width: 28, marginRight: 8, flexShrink: 0 }}>
+                    {isLast && (
+                      <div style={{
+                        width: 28, height: 28, borderRadius: '50%',
+                        background: 'var(--grad-warm)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 14,
+                      }}>
+                        {vet.avatar_emoji}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ maxWidth: '72%' }}>
+                  <div style={{
+                    padding: '10px 14px',
+                    borderRadius: bubbleRadius(isMe, isLast),
+                    background: isMe ? 'var(--primary)' : 'var(--surface)',
+                    color: isMe ? 'var(--on-primary)' : 'var(--text)',
+                    border: isMe ? 'none' : '1px solid var(--border)',
+                    fontSize: 14, lineHeight: 1.55,
+                    boxShadow: isMe ? 'none' : '0 1px 4px rgba(35,40,45,.06)',
+                  }}>
+                    {msg.text}
+                  </div>
+                  {isLast && (
+                    <div style={{
+                      fontSize: 10, color: 'var(--text-muted)', marginTop: 3,
+                      textAlign: isMe ? 'right' : 'left',
+                      paddingLeft: isMe ? 0 : 2,
+                    }}>
+                      {fmtTime(msg.created_at)}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )
         })}
 
-        {/* Summary on completion */}
+        {/* Completion card */}
         {isDone && (
           <div style={{
-            margin: '8px 0', padding: '14px 16px', borderRadius: 'var(--r-lg)',
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            margin: '8px 0 4px',
+            background: 'var(--surface)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--r-xl)',
+            overflow: 'hidden',
+            boxShadow: 'var(--shadow)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, marginBottom: 6, fontSize: 14 }}>
-              📋 {t('chat.summary_title')}
-            </div>
-            {consultation?.summary ? (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-                {consultation.summary}
+            <div style={{
+              background: 'var(--grad-warm)',
+              padding: '14px 18px',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              <span style={{ fontSize: 24 }}>✅</span>
+              <div style={{ color: '#fff' }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>{t('chat.done')}</div>
+                <div style={{ fontSize: 12, opacity: .85 }}>{vet.name}</div>
               </div>
-            ) : (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('chat.done')}</div>
-            )}
-            <button
-              onClick={onBack}
-              style={{
-                marginTop: 14, padding: '10px 20px', borderRadius: 'var(--r-pill)',
-                background: 'var(--primary)', color: 'var(--on-primary)',
-                border: 'none', fontWeight: 600, fontSize: 14, minHeight: 44,
-                fontFamily: 'inherit', cursor: 'pointer',
-              }}
-            >
-              {t('chat.new_consult')}
-            </button>
+            </div>
+
+            <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {consultation?.summary && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+                    {t('chat.summary_title')}
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65 }}>
+                    {consultation.summary}
+                  </div>
+                </div>
+              )}
+
+              {/* Star rating */}
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
+                  {rated ? t('chat.rate_done') : t('chat.rate')}
+                </div>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <button
+                      key={i}
+                      onClick={() => { if (!rated) { setRating(i); setRated(true) } }}
+                      onMouseEnter={() => { if (!rated) setHover(i) }}
+                      onMouseLeave={() => { if (!rated) setHover(0) }}
+                      disabled={rated}
+                      aria-label={`${i} звезд`}
+                      style={{
+                        fontSize: 28, background: 'none', border: 'none',
+                        cursor: rated ? 'default' : 'pointer', padding: '1px 2px',
+                        filter: i <= (hover || rating) ? 'none' : 'grayscale(1) opacity(.25)',
+                        transform: i <= (hover || rating) ? 'scale(1.15)' : 'scale(1)',
+                        transition: 'filter .12s, transform .12s',
+                      }}
+                    >
+                      ⭐
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={onBack}
+                style={{
+                  padding: '13px', borderRadius: 'var(--r-pill)',
+                  background: 'var(--primary)', color: 'var(--on-primary)',
+                  border: 'none', fontWeight: 700, fontSize: 15, minHeight: 48,
+                  fontFamily: 'inherit', cursor: 'pointer',
+                }}
+              >
+                {t('chat.new_consult')}
+              </button>
+            </div>
           </div>
         )}
 
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
+      {/* ── INPUT BAR ──────────────────────────────── */}
       {!isDone && (
         <div style={{
-          padding: '10px 14px', background: 'var(--surface)',
+          padding: '10px 14px',
+          background: 'var(--surface)',
           borderTop: '1px solid var(--border)',
           display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0,
+          boxShadow: '0 -2px 12px rgba(35,40,45,.06)',
         }}>
           <textarea
+            ref={taRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={onTextChange}
             onKeyDown={onKeyDown}
             disabled={sending}
             placeholder={t('chat.placeholder')}
             rows={1}
             style={{
               flex: 1, padding: '10px 14px', borderRadius: 'var(--r-lg)',
-              border: '1.5px solid var(--border)', background: 'var(--surface)',
+              border: '1.5px solid var(--border)', background: 'var(--bg)',
               fontSize: 15, color: 'var(--text)', resize: 'none', outline: 'none',
-              minHeight: 44, maxHeight: 120, fontFamily: 'inherit',
+              minHeight: 44, maxHeight: 120, fontFamily: 'inherit', lineHeight: 1.5,
+              transition: 'border-color .15s',
             }}
+            onFocus={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
+            onBlur={e  => (e.currentTarget.style.borderColor = 'var(--border)')}
           />
           <button
             onClick={send}
             disabled={!text.trim() || sending}
+            aria-label={t('chat.send')}
             style={{
               width: 44, height: 44, borderRadius: 'var(--r-pill)', flexShrink: 0,
               background: !text.trim() || sending ? 'var(--border)' : 'var(--primary)',
-              color: !text.trim() || sending ? 'var(--text-muted)' : 'var(--on-primary)',
+              color:      !text.trim() || sending ? 'var(--text-muted)' : 'var(--on-primary)',
               border: 'none', fontSize: 18,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              transition: 'background .15s', cursor: 'pointer',
+              transition: 'background .15s, box-shadow .15s',
+              boxShadow: !text.trim() || sending ? 'none' : '0 2px 10px rgba(242,120,75,.35)',
+              cursor: !text.trim() || sending ? 'default' : 'pointer',
             }}
           >
             ↑

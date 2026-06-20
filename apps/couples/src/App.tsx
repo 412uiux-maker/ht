@@ -12,8 +12,19 @@ type Screen =
   | { name: 'payment'; consultation: Consultation; vet: Vet }
   | { name: 'chat'; consultationId: string; vet: Vet }
 
+// Dev shortcut: ?chat=<id> opens chat with first vet for quick testing
+const STUB_VET: Vet = { id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)', avatar_emoji: '🐕', rating: 4.9, experience_yr: 8, price_uzs: 120000, is_available: true, bio: '' }
+
+function devInitialScreen(): Screen {
+  const p = new URLSearchParams(location.search)
+  const chatId = p.get('chat')
+  if (chatId) return { name: 'chat', consultationId: chatId, vet: STUB_VET }
+  if (p.has('booking')) return { name: 'booking', vet: STUB_VET }
+  return { name: 'home' }
+}
+
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ name: 'home' })
+  const [screen, setScreen] = useState<Screen>(devInitialScreen)
   const [lang, setLangState] = useState(localStorage.getItem('ht_lang') || 'ru')
 
   const switchLang = () => {

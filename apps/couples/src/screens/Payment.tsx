@@ -119,7 +119,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
             fontWeight: 700, fontSize: 22, color: 'var(--primary)',
             fontVariantNumeric: 'tabular-nums', marginBottom: 4,
           }}>
-            {amount.toLocaleString('ru-RU')} сум
+            {amount.toLocaleString('ru-RU')} {t('currency')}
           </div>
           <div style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>
             {selectedProvider.name}
@@ -177,6 +177,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
           }}>
             <button
               onClick={onBack}
+              aria-label={t('back')}
               style={{
                 width: 44, height: 44, borderRadius: 'var(--r-md)',
                 border: '1.5px solid var(--border)', background: 'transparent',
@@ -187,6 +188,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
             </button>
             <span style={{ fontWeight: 700, fontSize: 17 }}>{t('pay.title')}</span>
           </header>
+          <StepBar step={2} />
 
           <div style={{ flex: 1, padding: '20px 16px 32px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* Order summary */}
@@ -214,7 +216,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
               <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <Row label={t('pay.vet')} value={vet.name} />
                 <Row
-                  label="Питомец"
+                  label={t('pay.pet')}
                   value={`${SPECIES_EMOJI[consultation.pet_species] || '🐾'} ${consultation.pet_name}`}
                 />
                 <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
@@ -226,7 +228,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
                     fontSize: 20, fontWeight: 800, color: 'var(--primary)',
                     fontVariantNumeric: 'tabular-nums',
                   }}>
-                    {amount.toLocaleString('ru-RU')} сум
+                    {amount.toLocaleString('ru-RU')} {t('currency')}
                   </span>
                 </div>
               </div>
@@ -303,7 +305,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
                 transition: 'opacity .15s',
               }}
             >
-              {t('pay.btn')} {amount.toLocaleString('ru-RU')} сум · {selectedProvider.name}
+              {t('pay.btn')} {amount.toLocaleString('ru-RU')} {t('currency')} · {selectedProvider.name}
             </button>
 
             {/* Demo disclaimer */}
@@ -325,6 +327,50 @@ function Row({ label, value }: { label: string; value: string }) {
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{label}</span>
       <span style={{ fontSize: 14, fontWeight: 600 }}>{value}</span>
+    </div>
+  )
+}
+
+function StepBar({ step }: { step: 1 | 2 | 3 }) {
+  const labels = [t('book.step_form'), t('book.step_pay'), t('book.step_chat')]
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', padding: '10px 24px 12px',
+      background: 'var(--surface)', borderBottom: '1px solid var(--border)',
+    }}>
+      {labels.map((label, i) => {
+        const n = (i + 1) as 1 | 2 | 3
+        const done = n < step
+        const active = n === step
+        return (
+          <div key={n} style={{ display: 'flex', alignItems: 'center', flex: i < labels.length - 1 ? 1 : 'none' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                background: active || done ? 'var(--primary)' : 'var(--border)',
+                color: active || done ? '#fff' : 'var(--text-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: 12,
+              }}>
+                {done ? '✓' : n}
+              </div>
+              <span style={{
+                fontSize: 11, whiteSpace: 'nowrap',
+                color: active ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight: active ? 700 : 400,
+              }}>
+                {label}
+              </span>
+            </div>
+            {i < labels.length - 1 && (
+              <div style={{
+                flex: 1, height: 2, margin: '0 6px', marginBottom: 14,
+                background: done ? 'var(--primary)' : 'var(--border)',
+              }} />
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }

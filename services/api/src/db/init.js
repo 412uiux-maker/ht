@@ -36,10 +36,10 @@ const SEED_FOODS = [
 
 // Demo credentials linked to SEED_VETS by position (0-indexed)
 const SEED_VENDOR_CREDS = [
-  { email: 'aziz@happytails.uz',    password: 'demo123', vet_index: 0 },
-  { email: 'malika@happytails.uz',  password: 'demo123', vet_index: 1 },
-  { email: 'sanzhar@happytails.uz', password: 'demo123', vet_index: 2 },
-  { email: 'dilnoza@happytails.uz', password: 'demo123', vet_index: 3 },
+  { email: 'aziz@happytails.uz',    password: 'demo123', phone: '+998901234567', vet_index: 0 },
+  { email: 'malika@happytails.uz',  password: 'demo123', phone: '+998901234568', vet_index: 1 },
+  { email: 'sanzhar@happytails.uz', password: 'demo123', phone: '+998901234569', vet_index: 2 },
+  { email: 'dilnoza@happytails.uz', password: 'demo123', phone: '+998901234570', vet_index: 3 },
 ];
 
 const SEED_DEEDS = [
@@ -393,12 +393,20 @@ async function initDb() {
       const vet = vetRows[cred.vet_index];
       if (!vet) continue;
       await pool.query(
-        `INSERT INTO vendor_credentials (vet_id, email, password) VALUES ($1,$2,$3)
+        `INSERT INTO vendor_credentials (vet_id, email, password, phone) VALUES ($1,$2,$3,$4)
          ON CONFLICT DO NOTHING`,
-        [vet.id, cred.email, cred.password]
+        [vet.id, cred.email, cred.password, cred.phone]
       );
     }
     console.log('DB seeded:', SEED_VENDOR_CREDS.length, 'vendor credentials');
+  } else {
+    // Ensure demo phones are set even if rows were seeded without phone
+    for (const cred of SEED_VENDOR_CREDS) {
+      await pool.query(
+        `UPDATE vendor_credentials SET phone = $1 WHERE email = $2 AND phone IS NULL`,
+        [cred.phone, cred.email]
+      );
+    }
   }
 
   const { rows: vr } = await pool.query('SELECT COUNT(*) FROM vets');
