@@ -66,14 +66,16 @@ router.post('/:id/messages', async (req, res) => {
 });
 
 router.patch('/:id/status', async (req, res) => {
-  const { status, summary } = req.body;
+  const { status, summary, report } = req.body;
   if (!['pending', 'active', 'completed'].includes(status)) {
     return res.status(400).json({ error: 'invalid status' });
   }
   try {
+    // Derive plain-text summary from report.diagnosis for backwards compat
+    const derivedSummary = (report && report.diagnosis) ? report.diagnosis : (summary || null);
     const { rows: [consult] } = await pool.query(
-      `UPDATE consultations SET status = $1, summary = $2 WHERE id = $3 RETURNING *`,
-      [status, summary || null, req.params.id]
+      `UPDATE consultations SET status=$1, summary=$2, report=$3 WHERE id=$4 RETURNING *`,
+      [status, derivedSummary, report ? JSON.stringify(report) : null, req.params.id]
     );
     if (!consult) return res.status(404).json({ error: 'Not found' });
     res.json(consult);

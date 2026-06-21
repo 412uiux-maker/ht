@@ -21,8 +21,10 @@ CREATE TABLE IF NOT EXISTS consultations (
   status       TEXT NOT NULL DEFAULT 'pending'
                 CHECK (status IN ('pending','active','completed')),
   summary      TEXT,
+  report       JSONB,
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
+ALTER TABLE consultations ADD COLUMN IF NOT EXISTS report JSONB;
 
 CREATE TABLE IF NOT EXISTS messages (
   id                SERIAL PRIMARY KEY,

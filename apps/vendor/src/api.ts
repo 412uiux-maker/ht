@@ -1,4 +1,4 @@
-import type { VendorSession, Consultation, Message, Stats } from './types'
+import type { VendorSession, Consultation, Message, Stats, MedicalReport } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(path, opts)
@@ -56,10 +56,10 @@ export const api = {
       body: JSON.stringify({ status: 'active' })
     }),
 
-  complete: (id: string, summary: string) =>
+  complete: (id: string, report: MedicalReport) =>
     req<Consultation>(`/api/consultations/${id}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'completed', summary })
+      body: JSON.stringify({ status: 'completed', report })
     })
 }

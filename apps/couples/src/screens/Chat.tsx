@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Vet, Message, Consultation } from '../api'
+import type { Vet, Message, Consultation, MedicalReport } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
 
@@ -336,79 +336,15 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
 
         {/* Completion card */}
         {isDone && (
-          <div style={{
-            margin: '8px 0 4px',
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--r-xl)',
-            overflow: 'hidden',
-            boxShadow: 'var(--shadow)',
-          }}>
-            <div style={{
-              background: 'var(--grad-warm)',
-              padding: '14px 18px',
-              display: 'flex', alignItems: 'center', gap: 10,
-            }}>
-              <span style={{ fontSize: 24 }}>✅</span>
-              <div style={{ color: '#fff' }}>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>{t('chat.done')}</div>
-                <div style={{ fontSize: 12, opacity: .85 }}>{vet.name}</div>
-              </div>
-            </div>
-
-            <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {consultation?.summary && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
-                    {t('chat.summary_title')}
-                  </div>
-                  <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65 }}>
-                    {consultation.summary}
-                  </div>
-                </div>
-              )}
-
-              {/* Star rating */}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
-                  {rated ? t('chat.rate_done') : t('chat.rate')}
-                </div>
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[1, 2, 3, 4, 5].map(i => (
-                    <button
-                      key={i}
-                      onClick={() => { if (!rated) { setRating(i); setRated(true) } }}
-                      onMouseEnter={() => { if (!rated) setHover(i) }}
-                      onMouseLeave={() => { if (!rated) setHover(0) }}
-                      disabled={rated}
-                      aria-label={`${i} звезд`}
-                      style={{
-                        fontSize: 28, background: 'none', border: 'none',
-                        cursor: rated ? 'default' : 'pointer', padding: '1px 2px',
-                        filter: i <= (hover || rating) ? 'none' : 'grayscale(1) opacity(.25)',
-                        transform: i <= (hover || rating) ? 'scale(1.15)' : 'scale(1)',
-                        transition: 'filter .12s, transform .12s',
-                      }}
-                    >
-                      ⭐
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={onBack}
-                style={{
-                  padding: '13px', borderRadius: 'var(--r-pill)',
-                  background: 'var(--primary)', color: 'var(--on-primary)',
-                  border: 'none', fontWeight: 700, fontSize: 15, minHeight: 48,
-                  fontFamily: 'inherit', cursor: 'pointer',
-                }}
-              >
-                {t('chat.new_consult')}
-              </button>
-            </div>
-          </div>
+          <CompletionCard
+            consultation={consultation}
+            vet={vet}
+            lang={lang}
+            hover={hover} setHover={setHover}
+            rating={rating} setRating={setRating}
+            rated={rated} setRated={setRated}
+            onBack={onBack}
+          />
         )}
 
         <div ref={bottomRef} />
@@ -460,6 +396,232 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── COMPLETION CARD ─────────────────────────────────────────────────────────
+
+interface CompletionProps {
+  consultation: Consultation | null
+  vet: Vet
+  lang: string
+  hover: number; setHover: (v: number) => void
+  rating: number; setRating: (v: number) => void
+  rated: boolean; setRated: (v: boolean) => void
+  onBack: () => void
+}
+
+function MedReportCard({ report }: { report: MedicalReport }) {
+  const [checked, setChecked] = useState<Set<number>>(new Set())
+  const toggle = (i: number) =>
+    setChecked(prev => { const s = new Set(prev); s.has(i) ? s.delete(i) : s.add(i); return s })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+      {/* Diagnosis */}
+      <div style={{
+        background: 'rgba(242,120,75,.08)', border: '1px solid rgba(242,120,75,.2)',
+        borderRadius: 'var(--r-md)', padding: '12px 14px',
+      }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', letterSpacing: '.05em', marginBottom: 4 }}>
+          ДИАГНОЗ
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>
+          {report.diagnosis}
+        </div>
+      </div>
+
+      {/* Medications */}
+      {report.medications.length > 0 && (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            💊 Препараты
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {report.medications.map((m, i) => (
+              <div key={i} style={{
+                background: 'var(--surface-2)', borderRadius: 'var(--r-md)',
+                padding: '10px 12px',
+                display: 'grid', gridTemplateColumns: '1fr auto',
+                gap: '4px 12px', alignItems: 'start',
+              }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{m.name}</div>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, color: 'var(--primary)',
+                  background: 'rgba(242,120,75,.1)', borderRadius: 'var(--r-pill)',
+                  padding: '2px 8px', whiteSpace: 'nowrap',
+                }}>
+                  {m.days} дн.
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {[m.dose, m.freq].filter(Boolean).join(' · ')}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Steps checklist */}
+      {report.steps.length > 0 && (
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            📋 Инструкции
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {report.steps.map((step, i) => {
+              const done = checked.has(i)
+              return (
+                <button
+                  key={i}
+                  onClick={() => toggle(i)}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 10, textAlign: 'left',
+                    background: done ? 'rgba(76,175,125,.08)' : 'var(--surface-2)',
+                    border: `1px solid ${done ? 'rgba(76,175,125,.25)' : 'var(--border)'}`,
+                    borderRadius: 'var(--r-md)', padding: '10px 12px',
+                    cursor: 'pointer', transition: 'all .15s', width: '100%',
+                  }}
+                >
+                  <div style={{
+                    width: 20, height: 20, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                    border: `2px solid ${done ? 'var(--success)' : 'var(--border)'}`,
+                    background: done ? 'var(--success)' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 11, color: '#fff', transition: 'all .15s',
+                  }}>
+                    {done ? '✓' : ''}
+                  </div>
+                  <span style={{
+                    fontSize: 13, lineHeight: 1.5,
+                    color: done ? 'var(--text-muted)' : 'var(--text)',
+                    textDecoration: done ? 'line-through' : 'none',
+                    transition: 'color .15s',
+                  }}>
+                    {step}
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Follow-up */}
+      {report.followup && (
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-start',
+          background: 'var(--surface-2)', borderRadius: 'var(--r-md)', padding: '10px 12px',
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>📅</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 2 }}>НАБЛЮДЕНИЕ</div>
+            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{report.followup}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Restrictions */}
+      {report.restrictions && (
+        <div style={{
+          display: 'flex', gap: 10, alignItems: 'flex-start',
+          background: 'rgba(245,166,35,.07)', border: '1px solid rgba(245,166,35,.2)',
+          borderRadius: 'var(--r-md)', padding: '10px 12px',
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#856404', marginBottom: 2 }}>ОГРАНИЧЕНИЯ</div>
+            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{report.restrictions}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CompletionCard({ consultation, vet, hover, setHover, rating, setRating, rated, setRated, onBack }: CompletionProps) {
+  const report = consultation?.report ?? null
+  const summary = consultation?.summary ?? null
+
+  return (
+    <div style={{
+      margin: '8px 0 4px',
+      background: 'var(--surface)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--r-xl)',
+      overflow: 'hidden',
+      boxShadow: 'var(--shadow)',
+    }}>
+      {/* Header */}
+      <div style={{
+        background: 'var(--grad-warm)',
+        padding: '14px 18px',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
+        <span style={{ fontSize: 24 }}>✅</span>
+        <div style={{ color: '#fff' }}>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{t('chat.done')}</div>
+          <div style={{ fontSize: 12, opacity: .85 }}>{vet.name}</div>
+        </div>
+      </div>
+
+      <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Structured report */}
+        {report && <MedReportCard report={report} />}
+
+        {/* Fallback: plain summary */}
+        {!report && summary && (
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+              {t('chat.summary_title')}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65 }}>{summary}</div>
+          </div>
+        )}
+
+        {/* Star rating */}
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>
+            {rated ? t('chat.rate_done') : t('chat.rate')}
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {[1, 2, 3, 4, 5].map(i => (
+              <button
+                key={i}
+                onClick={() => { if (!rated) { setRating(i); setRated(true) } }}
+                onMouseEnter={() => { if (!rated) setHover(i) }}
+                onMouseLeave={() => { if (!rated) setHover(0) }}
+                disabled={rated}
+                aria-label={`${i} звезд`}
+                style={{
+                  fontSize: 28, background: 'none', border: 'none',
+                  cursor: rated ? 'default' : 'pointer', padding: '1px 2px',
+                  filter: i <= (hover || rating) ? 'none' : 'grayscale(1) opacity(.25)',
+                  transform: i <= (hover || rating) ? 'scale(1.15)' : 'scale(1)',
+                  transition: 'filter .12s, transform .12s',
+                }}
+              >
+                ⭐
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          onClick={onBack}
+          style={{
+            padding: '13px', borderRadius: 'var(--r-pill)',
+            background: 'var(--primary)', color: 'var(--on-primary)',
+            border: 'none', fontWeight: 700, fontSize: 15, minHeight: 48,
+            fontFamily: 'inherit', cursor: 'pointer',
+          }}
+        >
+          {t('chat.new_consult')}
+        </button>
+      </div>
     </div>
   )
 }

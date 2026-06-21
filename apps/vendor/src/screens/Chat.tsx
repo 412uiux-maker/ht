@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { api } from '../api'
-import type { VendorSession, Consultation, Message } from '../types'
+import type { VendorSession, Consultation, Message, MedicalReport, Medication } from '../types'
 
 const QUICK = [
   'Понял, изучаю вопрос',
@@ -10,11 +10,36 @@ const QUICK = [
 ]
 
 const SPECIES: Record<string, string> = {
-  cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾'
+  cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾',
+}
+
+interface MedDraft { name: string; dose: string; freq: string; days: string }
+interface ReportDraft {
+  diagnosis: string
+  medications: MedDraft[]
+  steps: string[]
+  followup: string
+  restrictions: string
+}
+
+const emptyReport = (): ReportDraft => ({
+  diagnosis: '', medications: [], steps: [''], followup: '', restrictions: '',
+})
+
+function toMedicalReport(d: ReportDraft): MedicalReport {
+  return {
+    diagnosis: d.diagnosis.trim(),
+    medications: d.medications
+      .filter(m => m.name.trim())
+      .map(m => ({ name: m.name.trim(), dose: m.dose.trim(), freq: m.freq.trim(), days: parseInt(m.days) || 1 })),
+    steps: d.steps.map(s => s.trim()).filter(Boolean),
+    followup: d.followup.trim(),
+    restrictions: d.restrictions.trim() || undefined,
+  }
 }
 
 export default function Chat({
-  consultId, session, onBack
+  consultId, session, onBack,
 }: {
   consultId: string
   session: VendorSession
@@ -24,7 +49,7 @@ export default function Chat({
   const [consult, setConsult] = useState<Consultation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
-  const [summary, setSummary] = useState('')
+  const [report, setReport] = useState<ReportDraft>(emptyReport())
   const [showComplete, setShowComplete] = useState(false)
   const [sending, setSending] = useState(false)
   const [accepting, setAccepting] = useState(false)
@@ -81,11 +106,11 @@ export default function Chat({
   }
 
   const complete = async () => {
-    if (!summary.trim() || completing) return
+    if (!report.diagnosis.trim() || completing) return
     setCompleting(true)
     setError('')
     try {
-      await api.complete(consultId, summary)
+      await api.complete(consultId, toMedicalReport(report))
       setShowComplete(false)
       await load()
     } catch (e: unknown) {
@@ -95,8 +120,36 @@ export default function Chat({
     }
   }
 
+  const setMed = (i: number, field: keyof MedDraft, val: string) =>
+    setReport(r => {
+      const meds = [...r.medications]
+      meds[i] = { ...meds[i], [field]: val }
+      return { ...r, medications: meds }
+    })
+
+  const addMed = () =>
+    setReport(r => ({ ...r, medications: [...r.medications, { name: '', dose: '', freq: '', days: '' }] }))
+
+  const removeMed = (i: number) =>
+    setReport(r => ({ ...r, medications: r.medications.filter((_, j) => j !== i) }))
+
+  const setStep = (i: number, val: string) =>
+    setReport(r => { const s = [...r.steps]; s[i] = val; return { ...r, steps: s } })
+
+  const addStep = () =>
+    setReport(r => ({ ...r, steps: [...r.steps, ''] }))
+
+  const removeStep = (i: number) =>
+    setReport(r => ({ ...r, steps: r.steps.filter((_, j) => j !== i) }))
+
   const isDone = consult?.status === 'completed'
   const isPending = consult?.status === 'pending'
+
+  const inp: React.CSSProperties = {
+    background: 'var(--surface3)', border: '1px solid var(--surface3)',
+    borderRadius: 'var(--r-sm)', padding: '8px 10px', color: 'var(--text)',
+    fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit',
+  }
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)' }}>
@@ -124,9 +177,7 @@ export default function Chat({
               <strong style={{ fontSize: '15px' }}>
                 {consult.pet_name} · {consult.client_name}
               </strong>
-              <p style={{ fontSize: '12px', color: 'var(--text3)' }}>
-                {consult.pet_species}
-              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text3)' }}>{consult.pet_species}</p>
             </div>
             <span className={`pill pill-${consult.status}`}>
               {consult.status === 'pending' ? 'Ожидает' : consult.status === 'active' ? 'Активна' : 'Завершена'}
@@ -151,7 +202,7 @@ export default function Chat({
         )}
       </header>
 
-      {/* Accept banner — shown only when pending */}
+      {/* Accept banner */}
       {isPending && consult && (
         <div style={{
           background: 'rgba(245,166,35,.08)', borderBottom: '1px solid rgba(245,166,35,.25)',
@@ -160,9 +211,7 @@ export default function Chat({
           <p style={{ color: 'var(--text2)', fontSize: '13px', marginBottom: '12px', lineHeight: 1.5 }}>
             <strong style={{ color: 'var(--amber)' }}>Жалоба:</strong> {consult.problem}
           </p>
-          {error && (
-            <p style={{ color: 'var(--danger)', fontSize: '13px', marginBottom: '8px' }}>{error}</p>
-          )}
+          {error && <p style={{ color: 'var(--danger)', fontSize: '13px', marginBottom: '8px' }}>{error}</p>}
           <button
             onClick={accept}
             disabled={accepting}
@@ -181,15 +230,8 @@ export default function Chat({
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {!isPending && messages.length === 0 && (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', flex: 1, gap: '12px',
-          }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              border: '3px solid var(--coral)', borderTopColor: 'transparent',
-              animation: 'spin 1s linear infinite',
-            }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, gap: '12px' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid var(--coral)', borderTopColor: 'transparent', animation: 'spin 1s linear infinite' }} />
             <p style={{ color: 'var(--text3)', fontSize: '14px' }}>Ожидаем ответа клиента…</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>
@@ -208,119 +250,224 @@ export default function Chat({
             </div>
           </div>
         ))}
-        {isDone && consult?.summary && (
+
+        {/* Completed — show issued report */}
+        {isDone && consult?.report && (
           <div style={{
-            background: 'rgba(76,175,125,.1)', border: '1px solid rgba(76,175,125,.3)',
+            background: 'rgba(76,175,125,.07)', border: '1px solid rgba(76,175,125,.25)',
+            borderRadius: 'var(--r-md)', padding: '16px 18px', marginTop: '8px',
+          }}>
+            <p style={{ color: 'var(--green)', fontWeight: 700, marginBottom: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ✓ Заключение выдано
+            </p>
+            <p style={{ color: 'var(--text2)', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
+              {consult.report.diagnosis}
+            </p>
+            {consult.report.steps.length > 0 && (
+              <ol style={{ margin: '8px 0 0', paddingLeft: '18px', color: 'var(--text3)', fontSize: '13px', lineHeight: 1.7 }}>
+                {consult.report.steps.map((s, i) => <li key={i}>{s}</li>)}
+              </ol>
+            )}
+          </div>
+        )}
+        {isDone && !consult?.report && consult?.summary && (
+          <div style={{
+            background: 'rgba(76,175,125,.07)', border: '1px solid rgba(76,175,125,.25)',
             borderRadius: 'var(--r-md)', padding: '14px 18px', marginTop: '8px',
           }}>
-            <p style={{ color: 'var(--green)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>
-              ✓ Заключение врача
-            </p>
+            <p style={{ color: 'var(--green)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>✓ Заключение врача</p>
             <p style={{ color: 'var(--text2)', fontSize: '14px' }}>{consult.summary}</p>
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
-      {/* Input area — only when active */}
+      {/* Input area */}
       {!isDone && !isPending && (
         <div style={{
           background: 'var(--surface)', borderTop: '1px solid var(--surface3)',
-          padding: '12px 16px', flexShrink: 0,
+          padding: '12px 16px', flexShrink: 0, maxHeight: '70vh', overflowY: 'auto',
         }}>
           {/* Quick replies */}
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
-            {QUICK.map(q => (
-              <button
-                key={q}
-                onClick={() => setText(q)}
-                style={{
-                  background: 'var(--surface2)', border: '1px solid var(--surface3)',
-                  borderRadius: 'var(--r-sm)', padding: '6px 10px',
-                  color: 'var(--text2)', fontSize: '12px', minHeight: '34px',
-                  cursor: 'pointer',
-                }}
-              >
-                {q}
-              </button>
-            ))}
-          </div>
+          {!showComplete && (
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+              {QUICK.map(q => (
+                <button
+                  key={q}
+                  onClick={() => setText(q)}
+                  style={{
+                    background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                    borderRadius: 'var(--r-sm)', padding: '6px 10px',
+                    color: 'var(--text2)', fontSize: '12px', minHeight: '34px', cursor: 'pointer',
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* Complete form */}
+          {/* ── REPORT FORM ─────────────────────────── */}
           {showComplete && (
-            <div style={{
-              background: 'var(--surface2)', borderRadius: 'var(--r-md)', padding: '14px',
-              marginBottom: '10px',
-            }}>
-              <p style={{ color: 'var(--amber)', fontSize: '13px', fontWeight: 600, marginBottom: '8px' }}>
-                Заключение консультации
-              </p>
-              <textarea
-                value={summary}
-                onChange={e => setSummary(e.target.value)}
-                placeholder="Напишите заключение для клиента…"
-                rows={3}
-                style={{
-                  width: '100%', background: 'var(--surface3)', border: '1px solid var(--surface3)',
-                  borderRadius: 'var(--r-sm)', padding: '10px 12px', color: 'var(--text)',
-                  fontSize: '14px', resize: 'vertical', marginBottom: '8px', boxSizing: 'border-box',
-                }}
-              />
-              {error && <p style={{ color: 'var(--danger)', fontSize: '13px', marginBottom: '8px' }}>{error}</p>}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={complete}
-                  disabled={completing}
-                  style={{
-                    background: 'var(--green)', color: '#fff', border: 'none',
-                    borderRadius: 'var(--r-sm)', padding: '10px 20px',
-                    fontSize: '14px', fontWeight: 600, minHeight: '44px', cursor: 'pointer',
-                  }}
-                >
-                  {completing ? 'Сохраняем…' : 'Завершить'}
-                </button>
-                <button
-                  onClick={() => setShowComplete(false)}
-                  style={{
-                    background: 'var(--surface3)', color: 'var(--text2)', border: 'none',
-                    borderRadius: 'var(--r-sm)', padding: '10px 20px',
-                    fontSize: '14px', minHeight: '44px', cursor: 'pointer',
-                  }}
-                >
-                  Отмена
-                </button>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{
+                background: 'rgba(245,166,35,.08)', borderRadius: 'var(--r-md)',
+                padding: '14px 16px', marginBottom: '12px',
+                border: '1px solid rgba(245,166,35,.2)',
+              }}>
+                <p style={{ color: 'var(--amber)', fontWeight: 700, fontSize: '14px', marginBottom: '14px' }}>
+                  📋 Медицинское заключение
+                </p>
+
+                {/* Diagnosis */}
+                <Section label="Диагноз *">
+                  <input
+                    style={{ ...inp, width: '100%' }}
+                    placeholder="Поставьте диагноз…"
+                    value={report.diagnosis}
+                    onChange={e => setReport(r => ({ ...r, diagnosis: e.target.value }))}
+                  />
+                </Section>
+
+                {/* Medications */}
+                <Section label="Препараты">
+                  {report.medications.map((m, i) => (
+                    <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 56px 28px', gap: '6px', marginBottom: '6px', alignItems: 'center' }}>
+                      <input style={inp} placeholder="Препарат" value={m.name} onChange={e => setMed(i, 'name', e.target.value)} />
+                      <input style={inp} placeholder="Доза" value={m.dose} onChange={e => setMed(i, 'dose', e.target.value)} />
+                      <input style={inp} placeholder="Частота" value={m.freq} onChange={e => setMed(i, 'freq', e.target.value)} />
+                      <input style={{ ...inp, textAlign: 'center' }} placeholder="Дней" type="number" min={1} value={m.days} onChange={e => setMed(i, 'days', e.target.value)} />
+                      <button
+                        onClick={() => removeMed(i)}
+                        style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '16px', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+                        aria-label="Удалить"
+                      >×</button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={addMed}
+                    style={{
+                      background: 'var(--surface2)', border: '1px dashed var(--surface3)',
+                      borderRadius: 'var(--r-sm)', padding: '6px 12px',
+                      color: 'var(--text3)', fontSize: '12px', cursor: 'pointer', minHeight: '34px',
+                    }}
+                  >
+                    + Добавить препарат
+                  </button>
+                </Section>
+
+                {/* Steps */}
+                <Section label="Инструкции по лечению">
+                  {report.steps.map((s, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '6px', marginBottom: '6px', alignItems: 'center' }}>
+                      <span style={{ color: 'var(--text3)', fontSize: '12px', minWidth: '18px', textAlign: 'right' }}>{i + 1}.</span>
+                      <input
+                        style={{ ...inp, flex: 1 }}
+                        placeholder={`Шаг ${i + 1}`}
+                        value={s}
+                        onChange={e => setStep(i, e.target.value)}
+                      />
+                      {report.steps.length > 1 && (
+                        <button
+                          onClick={() => removeStep(i)}
+                          style={{ background: 'none', border: 'none', color: 'var(--danger)', fontSize: '16px', cursor: 'pointer', padding: 0, lineHeight: 1 }}
+                          aria-label="Удалить"
+                        >×</button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    onClick={addStep}
+                    style={{
+                      background: 'var(--surface2)', border: '1px dashed var(--surface3)',
+                      borderRadius: 'var(--r-sm)', padding: '6px 12px',
+                      color: 'var(--text3)', fontSize: '12px', cursor: 'pointer', minHeight: '34px',
+                    }}
+                  >
+                    + Добавить шаг
+                  </button>
+                </Section>
+
+                {/* Follow-up */}
+                <Section label="Наблюдение и повторный приём">
+                  <input
+                    style={{ ...inp, width: '100%' }}
+                    placeholder="Когда обратиться повторно…"
+                    value={report.followup}
+                    onChange={e => setReport(r => ({ ...r, followup: e.target.value }))}
+                  />
+                </Section>
+
+                {/* Restrictions */}
+                <Section label="Ограничения (необязательно)">
+                  <input
+                    style={{ ...inp, width: '100%' }}
+                    placeholder="Что нельзя, диета и т.д."
+                    value={report.restrictions}
+                    onChange={e => setReport(r => ({ ...r, restrictions: e.target.value }))}
+                  />
+                </Section>
+
+                {error && <p style={{ color: 'var(--danger)', fontSize: '13px', marginTop: '8px' }}>{error}</p>}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
+                  <button
+                    onClick={complete}
+                    disabled={completing || !report.diagnosis.trim()}
+                    style={{
+                      background: 'var(--green)', color: '#fff', border: 'none',
+                      borderRadius: 'var(--r-sm)', padding: '10px 20px',
+                      fontSize: '14px', fontWeight: 700, minHeight: '44px',
+                      cursor: completing || !report.diagnosis.trim() ? 'default' : 'pointer',
+                      opacity: completing || !report.diagnosis.trim() ? 0.6 : 1,
+                    }}
+                  >
+                    {completing ? 'Сохраняем…' : '✓ Завершить и выдать заключение'}
+                  </button>
+                  <button
+                    onClick={() => setShowComplete(false)}
+                    style={{
+                      background: 'var(--surface3)', color: 'var(--text2)', border: 'none',
+                      borderRadius: 'var(--r-sm)', padding: '10px 16px',
+                      fontSize: '14px', minHeight: '44px', cursor: 'pointer',
+                    }}
+                  >
+                    Отмена
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
           {/* Text + send */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-            <textarea
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
-              placeholder="Напишите сообщение…"
-              rows={2}
-              style={{
-                flex: 1, background: 'var(--surface2)', border: '1px solid var(--surface3)',
-                borderRadius: 'var(--r-sm)', padding: '10px 14px', color: 'var(--text)',
-                fontSize: '14px', resize: 'none',
-              }}
-            />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <button
-                onClick={send}
-                disabled={sending || !text.trim()}
+          {!showComplete && (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+              <textarea
+                value={text}
+                onChange={e => setText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }}
+                placeholder="Напишите сообщение…"
+                rows={2}
                 style={{
-                  background: 'var(--coral)', color: '#fff', border: 'none',
-                  borderRadius: 'var(--r-sm)', padding: '10px 18px',
-                  fontSize: '14px', fontWeight: 600, minHeight: '44px', cursor: 'pointer',
-                  opacity: !text.trim() ? 0.5 : 1,
+                  flex: 1, background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                  borderRadius: 'var(--r-sm)', padding: '10px 14px', color: 'var(--text)',
+                  fontSize: '14px', resize: 'none', fontFamily: 'inherit',
                 }}
-              >
-                {sending ? '…' : 'Отправить'}
-              </button>
-              {!showComplete && (
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button
+                  onClick={send}
+                  disabled={sending || !text.trim()}
+                  style={{
+                    background: 'var(--coral)', color: '#fff', border: 'none',
+                    borderRadius: 'var(--r-sm)', padding: '10px 18px',
+                    fontSize: '14px', fontWeight: 600, minHeight: '44px', cursor: 'pointer',
+                    opacity: !text.trim() ? 0.5 : 1,
+                  }}
+                >
+                  {sending ? '…' : 'Отправить'}
+                </button>
                 <button
                   onClick={() => setShowComplete(true)}
                   style={{
@@ -331,9 +478,9 @@ export default function Chat({
                 >
                   Завершить
                 </button>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
@@ -357,6 +504,17 @@ export default function Chat({
           </button>
         </div>
       )}
+    </div>
+  )
+}
+
+function Section({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: '12px' }}>
+      <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        {label}
+      </p>
+      {children}
     </div>
   )
 }

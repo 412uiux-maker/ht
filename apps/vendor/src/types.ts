@@ -11,6 +11,21 @@ export type VendorSession = {
 
 export type ConsultStatus = 'pending' | 'active' | 'completed'
 
+export type Medication = {
+  name: string
+  dose: string
+  freq: string
+  days: number
+}
+
+export type MedicalReport = {
+  diagnosis: string
+  medications: Medication[]
+  steps: string[]
+  followup: string
+  restrictions?: string
+}
+
 export type Consultation = {
   id: string
   vet_id: number
@@ -20,6 +35,7 @@ export type Consultation = {
   problem: string
   status: ConsultStatus
   summary: string | null
+  report: MedicalReport | null
   created_at: string
 }
 

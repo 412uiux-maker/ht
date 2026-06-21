@@ -12,6 +12,21 @@ export type Vet = {
   is_available: boolean
 }
 
+export type Medication = {
+  name: string
+  dose: string
+  freq: string
+  days: number
+}
+
+export type MedicalReport = {
+  diagnosis: string
+  medications: Medication[]
+  steps: string[]
+  followup: string
+  restrictions?: string
+}
+
 export type Pet = {
   id: string
   owner_id: string
@@ -43,6 +58,7 @@ export type Consultation = {
   problem: string
   status: string
   summary: string | null
+  report: MedicalReport | null
   created_at: string
 }
 
