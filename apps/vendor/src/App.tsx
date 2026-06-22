@@ -10,11 +10,16 @@ type Screen =
   | { name: 'dashboard' }
   | { name: 'chat'; consultId: string }
 
+function devInitialScreen(session: VendorSession | null): Screen {
+  const p = new URLSearchParams(location.search)
+  const chatId = p.get('chat')
+  if (session && chatId) return { name: 'chat', consultId: chatId }
+  return session ? { name: 'dashboard' } : { name: 'login' }
+}
+
 export default function App() {
   const [session, setSessionState] = useState<VendorSession | null>(() => getSession())
-  const [screen, setScreen] = useState<Screen>(
-    session ? { name: 'dashboard' } : { name: 'login' }
-  )
+  const [screen, setScreen] = useState<Screen>(() => devInitialScreen(getSession()))
 
   const handleLogin = (s: VendorSession) => {
     setSession(s)
