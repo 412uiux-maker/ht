@@ -1,6 +1,8 @@
 import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode } from './types'
 
-let _session: AdminSession | null = null
+let _session: AdminSession | null = (() => {
+  try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
+})()
 
 export const setApiSession = (s: AdminSession | null) => { _session = s }
 
