@@ -10,9 +10,12 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { id: 'verification', label: '🔍 Верификация',  roles: ['admin', 'moderator'] },
-  { id: 'orders',       label: '📋 Заказы',        roles: ['admin', 'support']   },
-  { id: 'audit',        label: '📜 Аудит',          roles: ['admin']              },
+  { id: 'dashboard',     label: '📊 Обзор',          roles: ['admin', 'moderator', 'support'] },
+  { id: 'verification',  label: '🔍 Верификация',     roles: ['admin', 'moderator'] },
+  { id: 'consultations', label: '💬 Консультации',    roles: ['admin', 'support']   },
+  { id: 'orders',        label: '📋 Заказы',          roles: ['admin', 'support']   },
+  { id: 'promos',        label: '🏷️ Промокоды',      roles: ['admin', 'moderator'] },
+  { id: 'audit',         label: '📜 Аудит',           roles: ['admin']              },
 ]
 
 interface Props {

@@ -172,6 +172,18 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS orders_status_idx ON orders(status);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS consultation_id UUID;
 
+CREATE TABLE IF NOT EXISTS promo_codes (
+  id             SERIAL PRIMARY KEY,
+  code           TEXT UNIQUE NOT NULL,
+  discount_type  TEXT NOT NULL CHECK (discount_type IN ('percent','fixed')),
+  discount_value INTEGER NOT NULL CHECK (discount_value > 0),
+  max_uses       INTEGER,
+  used_count     INTEGER NOT NULL DEFAULT 0,
+  expires_at     DATE,
+  is_active      BOOLEAN NOT NULL DEFAULT true,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS foods (
   id            SERIAL PRIMARY KEY,
   name          TEXT NOT NULL,

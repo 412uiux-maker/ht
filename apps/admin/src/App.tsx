@@ -3,18 +3,21 @@ import type { AdminSession } from './types'
 import { setApiSession } from './api'
 import Login from './screens/Login'
 import Layout from './components/Layout'
+import Dashboard from './screens/Dashboard'
 import Verification from './screens/Verification'
+import Consultations from './screens/Consultations'
 import Orders from './screens/Orders'
+import Promos from './screens/Promos'
 import Audit from './screens/Audit'
 
-type Screen = 'verification' | 'orders' | 'audit'
+type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit'
 
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(() => {
     const s = localStorage.getItem('ht_admin')
     return s ? JSON.parse(s) : null
   })
-  const [screen, setScreen] = useState<Screen>('verification')
+  const [screen, setScreen] = useState<Screen>('dashboard')
 
   useEffect(() => { setApiSession(session) }, [session])
 
@@ -36,9 +39,12 @@ export default function App() {
 
   return (
     <Layout session={session} activeScreen={screen} onNavigate={s => setScreen(s as Screen)} onLogout={handleLogout}>
-      {screen === 'verification' && <Verification />}
-      {screen === 'orders' && <Orders session={session} />}
-      {screen === 'audit' && <Audit />}
+      {screen === 'dashboard'      && <Dashboard />}
+      {screen === 'verification'   && <Verification />}
+      {screen === 'consultations'  && <Consultations />}
+      {screen === 'orders'         && <Orders session={session} />}
+      {screen === 'promos'         && <Promos session={session} />}
+      {screen === 'audit'          && <Audit />}
     </Layout>
   )
 }

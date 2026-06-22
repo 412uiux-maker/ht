@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Vet, Consultation, PaymentResult } from '../api'
+import type { Vet, Consultation, PaymentResult, PromoResult } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
 
@@ -41,6 +41,12 @@ const SPECIES_EMOJI: Record<string, string> = {
 
 type PayState = 'select' | 'processing' | 'success'
 
+function calcFinal(base: number, promo: PromoResult | null): number {
+  if (!promo) return base
+  if (promo.discount_type === 'percent') return Math.round(base * (1 - promo.discount_value / 100))
+  return Math.max(0, base - promo.discount_value)
+}
+
 export default function Payment({ lang, consultation, vet, onBack, onPaid }: Props) {
   void lang
   const [provider, setProvider] = useState<'click' | 'payme' | 'uzum'>('click')
@@ -48,18 +54,37 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
   const [result, setResult] = useState<PaymentResult | null>(null)
   const [err, setErr] = useState('')
 
-  const amount = vet.price_uzs
+  const [promoInput, setPromoInput] = useState('')
+  const [promo, setPromo] = useState<PromoResult | null>(null)
+  const [promoApplying, setPromoApplying] = useState(false)
+  const [promoErr, setPromoErr] = useState('')
+
+  const baseAmount = vet.price_uzs
+  const finalAmount = calcFinal(baseAmount, promo)
   const selectedProvider = PROVIDERS.find((p) => p.id === provider)!
+
+  const applyPromo = async () => {
+    const code = promoInput.trim().toUpperCase()
+    if (!code) return
+    setPromoApplying(true); setPromoErr(''); setPromo(null)
+    try {
+      const res = await api.validatePromo(code)
+      setPromo(res)
+      setPromoInput(res.code)
+    } catch {
+      setPromoErr(t('pay.promo_err'))
+    } finally { setPromoApplying(false) }
+  }
 
   const pay = async () => {
     setState('processing')
     setErr('')
     try {
-      // Minimum 1.5s to feel like a real transaction
       const [res] = await Promise.all([
-        api.simulatePayment(consultation.id, provider, amount),
+        api.simulatePayment(consultation.id, provider, finalAmount),
         new Promise((r) => setTimeout(r, 1500)),
       ])
+      if (promo) { api.usePromo(promo.code).catch(() => {}) }
       setResult(res)
       setState('success')
     } catch {
@@ -119,7 +144,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
             fontWeight: 700, fontSize: 22, color: 'var(--primary)',
             fontVariantNumeric: 'tabular-nums', marginBottom: 4,
           }}>
-            {amount.toLocaleString('ru-RU')} {t('currency')}
+            {finalAmount.toLocaleString('ru-RU')} {t('currency')}
           </div>
           <div style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 20 }}>
             {selectedProvider.name}
@@ -220,6 +245,24 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
                   value={`${SPECIES_EMOJI[consultation.pet_species] || '🐾'} ${consultation.pet_name}`}
                 />
                 <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }} />
+                {promo && (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('pay.amount')}</span>
+                      <span style={{ fontSize: 14, color: 'var(--text-muted)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
+                        {baseAmount.toLocaleString('ru-RU')} {t('currency')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: '#2E7D32', fontWeight: 600 }}>
+                        {t('pay.discount')} ({promo.discount_type === 'percent' ? `${promo.discount_value}%` : `${promo.discount_value.toLocaleString()} ${t('currency')}`})
+                      </span>
+                      <span style={{ fontSize: 13, color: '#2E7D32', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                        −{(baseAmount - finalAmount).toLocaleString('ru-RU')} {t('currency')}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 600 }}>
                     {t('pay.amount')}
@@ -228,10 +271,58 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
                     fontSize: 20, fontWeight: 800, color: 'var(--primary)',
                     fontVariantNumeric: 'tabular-nums',
                   }}>
-                    {amount.toLocaleString('ru-RU')} {t('currency')}
+                    {finalAmount.toLocaleString('ru-RU')} {t('currency')}
                   </span>
                 </div>
               </div>
+            </div>
+
+            {/* Promo code */}
+            <div style={{
+              background: 'var(--surface)', border: '1px solid var(--border)',
+              borderRadius: 'var(--r-lg)', padding: '14px 16px',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10 }}>
+                {t('pay.promo_label')}
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  value={promoInput}
+                  onChange={e => { setPromoInput(e.target.value.toUpperCase()); setPromoErr(''); if (promo) setPromo(null) }}
+                  onKeyDown={e => e.key === 'Enter' && applyPromo()}
+                  placeholder={t('pay.promo_placeholder')}
+                  disabled={!!promo}
+                  style={{
+                    flex: 1, padding: '9px 12px', borderRadius: 'var(--r-md)',
+                    border: `1.5px solid ${promo ? '#2E7D32' : promoErr ? 'var(--danger)' : 'var(--border)'}`,
+                    fontSize: 14, fontFamily: 'inherit', minHeight: 44,
+                    background: promo ? '#F1FDF4' : 'var(--surface)',
+                    fontWeight: promo ? 700 : 400, letterSpacing: promo ? '.04em' : 0,
+                    color: promo ? '#2E7D32' : 'var(--text)',
+                  }}
+                />
+                <button
+                  onClick={promo ? () => { setPromo(null); setPromoInput('') } : applyPromo}
+                  disabled={promoApplying || (!promo && !promoInput.trim())}
+                  style={{
+                    padding: '9px 16px', borderRadius: 'var(--r-md)', minHeight: 44,
+                    border: 'none', fontWeight: 700, fontSize: 13, fontFamily: 'inherit',
+                    background: promo ? '#E8F5E9' : 'var(--primary)', color: promo ? '#2E7D32' : '#fff',
+                    cursor: 'pointer', whiteSpace: 'nowrap',
+                    opacity: (promoApplying || (!promo && !promoInput.trim())) ? 0.5 : 1,
+                  }}
+                >
+                  {promoApplying ? '…' : promo ? '✕' : t('pay.promo_apply')}
+                </button>
+              </div>
+              {promo && (
+                <div style={{ marginTop: 8, fontSize: 13, color: '#2E7D32', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  ✅ {t('pay.promo_ok')}
+                </div>
+              )}
+              {promoErr && (
+                <div style={{ marginTop: 8, fontSize: 13, color: 'var(--danger)' }}>{promoErr}</div>
+              )}
             </div>
 
             {/* Provider select */}
@@ -305,7 +396,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
                 transition: 'opacity .15s',
               }}
             >
-              {t('pay.btn')} {amount.toLocaleString('ru-RU')} {t('currency')} · {selectedProvider.name}
+              {t('pay.btn')} {finalAmount.toLocaleString('ru-RU')} {t('currency')} · {selectedProvider.name}
             </button>
 
             {/* Demo disclaimer */}

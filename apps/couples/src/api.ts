@@ -79,6 +79,13 @@ export type PaymentResult = {
   provider: string
 }
 
+export type PromoResult = {
+  id: number
+  code: string
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+}
+
 export const getOwnerId = () => {
   let id = localStorage.getItem('ht_owner_id')
   if (!id) { id = crypto.randomUUID(); localStorage.setItem('ht_owner_id', id) }
@@ -107,4 +114,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ consultation_id, provider, amount_uzs, owner_id: getOwnerId() }),
     }),
+  validatePromo: (code: string) =>
+    req<PromoResult>('/promos/validate', { method: 'POST', body: JSON.stringify({ code }) }),
+  usePromo: (code: string) =>
+    req<{ used: boolean }>('/promos/use', { method: 'POST', body: JSON.stringify({ code }) }),
 }
