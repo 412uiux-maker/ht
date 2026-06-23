@@ -21,9 +21,10 @@ interface Props {
   lang: string
   onSwitchLang: () => void
   onNavigate: (tab: Tab) => void
+  onOrders: () => void
 }
 
-export default function Profile({ lang, onSwitchLang, onNavigate }: Props) {
+export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Props) {
   const [pets, setPets] = useState<Pet[]>([])
   const { theme, toggle: toggleTheme } = useTheme()
 
@@ -151,7 +152,7 @@ export default function Profile({ lang, onSwitchLang, onNavigate }: Props) {
             </button>
           </div>
 
-          <NavRow icon="📋" label={t('profile.orders')} onClick={() => {}} />
+          <NavRow icon="📋" label={t('profile.orders')} onClick={onOrders} />
           <NavRow icon="ℹ️" label={t('profile.about')} last onClick={() => {}} />
         </div>
 

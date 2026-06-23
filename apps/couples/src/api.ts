@@ -99,6 +99,23 @@ export type LearnItem = {
   species: string[]
 }
 
+export type Order = {
+  id: string
+  service_type: string
+  consultation_id: string | null
+  status: string
+  price_uzs: number | null
+  provider: string | null
+  created_at: string
+  problem: string | null
+  pet_name: string | null
+  pet_species: string | null
+  consult_status: string | null
+  vet_name: string | null
+  vet_specialty: string | null
+  vet_avatar: string | null
+}
+
 export type Deed = {
   id: number
   title: string
@@ -159,4 +176,5 @@ export const api = {
   updatePet: (id: string, body: { name: string; species: string; sex: string; avatar_emoji: string; breed?: string | null; birth_date?: string | null; weight_kg?: number | null; notes?: string | null }) =>
     req<Pet>(`/pets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deletePet: (id: string) => req<{ ok: boolean }>(`/pets/${id}`, { method: 'DELETE' }),
+  orders: (ownerId: string) => req<Order[]>(`/orders?owner_id=${encodeURIComponent(ownerId)}`),
 }

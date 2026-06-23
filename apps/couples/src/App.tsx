@@ -14,6 +14,7 @@ import Profile from './screens/Profile'
 import Insurance from './screens/Insurance'
 import InsuranceCheckout from './screens/InsuranceCheckout'
 import InsuranceSuccess from './screens/InsuranceSuccess'
+import Orders from './screens/Orders'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
@@ -23,6 +24,7 @@ type Flow =
   | { name: 'insurance' }
   | { name: 'insurance-checkout' }
   | { name: 'insurance-success' }
+  | { name: 'orders' }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -121,6 +123,15 @@ export default function App() {
         <InsuranceSuccess onHome={() => endFlow()} />
       </Wrap>
     )
+
+    if (flow.name === 'orders') return (
+      <Wrap>
+        <Orders
+          onBack={() => endFlow('profile')}
+          onOpenChat={consultationId => startFlow({ name: 'chat', consultationId, vet: STUB_VET })}
+        />
+      </Wrap>
+    )
   }
 
   // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
@@ -145,7 +156,7 @@ export default function App() {
       {tab === 'pets'    && <Pets    lang={lang} />}
       {tab === 'learn'   && <LearnHub lang={lang} />}
       {tab === 'profile' && (
-        <Profile lang={lang} onSwitchLang={switchLang} onNavigate={setTab} />
+        <Profile lang={lang} onSwitchLang={switchLang} onNavigate={setTab} onOrders={() => startFlow({ name: 'orders' })} />
       )}
 
       <BottomNav active={tab} onChange={setTab} />
