@@ -7,9 +7,10 @@ interface Props {
   lang: string
   onSwitchLang: () => void
   onSelectVet: (vet: Vet) => void
+  onInsurance: () => void
 }
 
-export default function Home({ lang, onSwitchLang, onSelectVet }: Props) {
+export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: Props) {
   void lang
   const [vets, setVets] = useState<Vet[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,6 +80,42 @@ export default function Home({ lang, onSwitchLang, onSelectVet }: Props) {
         <div style={{ fontSize: 36, marginBottom: 8 }}>🐶🐱</div>
         <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{t('home.title')}</div>
         <div style={{ fontSize: 14, opacity: 0.85 }}>{t('home.subtitle')}</div>
+      </div>
+
+      {/* Insurance banner */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <button
+          onClick={onInsurance}
+          style={{
+            width: '100%', borderRadius: 'var(--r-xl)',
+            background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
+            padding: '16px 20px', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+            boxShadow: '0 4px 16px rgba(124,58,237,.25)',
+          }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,.2)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 24, flexShrink: 0,
+          }}>🛡️</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 2 }}>
+              {t('ins.banner_title')}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,.8)' }}>
+              {t('ins.banner_sub')}
+            </div>
+          </div>
+          <div style={{
+            background: 'rgba(255,255,255,.9)', color: '#7C3AED',
+            padding: '6px 14px', borderRadius: 'var(--r-pill)',
+            fontSize: 12, fontWeight: 700, flexShrink: 0,
+          }}>
+            {t('ins.more')} →
+          </div>
+        </button>
       </div>
 
       {/* Search */}

@@ -5,12 +5,18 @@ import Home from './screens/Home'
 import Booking from './screens/Booking'
 import Payment from './screens/Payment'
 import Chat from './screens/Chat'
+import Insurance from './screens/Insurance'
+import InsuranceCheckout from './screens/InsuranceCheckout'
+import InsuranceSuccess from './screens/InsuranceSuccess'
 
 type Screen =
   | { name: 'home' }
   | { name: 'booking'; vet: Vet }
   | { name: 'payment'; consultation: Consultation; vet: Vet }
   | { name: 'chat'; consultationId: string; vet: Vet }
+  | { name: 'insurance' }
+  | { name: 'insurance-checkout' }
+  | { name: 'insurance-success' }
 
 // Dev shortcut: ?chat=<id> opens chat with first vet for quick testing
 const STUB_VET: Vet = { id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)', avatar_emoji: '🐕', rating: 4.9, experience_yr: 8, price_uzs: 120000, is_available: true, bio: '' }
@@ -40,6 +46,7 @@ export default function App() {
           lang={lang}
           onSwitchLang={switchLang}
           onSelectVet={(vet) => setScreen({ name: 'booking', vet })}
+          onInsurance={() => setScreen({ name: 'insurance' })}
         />
       </Wrap>
     )
@@ -72,6 +79,38 @@ export default function App() {
             setScreen({ name: 'chat', consultationId: screen.consultation.id, vet: screen.vet })
           }
         />
+      </Wrap>
+    )
+  }
+
+  if (screen.name === 'insurance') {
+    return (
+      <Wrap>
+        <Insurance
+          lang={lang}
+          onBack={() => setScreen({ name: 'home' })}
+          onStart={() => setScreen({ name: 'insurance-checkout' })}
+        />
+      </Wrap>
+    )
+  }
+
+  if (screen.name === 'insurance-checkout') {
+    return (
+      <Wrap>
+        <InsuranceCheckout
+          lang={lang}
+          onBack={() => setScreen({ name: 'insurance' })}
+          onSuccess={() => setScreen({ name: 'insurance-success' })}
+        />
+      </Wrap>
+    )
+  }
+
+  if (screen.name === 'insurance-success') {
+    return (
+      <Wrap>
+        <InsuranceSuccess onHome={() => setScreen({ name: 'home' })} />
       </Wrap>
     )
   }
