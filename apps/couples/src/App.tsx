@@ -1,16 +1,21 @@
 import { useState } from 'react'
 import type { Vet, Consultation } from './api'
 import { setLang } from './i18n'
-import Home from './screens/Home'
+import BottomNav, { type Tab } from './components/BottomNav'
+import Dashboard from './screens/Dashboard'
+import Home from './screens/Home'          // vet list — used as Consult tab
 import Booking from './screens/Booking'
 import Payment from './screens/Payment'
 import Chat from './screens/Chat'
+import Pets from './screens/Pets'
+import LearnHub from './screens/LearnHub'
+import Profile from './screens/Profile'
 import Insurance from './screens/Insurance'
 import InsuranceCheckout from './screens/InsuranceCheckout'
 import InsuranceSuccess from './screens/InsuranceSuccess'
 
-type Screen =
-  | { name: 'home' }
+// Flows that cover the full screen (no bottom nav)
+type Flow =
   | { name: 'booking'; vet: Vet }
   | { name: 'payment'; consultation: Consultation; vet: Vet }
   | { name: 'chat'; consultationId: string; vet: Vet }
@@ -18,19 +23,28 @@ type Screen =
   | { name: 'insurance-checkout' }
   | { name: 'insurance-success' }
 
-// Dev shortcut: ?chat=<id> opens chat with first vet for quick testing
-const STUB_VET: Vet = { id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)', avatar_emoji: '🐕', rating: 4.9, experience_yr: 8, price_uzs: 120000, is_available: true, bio: '' }
+const STUB_VET: Vet = {
+  id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
+  avatar_emoji: '🐕', rating: 4.9, experience_yr: 8, price_uzs: 120000,
+  is_available: true, bio: '',
+}
 
-function devInitialScreen(): Screen {
+function devInitialFlow(): Flow | null {
   const p = new URLSearchParams(location.search)
   const chatId = p.get('chat')
   if (chatId) return { name: 'chat', consultationId: chatId, vet: STUB_VET }
-  if (p.has('booking')) return { name: 'booking', vet: STUB_VET }
-  return { name: 'home' }
+  return null
+}
+
+function devInitialTab(): Tab {
+  const p = new URLSearchParams(location.search)
+  if (p.has('booking')) return 'consult'
+  return 'home'
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>(devInitialScreen)
+  const [tab, setTab] = useState<Tab>(devInitialTab)
+  const [flow, setFlow] = useState<Flow | null>(devInitialFlow)
   const [lang, setLangState] = useState(localStorage.getItem('ht_lang') || 'ru')
 
   const switchLang = () => {
@@ -39,97 +53,103 @@ export default function App() {
     setLangState(next)
   }
 
-  if (screen.name === 'home') {
-    return (
-      <Wrap>
-        <Home
-          lang={lang}
-          onSwitchLang={switchLang}
-          onSelectVet={(vet) => setScreen({ name: 'booking', vet })}
-          onInsurance={() => setScreen({ name: 'insurance' })}
-        />
-      </Wrap>
-    )
-  }
+  const startFlow = (f: Flow) => setFlow(f)
+  const endFlow = (returnTab?: Tab) => { setFlow(null); if (returnTab) setTab(returnTab) }
 
-  if (screen.name === 'booking') {
-    return (
+  // ─── Active flow (no bottom nav) ────────────────────────────────────────────
+  if (flow) {
+    if (flow.name === 'booking') return (
       <Wrap>
         <Booking
-          lang={lang}
-          vet={screen.vet}
-          onBack={() => setScreen({ name: 'home' })}
-          onBooked={(consultation) =>
-            setScreen({ name: 'payment', consultation, vet: screen.vet })
-          }
+          lang={lang} vet={flow.vet}
+          onBack={() => endFlow('consult')}
+          onBooked={consultation => startFlow({ name: 'payment', consultation, vet: flow.vet })}
         />
       </Wrap>
     )
-  }
 
-  if (screen.name === 'payment') {
-    return (
+    if (flow.name === 'payment') return (
       <Wrap>
         <Payment
-          lang={lang}
-          consultation={screen.consultation}
-          vet={screen.vet}
-          onBack={() => setScreen({ name: 'booking', vet: screen.vet })}
-          onPaid={() =>
-            setScreen({ name: 'chat', consultationId: screen.consultation.id, vet: screen.vet })
-          }
+          lang={lang} consultation={flow.consultation} vet={flow.vet}
+          onBack={() => startFlow({ name: 'booking', vet: flow.vet })}
+          onPaid={() => startFlow({ name: 'chat', consultationId: flow.consultation.id, vet: flow.vet })}
         />
       </Wrap>
     )
-  }
 
-  if (screen.name === 'insurance') {
-    return (
+    if (flow.name === 'chat') return (
+      <Wrap>
+        <Chat
+          lang={lang} consultationId={flow.consultationId} vet={flow.vet}
+          onBack={() => endFlow('consult')}
+        />
+      </Wrap>
+    )
+
+    if (flow.name === 'insurance') return (
       <Wrap>
         <Insurance
           lang={lang}
-          onBack={() => setScreen({ name: 'home' })}
-          onStart={() => setScreen({ name: 'insurance-checkout' })}
+          onBack={() => endFlow()}
+          onStart={() => startFlow({ name: 'insurance-checkout' })}
         />
       </Wrap>
     )
-  }
 
-  if (screen.name === 'insurance-checkout') {
-    return (
+    if (flow.name === 'insurance-checkout') return (
       <Wrap>
         <InsuranceCheckout
           lang={lang}
-          onBack={() => setScreen({ name: 'insurance' })}
-          onSuccess={() => setScreen({ name: 'insurance-success' })}
+          onBack={() => startFlow({ name: 'insurance' })}
+          onSuccess={() => startFlow({ name: 'insurance-success' })}
         />
       </Wrap>
     )
-  }
 
-  if (screen.name === 'insurance-success') {
-    return (
+    if (flow.name === 'insurance-success') return (
       <Wrap>
-        <InsuranceSuccess onHome={() => setScreen({ name: 'home' })} />
+        <InsuranceSuccess onHome={() => endFlow()} />
       </Wrap>
     )
   }
 
+  // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
   return (
     <Wrap>
-      <Chat
-        lang={lang}
-        consultationId={screen.consultationId}
-        vet={screen.vet}
-        onBack={() => setScreen({ name: 'home' })}
-      />
+      {tab === 'home' && (
+        <Dashboard
+          lang={lang}
+          onSwitchLang={switchLang}
+          onNavigate={setTab}
+          onInsurance={() => startFlow({ name: 'insurance' })}
+        />
+      )}
+      {tab === 'consult' && (
+        <Home
+          lang={lang}
+          onSwitchLang={switchLang}
+          onSelectVet={vet => startFlow({ name: 'booking', vet })}
+          onInsurance={() => startFlow({ name: 'insurance' })}
+        />
+      )}
+      {tab === 'pets'    && <Pets    lang={lang} />}
+      {tab === 'learn'   && <LearnHub lang={lang} />}
+      {tab === 'profile' && (
+        <Profile lang={lang} onSwitchLang={switchLang} onNavigate={setTab} />
+      )}
+
+      <BottomNav active={tab} onChange={setTab} />
     </Wrap>
   )
 }
 
 function Wrap({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
+    <div style={{
+      maxWidth: 480, margin: '0 auto', minHeight: '100vh',
+      position: 'relative', background: 'var(--bg)',
+    }}>
       {children}
     </div>
   )

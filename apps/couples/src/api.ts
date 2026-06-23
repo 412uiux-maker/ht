@@ -86,6 +86,34 @@ export type PromoResult = {
   discount_value: number
 }
 
+export type LearnStep = { id: number; text: string }
+
+export type LearnItem = {
+  id: number
+  type: 'checklist' | 'guide' | 'article'
+  category: string
+  title: string
+  subtitle: string
+  body: string | null
+  steps: LearnStep[] | null
+  species: string[]
+}
+
+export type Deed = {
+  id: number
+  title: string
+  subtitle: string
+  description: string
+  category: string
+  goal_amount: number
+  raised_amount: number
+  participants_count: number
+  emoji: string
+  deadline: string
+  status: string
+  my_types: string[]
+}
+
 export const getOwnerId = () => {
   let id = localStorage.getItem('ht_owner_id')
   if (!id) { id = crypto.randomUUID(); localStorage.setItem('ht_owner_id', id) }
@@ -118,4 +146,15 @@ export const api = {
     req<PromoResult>('/promos/validate', { method: 'POST', body: JSON.stringify({ code }) }),
   usePromo: (code: string) =>
     req<{ used: boolean }>('/promos/use', { method: 'POST', body: JSON.stringify({ code }) }),
+  learn: (ownerId: string) => req<LearnItem[]>(`/learn?owner_id=${encodeURIComponent(ownerId)}`),
+  learnItem: (id: number, ownerId: string) => req<LearnItem>(`/learn/${id}?owner_id=${encodeURIComponent(ownerId)}`),
+  deeds: (ownerId: string) => req<Deed[]>(`/deeds?owner_id=${encodeURIComponent(ownerId)}`),
+  participateDeed: (id: number, type: 'donate' | 'volunteer' | 'share', amount?: number) =>
+    req<{ ok: boolean }>(`/deeds/${id}/participate`, {
+      method: 'POST',
+      body: JSON.stringify({ owner_id: getOwnerId(), type, amount_uzs: amount }),
+    }),
+  createPet: (body: { owner_id: string; name: string; species: string; sex: string; avatar_emoji: string }) =>
+    req<Pet>('/pets', { method: 'POST', body: JSON.stringify(body) }),
+  deletePet: (id: string) => req<{ ok: boolean }>(`/pets/${id}`, { method: 'DELETE' }),
 }
