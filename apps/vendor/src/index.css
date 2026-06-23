@@ -1,13 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Shared tokens ────────────────────────────────────────────── */
 :root {
-  --bg: #0f0f0f;
-  --surface: #1a1a1a;
-  --surface2: #242424;
-  --surface3: #2e2e2e;
-  --text: #f5f5f5;
-  --text2: #a0a0a0;
-  --text3: #666;
   --coral: #F2784B;
   --coral-dark: #d95f30;
   --green: #4CAF7D;
@@ -20,11 +14,69 @@
   --font: 'Onest', system-ui, sans-serif;
 }
 
+/* ── Dark mode ────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg: #0f0f0f;
+  --surface: #1a1a1a;
+  --surface2: #242424;
+  --surface3: #2e2e2e;
+  --text: #f5f5f5;
+  --text2: #a0a0a0;
+  --text3: #666;
+  --green: #4CAF7D;
+  --violet: #7C5CBF;
+  --amber: #F5A623;
+}
+
+/* ── Light mode ───────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg: #F1F2F4;
+  --surface: #FFFFFF;
+  --surface2: #F5F7FA;
+  --surface3: #EAECF0;
+  --text: #1A1D23;
+  --text2: #5C6370;
+  --text3: #9AA0AB;
+  --coral-dark: #C0511F;
+  --green: #2E9E5B;
+  --violet: #5B3FA8;
+  --amber: #C07A00;
+}
+
+/* ── System preference fallback ──────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --surface3: #2e2e2e;
+    --text: #f5f5f5;
+    --text2: #a0a0a0;
+    --text3: #666;
+  }
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    --bg: #F1F2F4;
+    --surface: #FFFFFF;
+    --surface2: #F5F7FA;
+    --surface3: #EAECF0;
+    --text: #1A1D23;
+    --text2: #5C6370;
+    --text3: #9AA0AB;
+    --coral-dark: #C0511F;
+    --green: #2E9E5B;
+    --violet: #5B3FA8;
+    --amber: #C07A00;
+  }
+}
+
 body {
   font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  transition: background .2s, color .2s;
 }
 
 button { cursor: pointer; font-family: var(--font); }
@@ -37,6 +89,6 @@ input, textarea { font-family: var(--font); }
   font-size: 12px;
   font-weight: 600;
 }
-.pill-pending { background: rgba(245,166,35,.15); color: var(--amber); }
-.pill-active  { background: rgba(76,175,125,.15); color: var(--green); }
+.pill-pending   { background: rgba(245,166,35,.15); color: var(--amber); }
+.pill-active    { background: rgba(76,175,125,.15);  color: var(--green); }
 .pill-completed { background: rgba(102,102,102,.15); color: var(--text3); }

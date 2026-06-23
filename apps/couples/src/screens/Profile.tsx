@@ -4,6 +4,19 @@ import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
 import type { Tab } from '../components/BottomNav'
 
+function useTheme() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    (document.documentElement.dataset.theme as 'light' | 'dark') || 'light'
+  )
+  const toggle = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    document.documentElement.dataset.theme = next
+    localStorage.setItem('ht_theme', next)
+    setTheme(next)
+  }
+  return { theme, toggle }
+}
+
 interface Props {
   lang: string
   onSwitchLang: () => void
@@ -12,6 +25,7 @@ interface Props {
 
 export default function Profile({ lang, onSwitchLang, onNavigate }: Props) {
   const [pets, setPets] = useState<Pet[]>([])
+  const { theme, toggle: toggleTheme } = useTheme()
 
   useEffect(() => {
     api.pets(getOwnerId()).then(setPets).catch(() => {})
@@ -102,6 +116,38 @@ export default function Profile({ lang, onSwitchLang, onNavigate }: Props) {
               }}
             >
               {lang === 'ru' ? "O'zbekcha →" : 'Русский →'}
+            </button>
+          </div>
+
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '14px 16px', borderBottom: '1px solid var(--border)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>
+                {theme === 'dark' ? '🌙' : '☀️'}
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600 }}>
+                {theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
+              </span>
+            </div>
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              style={{
+                width: 48, height: 28, borderRadius: 'var(--r-pill)',
+                border: 'none', cursor: 'pointer', position: 'relative',
+                background: theme === 'dark' ? 'var(--primary)' : 'var(--border)',
+                transition: 'background .2s',
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, width: 22, height: 22,
+                borderRadius: '50%', background: '#fff',
+                transition: 'left .2s',
+                left: theme === 'dark' ? 23 : 3,
+                boxShadow: '0 1px 4px rgba(0,0,0,.2)',
+              }} />
             </button>
           </div>
 

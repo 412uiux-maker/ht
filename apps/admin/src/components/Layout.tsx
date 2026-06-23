@@ -1,21 +1,16 @@
+import { useState } from 'react'
 import type { AdminSession } from '../types'
 
 const ROLE_LABEL: Record<string, string> = { admin: 'Администратор', moderator: 'Модератор', support: 'Поддержка' }
 const ROLE_COLOR: Record<string, string> = { admin: 'var(--primary)', moderator: '#3B5BDB', support: 'var(--success)' }
 
-interface NavItem {
-  id: string
-  label: string
-  roles: string[]
-}
-
-const NAV: NavItem[] = [
-  { id: 'dashboard',     label: '📊 Обзор',          roles: ['admin', 'moderator', 'support'] },
-  { id: 'verification',  label: '🔍 Верификация',     roles: ['admin', 'moderator'] },
-  { id: 'consultations', label: '💬 Консультации',    roles: ['admin', 'support']   },
-  { id: 'orders',        label: '📋 Заказы',          roles: ['admin', 'support']   },
-  { id: 'promos',        label: '🏷️ Промокоды',      roles: ['admin', 'moderator'] },
-  { id: 'audit',         label: '📜 Аудит',           roles: ['admin']              },
+const NAV = [
+  { id: 'dashboard',     label: '📊 Обзор',        roles: ['admin', 'moderator', 'support'] },
+  { id: 'verification',  label: '🔍 Верификация',   roles: ['admin', 'moderator'] },
+  { id: 'consultations', label: '💬 Консультации',  roles: ['admin', 'support']   },
+  { id: 'orders',        label: '📋 Заказы',        roles: ['admin', 'support']   },
+  { id: 'promos',        label: '🏷️ Промокоды',    roles: ['admin', 'moderator'] },
+  { id: 'audit',         label: '📜 Аудит',         roles: ['admin']              },
 ]
 
 interface Props {
@@ -26,8 +21,22 @@ interface Props {
   children: React.ReactNode
 }
 
+function useTheme() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    (document.documentElement.dataset.theme as 'light' | 'dark') || 'light'
+  )
+  const toggle = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    document.documentElement.dataset.theme = next
+    localStorage.setItem('ht_theme', next)
+    setTheme(next)
+  }
+  return { theme, toggle }
+}
+
 export default function Layout({ session, activeScreen, onNavigate, onLogout, children }: Props) {
   const visibleNav = NAV.filter(n => n.roles.includes(session.role))
+  const { theme, toggle: toggleTheme } = useTheme()
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -35,7 +44,7 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
       <aside style={{
         width: 'var(--sidebar-w)', background: 'var(--surface)',
         borderRight: '1px solid var(--border)', display: 'flex',
-        flexDirection: 'column', flexShrink: 0,
+        flexDirection: 'column', flexShrink: 0, position: 'sticky', top: 0, height: '100vh',
       }}>
         <div style={{ padding: '24px 20px 16px' }}>
           <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>🐾 HappyTails</div>
@@ -52,7 +61,7 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
           </span>
         </div>
 
-        <nav style={{ flex: 1, padding: '12px 8px' }}>
+        <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
           {visibleNav.map(item => (
             <button
               key={item.id}
@@ -70,7 +79,34 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
           ))}
         </nav>
 
-        <div style={{ padding: '16px 8px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            style={{
+              width: '100%', textAlign: 'left', padding: '10px 14px',
+              borderRadius: 'var(--r-md)', fontSize: 14, fontWeight: 500,
+              background: 'none', color: 'var(--text-muted)',
+              minHeight: 44, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}
+          >
+            <span>{theme === 'dark' ? '🌙 Тёмная тема' : '☀️ Светлая тема'}</span>
+            <div style={{
+              width: 40, height: 22, borderRadius: 'var(--r-pill)', position: 'relative',
+              background: theme === 'dark' ? 'var(--primary)' : 'var(--border)',
+              transition: 'background .2s',
+            }}>
+              <span style={{
+                position: 'absolute', top: 2, width: 18, height: 18,
+                borderRadius: '50%', background: '#fff',
+                transition: 'left .2s',
+                left: theme === 'dark' ? 20 : 2,
+                boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+              }} />
+            </div>
+          </button>
+
           <button
             className="btn btn-ghost"
             onClick={onLogout}

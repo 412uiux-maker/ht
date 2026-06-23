@@ -2,6 +2,19 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api'
 import type { VendorSession, Consultation, Stats } from '../types'
 
+function useTheme() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    (document.documentElement.dataset.theme as 'light' | 'dark') || 'dark'
+  )
+  const toggle = () => {
+    const next = theme === 'light' ? 'dark' : 'light'
+    document.documentElement.dataset.theme = next
+    localStorage.setItem('ht_theme', next)
+    setTheme(next)
+  }
+  return { theme, toggle }
+}
+
 const SPECIES: Record<string, string> = {
   cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾'
 }
@@ -21,6 +34,7 @@ export default function Dashboard({
   onLogout: () => void
   onOpenChat: (id: string) => void
 }) {
+  const { theme, toggle: toggleTheme } = useTheme()
   const [stats, setStats] = useState<Stats | null>(null)
   const [consultations, setConsultations] = useState<Consultation[]>([])
   const [tab, setTab] = useState('all')
@@ -77,17 +91,31 @@ export default function Dashboard({
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         <span style={{ fontWeight: 700, fontSize: '18px', color: 'var(--coral)' }}>🐾 HappyTails</span>
-        <button
-          onClick={onLogout}
-          style={{
-            background: 'var(--surface2)', border: '1px solid var(--surface3)',
-            borderRadius: 'var(--r-sm)', padding: '8px 16px',
-            color: 'var(--text2)', fontSize: '13px', minHeight: '36px',
-            cursor: 'pointer',
-          }}
-        >
-          Выйти
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+            style={{
+              width: 36, height: 36, borderRadius: 'var(--r-sm)',
+              background: 'var(--surface2)', border: '1px solid var(--surface3)',
+              fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
+          <button
+            onClick={onLogout}
+            style={{
+              background: 'var(--surface2)', border: '1px solid var(--surface3)',
+              borderRadius: 'var(--r-sm)', padding: '8px 16px',
+              color: 'var(--text2)', fontSize: '13px', minHeight: '36px',
+              cursor: 'pointer',
+            }}
+          >
+            Выйти
+          </button>
+        </div>
       </header>
 
       <main style={{ maxWidth: '960px', margin: '0 auto', padding: '24px 20px' }}>

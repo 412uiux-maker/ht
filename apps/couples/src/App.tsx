@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Vet, Consultation } from './api'
 import { setLang } from './i18n'
 import BottomNav, { type Tab } from './components/BottomNav'
+import Onboarding from './screens/Onboarding'
 import Dashboard from './screens/Dashboard'
 import Home from './screens/Home'          // vet list — used as Consult tab
 import Booking from './screens/Booking'
@@ -43,6 +44,7 @@ function devInitialTab(): Tab {
 }
 
 export default function App() {
+  const [onboarded, setOnboarded] = useState(() => !!localStorage.getItem('ht_onboarded'))
   const [tab, setTab] = useState<Tab>(devInitialTab)
   const [flow, setFlow] = useState<Flow | null>(devInitialFlow)
   const [lang, setLangState] = useState(localStorage.getItem('ht_lang') || 'ru')
@@ -55,6 +57,13 @@ export default function App() {
 
   const startFlow = (f: Flow) => setFlow(f)
   const endFlow = (returnTab?: Tab) => { setFlow(null); if (returnTab) setTab(returnTab) }
+
+  // ─── Onboarding ─────────────────────────────────────────────────────────────
+  if (!onboarded) return (
+    <Wrap>
+      <Onboarding onDone={() => { setOnboarded(true); setLangState(localStorage.getItem('ht_lang') || 'ru') }} />
+    </Wrap>
+  )
 
   // ─── Active flow (no bottom nav) ────────────────────────────────────────────
   if (flow) {

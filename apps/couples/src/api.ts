@@ -156,5 +156,7 @@ export const api = {
     }),
   createPet: (body: { owner_id: string; name: string; species: string; sex: string; avatar_emoji: string }) =>
     req<Pet>('/pets', { method: 'POST', body: JSON.stringify(body) }),
+  updatePet: (id: string, body: { name: string; species: string; sex: string; avatar_emoji: string; breed?: string | null; birth_date?: string | null; weight_kg?: number | null; notes?: string | null }) =>
+    req<Pet>(`/pets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deletePet: (id: string) => req<{ ok: boolean }>(`/pets/${id}`, { method: 'DELETE' }),
 }
