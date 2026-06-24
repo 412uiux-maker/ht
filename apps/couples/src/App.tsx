@@ -16,6 +16,9 @@ import InsuranceCheckout from './screens/InsuranceCheckout'
 import InsuranceSuccess from './screens/InsuranceSuccess'
 import Orders from './screens/Orders'
 import FoodWizard from './screens/FoodWizard'
+import ClinicServicePicker, { type ClinicService } from './screens/ClinicServicePicker'
+import ClinicList, { type Clinic } from './screens/ClinicList'
+import ClinicDetail from './screens/ClinicDetail'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
@@ -27,6 +30,9 @@ type Flow =
   | { name: 'insurance-success' }
   | { name: 'orders' }
   | { name: 'food' }
+  | { name: 'clinic-services' }
+  | { name: 'clinic-list'; service: ClinicService }
+  | { name: 'clinic-detail'; clinic: Clinic; service: ClinicService }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -147,6 +153,36 @@ export default function App() {
         />
       </Wrap>
     )
+
+    if (flow.name === 'clinic-services') return (
+      <Wrap>
+        <ClinicServicePicker
+          onBack={() => endFlow('home')}
+          onSelectService={svc => startFlow({ name: 'clinic-list', service: svc })}
+        />
+      </Wrap>
+    )
+
+    if (flow.name === 'clinic-list') return (
+      <Wrap>
+        <ClinicList
+          service={flow.service}
+          onBack={() => startFlow({ name: 'clinic-services' })}
+          onSelectClinic={clinic => startFlow({ name: 'clinic-detail', clinic, service: flow.service })}
+        />
+      </Wrap>
+    )
+
+    if (flow.name === 'clinic-detail') return (
+      <Wrap>
+        <ClinicDetail
+          clinic={flow.clinic}
+          service={flow.service}
+          onBack={() => startFlow({ name: 'clinic-list', service: flow.service })}
+          onViewOthers={() => startFlow({ name: 'clinic-list', service: flow.service })}
+        />
+      </Wrap>
+    )
   }
 
   // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
@@ -159,6 +195,7 @@ export default function App() {
           onNavigate={setTab}
           onInsurance={() => startFlow({ name: 'insurance' })}
           onFood={() => startFlow({ name: 'food' })}
+          onClinics={() => startFlow({ name: 'clinic-services' })}
         />
       )}
       {tab === 'consult' && (
