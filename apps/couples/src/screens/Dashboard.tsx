@@ -11,16 +11,17 @@ interface Props {
   onInsurance: () => void
   onFood: () => void
   onClinics: () => void
+  onPlaces: () => void
 }
 
 const QUICK = [
   { icon: '🩺', bg: 'linear-gradient(135deg,#F8915A,#F26B47)', action: 'consult'  as const, titleKey: 'dash.consult'  as const, subKey: 'dash.consult_sub'  as const },
   { icon: '🥗', bg: 'linear-gradient(135deg,#4ADE80,#22C55E)', action: 'food'     as const, titleKey: 'dash.food'     as const, subKey: 'dash.food_sub'     as const },
   { icon: '🏥', bg: 'linear-gradient(135deg,#60A5FA,#3B82F6)', action: 'clinics'  as const, titleKey: 'dash.clinics'  as const, subKey: 'dash.clinics_sub'  as const },
-  { icon: '❤️', bg: 'linear-gradient(135deg,#F472B6,#EC4899)', action: 'deeds'    as const, titleKey: 'dash.deeds'    as const, subKey: 'dash.deeds_sub'    as const },
+  { icon: '🗺️', bg: 'linear-gradient(135deg,#4ADE80,#2E7D32)', action: 'places'   as const, titleKey: 'dash.places'   as const, subKey: 'dash.places_sub'   as const },
 ]
 
-export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics }: Props) {
+export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces }: Props) {
   void lang
   const [featuredDeed, setFeaturedDeed] = useState<Deed | null>(null)
 
@@ -78,6 +79,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
               onClick={() => {
                 if (q.action === 'food') onFood()
                 else if (q.action === 'clinics') onClinics()
+                else if (q.action === 'places') onPlaces()
                 else onNavigate(q.action === 'consult' ? 'consult' : 'learn')
               }}
               style={{

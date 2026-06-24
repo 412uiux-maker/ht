@@ -19,6 +19,7 @@ import FoodWizard from './screens/FoodWizard'
 import ClinicServicePicker, { type ClinicService } from './screens/ClinicServicePicker'
 import ClinicList, { type Clinic } from './screens/ClinicList'
 import ClinicDetail from './screens/ClinicDetail'
+import Places from './screens/Places'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
@@ -33,6 +34,7 @@ type Flow =
   | { name: 'clinic-services' }
   | { name: 'clinic-list'; service: ClinicService }
   | { name: 'clinic-detail'; clinic: Clinic; service: ClinicService }
+  | { name: 'places' }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -183,6 +185,12 @@ export default function App() {
         />
       </Wrap>
     )
+
+    if (flow.name === 'places') return (
+      <Wrap>
+        <Places onBack={() => endFlow('home')} />
+      </Wrap>
+    )
   }
 
   // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
@@ -196,6 +204,7 @@ export default function App() {
           onInsurance={() => startFlow({ name: 'insurance' })}
           onFood={() => startFlow({ name: 'food' })}
           onClinics={() => startFlow({ name: 'clinic-services' })}
+          onPlaces={() => startFlow({ name: 'places' })}
         />
       )}
       {tab === 'consult' && (
