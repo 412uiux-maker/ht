@@ -13,8 +13,9 @@ import Finances from './screens/Finances'
 import Content from './screens/Content'
 import Users from './screens/Users'
 import Settings from './screens/Settings'
+import Learning from './screens/Learning'
 
-type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit' | 'finances' | 'content' | 'users' | 'settings'
+type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings'
 
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(() => {
@@ -50,6 +51,7 @@ export default function App() {
       {screen === 'finances'       && <Finances />}
       {screen === 'users'          && <Users sessionRole={session.role} />}
       {screen === 'content'        && <Content />}
+      {screen === 'learning'       && <Learning />}
       {screen === 'promos'         && <Promos session={session} />}
       {screen === 'settings'       && <Settings />}
       {screen === 'audit'          && <Audit />}

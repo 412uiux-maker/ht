@@ -12,6 +12,7 @@ const NAV = [
   { id: 'finances',      label: '💰 Финансы',          roles: ['admin']              },
   { id: 'users',         label: '👥 Пользователи',     roles: ['admin', 'moderator'] },
   { id: 'content',       label: '📝 Контент',          roles: ['admin', 'moderator'] },
+  { id: 'learning',      label: '🎓 Обучение',          roles: ['admin', 'moderator'] },
   { id: 'promos',        label: '🏷️ Промокоды',       roles: ['admin', 'moderator'] },
   { id: 'settings',      label: '⚙️ Настройки',       roles: ['admin']              },
   { id: 'audit',         label: '📜 Аудит',            roles: ['admin']              },

@@ -3,10 +3,12 @@ WORKDIR /repo
 
 COPY package.json ./
 COPY apps/couples/package.json ./apps/couples/
+COPY packages/shared/package.json ./packages/shared/
 
 RUN npm install --workspace=apps/couples
 
 COPY apps/couples/ ./apps/couples/
+COPY packages/shared/ ./packages/shared/
 
 RUN npm run build --workspace=apps/couples
 

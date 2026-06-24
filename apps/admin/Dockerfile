@@ -3,10 +3,12 @@ WORKDIR /repo
 
 COPY package.json ./
 COPY apps/admin/package.json ./apps/admin/
+COPY packages/shared/package.json ./packages/shared/
 
 RUN npm install --workspace=apps/admin
 
 COPY apps/admin/ ./apps/admin/
+COPY packages/shared/ ./packages/shared/
 
 RUN npm run build --workspace=apps/admin
 
