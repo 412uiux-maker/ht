@@ -33,10 +33,19 @@ export default function Login({ onLogin }: Props) {
     }
   }
 
-  const quickLogin = (acc: { email: string; password: string }) => {
+  const quickLogin = async (acc: { email: string; password: string }) => {
     setEmail(acc.email)
     setPassword(acc.password)
-    setTimeout(submit, 0)
+    setLoading(true)
+    setError('')
+    try {
+      const session = await adminApi.login(acc.email, acc.password)
+      onLogin(session, acc.password)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка входа')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (

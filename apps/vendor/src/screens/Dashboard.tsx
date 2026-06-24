@@ -258,7 +258,7 @@ function StatCard({ label, value, color }: { label: string; value: string | numb
       <div style={{ fontSize: '20px', fontWeight: 700, color: color ?? 'var(--text)', marginBottom: '4px' }}>
         {value}
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--text3)' }}>
+      <div style={{ fontSize: '12px', color: 'var(--text2)' }}>
         {label}
       </div>
     </div>
