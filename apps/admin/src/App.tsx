@@ -9,8 +9,12 @@ import Consultations from './screens/Consultations'
 import Orders from './screens/Orders'
 import Promos from './screens/Promos'
 import Audit from './screens/Audit'
+import Finances from './screens/Finances'
+import Content from './screens/Content'
+import Users from './screens/Users'
+import Settings from './screens/Settings'
 
-type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit'
+type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit' | 'finances' | 'content' | 'users' | 'settings'
 
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(() => {
@@ -43,7 +47,11 @@ export default function App() {
       {screen === 'verification'   && <Verification />}
       {screen === 'consultations'  && <Consultations />}
       {screen === 'orders'         && <Orders session={session} />}
+      {screen === 'finances'       && <Finances />}
+      {screen === 'users'          && <Users sessionRole={session.role} />}
+      {screen === 'content'        && <Content />}
       {screen === 'promos'         && <Promos session={session} />}
+      {screen === 'settings'       && <Settings />}
       {screen === 'audit'          && <Audit />}
     </Layout>
   )

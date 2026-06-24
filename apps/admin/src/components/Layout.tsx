@@ -5,12 +5,16 @@ const ROLE_LABEL: Record<string, string> = { admin: 'Администратор'
 const ROLE_COLOR: Record<string, string> = { admin: 'var(--primary)', moderator: '#3B5BDB', support: 'var(--success)' }
 
 const NAV = [
-  { id: 'dashboard',     label: '📊 Обзор',        roles: ['admin', 'moderator', 'support'] },
-  { id: 'verification',  label: '🔍 Верификация',   roles: ['admin', 'moderator'] },
-  { id: 'consultations', label: '💬 Консультации',  roles: ['admin', 'support']   },
-  { id: 'orders',        label: '📋 Заказы',        roles: ['admin', 'support']   },
-  { id: 'promos',        label: '🏷️ Промокоды',    roles: ['admin', 'moderator'] },
-  { id: 'audit',         label: '📜 Аудит',         roles: ['admin']              },
+  { id: 'dashboard',     label: '📊 Обзор',           roles: ['admin', 'moderator', 'support'] },
+  { id: 'verification',  label: '🔍 Верификация',      roles: ['admin', 'moderator'] },
+  { id: 'consultations', label: '💬 Консультации',     roles: ['admin', 'support']   },
+  { id: 'orders',        label: '📋 Заказы',           roles: ['admin', 'support']   },
+  { id: 'finances',      label: '💰 Финансы',          roles: ['admin']              },
+  { id: 'users',         label: '👥 Пользователи',     roles: ['admin', 'moderator'] },
+  { id: 'content',       label: '📝 Контент',          roles: ['admin', 'moderator'] },
+  { id: 'promos',        label: '🏷️ Промокоды',       roles: ['admin', 'moderator'] },
+  { id: 'settings',      label: '⚙️ Настройки',       roles: ['admin']              },
+  { id: 'audit',         label: '📜 Аудит',            roles: ['admin']              },
 ]
 
 interface Props {
