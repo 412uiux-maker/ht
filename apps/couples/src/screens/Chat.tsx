@@ -254,13 +254,6 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
               <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 4 }}>{t('chat.waiting')}</div>
               <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t('chat.waiting_hint')}</div>
             </div>
-
-            <style>{`
-              @keyframes dot-pulse {
-                0%, 80%, 100% { opacity: .3; transform: scale(.75); }
-                40% { opacity: 1; transform: scale(1.15); }
-              }
-            `}</style>
           </div>
         )}
 
@@ -321,7 +314,7 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
                   </div>
                   {isLast && (
                     <div style={{
-                      fontSize: 10, color: 'var(--text-muted)', marginTop: 3,
+                      fontSize: 11, color: 'var(--text-muted)', marginTop: 3,
                       textAlign: isMe ? 'right' : 'left',
                       paddingLeft: isMe ? 0 : 2,
                     }}>
@@ -425,8 +418,8 @@ function MedReportCard({ report }: { report: MedicalReport }) {
         background: 'rgba(242,120,75,.08)', border: '1px solid rgba(242,120,75,.2)',
         borderRadius: 'var(--r-md)', padding: '12px 14px',
       }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary)', letterSpacing: '.05em', marginBottom: 4 }}>
-          ДИАГНОЗ
+        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--primary)', marginBottom: 4 }}>
+          Диагноз
         </div>
         <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', lineHeight: 1.5 }}>
           {report.diagnosis}
@@ -517,7 +510,7 @@ function MedReportCard({ report }: { report: MedicalReport }) {
         }}>
           <span style={{ fontSize: 20, flexShrink: 0 }}>📅</span>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 2 }}>НАБЛЮДЕНИЕ</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>Наблюдение</div>
             <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{report.followup}</div>
           </div>
         </div>
@@ -532,7 +525,7 @@ function MedReportCard({ report }: { report: MedicalReport }) {
         }}>
           <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#856404', marginBottom: 2 }}>ОГРАНИЧЕНИЯ</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#856404', marginBottom: 2 }}>Ограничения</div>
             <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{report.restrictions}</div>
           </div>
         </div>
@@ -595,7 +588,7 @@ function CompletionCard({ consultation, vet, hover, setHover, rating, setRating,
                 onMouseEnter={() => { if (!rated) setHover(i) }}
                 onMouseLeave={() => { if (!rated) setHover(0) }}
                 disabled={rated}
-                aria-label={`${i} звезд`}
+                aria-label={`${i} ★`}
                 style={{
                   fontSize: 28, background: 'none', border: 'none',
                   cursor: rated ? 'default' : 'pointer', padding: '1px 2px',

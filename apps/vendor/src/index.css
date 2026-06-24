@@ -65,11 +65,16 @@
     --text: #1A1D23;
     --text2: #5C6370;
     --text3: #9AA0AB;
+    --coral: #C0511F;
     --coral-dark: #C0511F;
     --green: #2E9E5B;
     --violet: #5B3FA8;
     --amber: #C07A00;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
 body {

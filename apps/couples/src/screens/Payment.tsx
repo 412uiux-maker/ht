@@ -99,7 +99,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
       {state === 'processing' && (
         <div style={{
           position: 'fixed', inset: 0,
-          background: 'rgba(255,255,255,0.96)',
+          background: 'var(--surface)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           zIndex: 100, gap: 20,
@@ -116,7 +116,6 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
           <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>
             {t('pay.processing_sub')}
           </div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
       )}
 

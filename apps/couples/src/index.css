@@ -81,3 +81,15 @@ button { cursor: pointer; font-family: var(--font); }
 input, select, textarea { font-family: var(--font); color: var(--text); background: var(--surface); }
 
 :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+@keyframes dot-pulse {
+  0%, 80%, 100% { opacity: .25; }
+  40%           { opacity: 1;   }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [style*="dot-pulse"] { animation: none !important; opacity: 1 !important; }
+  [style*="spin"]      { animation: none !important; }
+}

@@ -108,8 +108,9 @@ export default function Pets({ lang }: { lang: string }) {
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('pets.title')}</span>
         <button
           onClick={() => setShowAdd(true)}
+          aria-label={t('pets.add')}
           style={{
-            width: 36, height: 36, borderRadius: 'var(--r-md)',
+            width: 44, height: 44, borderRadius: 'var(--r-md)',
             background: 'var(--primary)', color: '#fff', border: 'none',
             fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
           }}
@@ -245,11 +246,11 @@ function PetCard({ pet, onBack, onEdit }: { pet: Pet; onBack: () => void; onEdit
         padding: '14px 20px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
         <span style={{ fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center', margin: '0 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {pet.name}
         </span>
-        <button onClick={onEdit} style={{ ...iconBtn, background: 'var(--surface-2)', border: '1.5px solid var(--border)', fontSize: 14 }}>✏️</button>
+        <button onClick={onEdit} aria-label={t('pets.edit_profile')} style={{ ...iconBtn, background: 'var(--surface-2)', border: '1.5px solid var(--border)', fontSize: 14 }}>✏️</button>
       </header>
 
       {/* Avatar */}
@@ -383,7 +384,7 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
         padding: '14px 20px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
         <span style={{ fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center', margin: '0 8px' }}>
           {t('pets.edit_profile')}
         </span>
@@ -510,7 +511,7 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
 // ═══════════════════════════════════════════════════════════════
 
 const iconBtn: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 'var(--r-md)',
+  width: 44, height: 44, borderRadius: 'var(--r-md)',
   border: '1.5px solid var(--border)', background: 'transparent',
   fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
 }

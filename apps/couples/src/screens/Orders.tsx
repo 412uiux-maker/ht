@@ -71,7 +71,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
         padding: '14px 20px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('orders.title')}</span>
       </header>
 
@@ -209,7 +209,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
 }
 
 const iconBtn: React.CSSProperties = {
-  width: 36, height: 36, borderRadius: 'var(--r-md)',
+  width: 44, height: 44, borderRadius: 'var(--r-md)',
   border: '1.5px solid var(--border)', background: 'transparent',
   fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
 }
