@@ -1,3 +1,4 @@
+import { IconHome, IconConsultation, IconPaw, IconBook, IconUser } from '@ht/shared'
 import { t } from '../i18n'
 
 export type Tab = 'home' | 'consult' | 'pets' | 'learn' | 'profile'
@@ -7,12 +8,18 @@ interface Props {
   onChange: (tab: Tab) => void
 }
 
-const TABS: { id: Tab; icon: string; labelKey: keyof typeof import('../i18n').t extends (k: infer K) => string ? K : never }[] = [
-  { id: 'home',    icon: '🏠', labelKey: 'nav.home' as const },
-  { id: 'consult', icon: '💬', labelKey: 'nav.consult' as const },
-  { id: 'pets',    icon: '🐾', labelKey: 'nav.pets' as const },
-  { id: 'learn',   icon: '📚', labelKey: 'nav.learn' as const },
-  { id: 'profile', icon: '👤', labelKey: 'nav.profile' as const },
+type TabDef = {
+  id: Tab
+  Icon: React.ComponentType<{ size?: number; color?: string }>
+  labelKey: 'nav.home' | 'nav.consult' | 'nav.pets' | 'nav.learn' | 'nav.profile'
+}
+
+const TABS: TabDef[] = [
+  { id: 'home',    Icon: IconHome,         labelKey: 'nav.home' },
+  { id: 'consult', Icon: IconConsultation, labelKey: 'nav.consult' },
+  { id: 'pets',    Icon: IconPaw,          labelKey: 'nav.pets' },
+  { id: 'learn',   Icon: IconBook,         labelKey: 'nav.learn' },
+  { id: 'profile', Icon: IconUser,         labelKey: 'nav.profile' },
 ]
 
 export default function BottomNav({ active, onChange }: Props) {
@@ -26,16 +33,16 @@ export default function BottomNav({ active, onChange }: Props) {
       zIndex: 50,
       paddingBottom: 'env(safe-area-inset-bottom)',
     }}>
-      {TABS.map(tab => {
-        const isActive = active === tab.id
+      {TABS.map(({ id, Icon, labelKey }) => {
+        const isActive = active === id
         return (
           <button
-            key={tab.id}
-            onClick={() => onChange(tab.id)}
+            key={id}
+            onClick={() => onChange(id)}
             style={{
               flex: 1, display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
-              gap: 3, padding: '10px 4px 10px',
+              gap: 4, padding: '10px 4px',
               background: 'transparent', border: 'none',
               cursor: 'pointer', fontFamily: 'inherit',
               minHeight: 56,
@@ -51,16 +58,12 @@ export default function BottomNav({ active, onChange }: Props) {
                 borderRadius: '0 0 2px 2px',
               }} />
             )}
-            <span style={{
-              fontSize: 20,
-              filter: isActive ? 'none' : 'grayscale(1) opacity(0.5)',
-              transition: 'filter .15s',
-            }}>{tab.icon}</span>
+            <Icon size={22} />
             <span style={{
               fontSize: 10, fontWeight: isActive ? 700 : 500,
               letterSpacing: '0.01em', whiteSpace: 'nowrap',
             }}>
-              {t(tab.labelKey as Parameters<typeof t>[0])}
+              {t(labelKey)}
             </span>
           </button>
         )
