@@ -33,7 +33,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
     const seen = new Set<string>()
     const result: string[] = []
     vets.forEach((v) => {
-      const key = v.specialty.split(',')[0].trim()
+      const key = v.specialty.split(' (')[0].trim()
       if (!seen.has(key)) { seen.add(key); result.push(key) }
     })
     return result
