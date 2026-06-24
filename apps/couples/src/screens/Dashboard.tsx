@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconStethoscope, IconFood, IconSyringe, IconMapPin, IconShield, IconChevronRight } from '@ht/shared'
 import type { Deed } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -14,11 +15,19 @@ interface Props {
   onPlaces: () => void
 }
 
-const QUICK = [
-  { icon: '🩺', bg: 'linear-gradient(135deg,#F8915A,#F26B47)', action: 'consult'  as const, titleKey: 'dash.consult'  as const, subKey: 'dash.consult_sub'  as const },
-  { icon: '🥗', bg: 'linear-gradient(135deg,#4ADE80,#22C55E)', action: 'food'     as const, titleKey: 'dash.food'     as const, subKey: 'dash.food_sub'     as const },
-  { icon: '🏥', bg: 'linear-gradient(135deg,#60A5FA,#3B82F6)', action: 'clinics'  as const, titleKey: 'dash.clinics'  as const, subKey: 'dash.clinics_sub'  as const },
-  { icon: '🗺️', bg: 'linear-gradient(135deg,#4ADE80,#2E7D32)', action: 'places'   as const, titleKey: 'dash.places'   as const, subKey: 'dash.places_sub'   as const },
+type QuickAction = 'consult' | 'food' | 'clinics' | 'places'
+
+const QUICK: {
+  Icon: React.ComponentType<{ size?: number; color?: string }>
+  bg: string
+  action: QuickAction
+  titleKey: 'dash.consult' | 'dash.food' | 'dash.clinics' | 'dash.places'
+  subKey: 'dash.consult_sub' | 'dash.food_sub' | 'dash.clinics_sub' | 'dash.places_sub'
+}[] = [
+  { Icon: IconStethoscope, bg: 'linear-gradient(135deg,#F8915A,#F26B47)', action: 'consult', titleKey: 'dash.consult', subKey: 'dash.consult_sub' },
+  { Icon: IconFood,        bg: 'linear-gradient(135deg,#4ADE80,#22C55E)', action: 'food',    titleKey: 'dash.food',    subKey: 'dash.food_sub'    },
+  { Icon: IconSyringe,     bg: 'linear-gradient(135deg,#60A5FA,#3B82F6)', action: 'clinics', titleKey: 'dash.clinics', subKey: 'dash.clinics_sub' },
+  { Icon: IconMapPin,      bg: 'linear-gradient(135deg,#4ADE80,#2E7D32)', action: 'places',  titleKey: 'dash.places',  subKey: 'dash.places_sub'  },
 ]
 
 export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces }: Props) {
@@ -94,9 +103,8 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
                 width: 40, height: 40, borderRadius: 'var(--r-md)',
                 background: q.bg,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 20,
               }}>
-                {q.icon}
+                <q.Icon size={20} color="#fff" />
               </div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>
@@ -124,8 +132,10 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
           <div style={{
             width: 44, height: 44, borderRadius: 'var(--r-md)',
             background: 'rgba(255,255,255,.2)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0,
-          }}>🛡️</div>
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}>
+            <IconShield size={24} color="#fff" />
+          </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 2 }}>{t('ins.banner_title')}</div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.8)' }}>{t('ins.banner_sub')}</div>
@@ -134,8 +144,9 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
             background: 'rgba(255,255,255,.9)', color: '#7C3AED',
             padding: '6px 12px', borderRadius: 'var(--r-pill)',
             fontSize: 12, fontWeight: 700, flexShrink: 0,
+            display: 'flex', alignItems: 'center', gap: 4,
           }}>
-            {t('ins.more')} →
+            {t('ins.more')} <IconChevronRight size={14} color="#7C3AED" />
           </div>
         </button>
 
