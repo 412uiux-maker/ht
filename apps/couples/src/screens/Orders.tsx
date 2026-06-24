@@ -41,9 +41,15 @@ function fmtMoney(n: number | null) {
   return n.toLocaleString('ru-RU') + ' ' + t('currency')
 }
 
+interface VetInfo {
+  name: string
+  specialty: string
+  avatar_emoji: string
+}
+
 interface Props {
   onBack: () => void
-  onOpenChat: (consultationId: string) => void
+  onOpenChat: (consultationId: string, vet: VetInfo) => void
 }
 
 export default function Orders({ onBack, onOpenChat }: Props) {
@@ -189,7 +195,11 @@ export default function Orders({ onBack, onOpenChat }: Props) {
                 </div>
                 {canChat && (
                   <button
-                    onClick={() => onOpenChat(order.consultation_id!)}
+                    onClick={() => onOpenChat(order.consultation_id!, {
+                      name: order.vet_name ?? 'Ветеринар',
+                      specialty: order.vet_specialty ?? '',
+                      avatar_emoji: order.vet_avatar ?? '🩺',
+                    })}
                     style={{
                       padding: '10px 20px', borderRadius: 'var(--r-pill)',
                       background: 'var(--primary)', color: '#fff', border: 'none',

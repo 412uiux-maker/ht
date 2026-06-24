@@ -130,7 +130,11 @@ export default function App() {
       <Wrap>
         <Orders
           onBack={() => endFlow('profile')}
-          onOpenChat={consultationId => startFlow({ name: 'chat', consultationId, vet: STUB_VET })}
+          onOpenChat={(consultationId, vetInfo) => startFlow({
+            name: 'chat',
+            consultationId,
+            vet: { ...STUB_VET, ...vetInfo },
+          })}
         />
       </Wrap>
     )
