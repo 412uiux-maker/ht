@@ -77,9 +77,9 @@ export default function Dashboard() {
       {/* Consultations */}
       <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Консультации</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 28 }}>
-        <StatusCard label="Ожидают" value={stats.consult_pending}  color="#856404" bg="#FFF3CD" />
-        <StatusCard label="Активны"  value={stats.consult_active}   color="#3B5BDB" bg="#E8EDFF" />
-        <StatusCard label="Завершены" value={stats.consult_completed} color="var(--success)" bg="#D1F2E4" />
+        <StatusCard label="Ожидают"  value={stats.consult_pending}   variant="warning" />
+        <StatusCard label="Активны"  value={stats.consult_active}    variant="blue" />
+        <StatusCard label="Завершены" value={stats.consult_completed} variant="success" />
       </div>
 
       {/* Verification alert */}
@@ -104,11 +104,11 @@ export default function Dashboard() {
   )
 }
 
-function StatusCard({ label, value, color, bg }: { label: string; value: number; color: string; bg: string }) {
+function StatusCard({ label, value, variant }: { label: string; value: number; variant: 'warning' | 'blue' | 'success' }) {
   return (
-    <div style={{ background: bg, borderRadius: 'var(--r-md)', padding: '16px 20px' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color, marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 32, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+    <div className={`status-card-${variant}`} style={{ borderRadius: 'var(--r-md)', padding: '16px 20px' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 32, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
     </div>
   )
 }

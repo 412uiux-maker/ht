@@ -140,7 +140,7 @@ export default function Login({ onLogin }: { onLogin: (s: VendorSession) => void
 
         {step === 'phone' ? (
           <>
-            <p style={{ fontSize: '12px', color: 'var(--text3)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            <p style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text2)', marginBottom: '10px' }}>
               Быстрый вход
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '24px' }}>

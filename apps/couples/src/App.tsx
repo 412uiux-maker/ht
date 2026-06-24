@@ -15,6 +15,7 @@ import Insurance from './screens/Insurance'
 import InsuranceCheckout from './screens/InsuranceCheckout'
 import InsuranceSuccess from './screens/InsuranceSuccess'
 import Orders from './screens/Orders'
+import FoodWizard from './screens/FoodWizard'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
@@ -25,6 +26,7 @@ type Flow =
   | { name: 'insurance-checkout' }
   | { name: 'insurance-success' }
   | { name: 'orders' }
+  | { name: 'food' }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -132,6 +134,15 @@ export default function App() {
         />
       </Wrap>
     )
+
+    if (flow.name === 'food') return (
+      <Wrap>
+        <FoodWizard
+          onBack={() => endFlow('home')}
+          onConsult={() => endFlow('consult')}
+        />
+      </Wrap>
+    )
   }
 
   // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
@@ -143,6 +154,7 @@ export default function App() {
           onSwitchLang={switchLang}
           onNavigate={setTab}
           onInsurance={() => startFlow({ name: 'insurance' })}
+          onFood={() => startFlow({ name: 'food' })}
         />
       )}
       {tab === 'consult' && (

@@ -258,7 +258,7 @@ function StatCard({ label, value, color }: { label: string; value: string | numb
       <div style={{ fontSize: '20px', fontWeight: 700, color: color ?? 'var(--text)', marginBottom: '4px' }}>
         {value}
       </div>
-      <div style={{ fontSize: '12px', color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+      <div style={{ fontSize: '12px', color: 'var(--text3)' }}>
         {label}
       </div>
     </div>
@@ -281,10 +281,10 @@ function ConsultCard({
         padding: '16px 18px', border: '1px solid var(--surface3)',
         cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
         transition: 'border-color .15s',
-        borderLeft: c.status === 'pending' ? '3px solid var(--amber)' : c.status === 'active' ? '3px solid var(--green)' : '1px solid var(--surface3)',
+        borderLeft: c.status === 'pending' ? '3px solid var(--amber)' : c.status === 'active' ? '3px solid var(--green)' : '3px solid transparent',
       }}
       onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--coral)')}
-      onMouseLeave={e => (e.currentTarget.style.borderColor = c.status === 'pending' ? 'var(--amber)' : c.status === 'active' ? 'var(--green)' : 'var(--surface3)')}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = c.status === 'pending' ? 'var(--amber)' : c.status === 'active' ? 'var(--green)' : 'transparent')}
     >
       <span style={{ fontSize: '28px', flexShrink: 0 }}>
         {SPECIES[c.pet_species] ?? '🐾'}

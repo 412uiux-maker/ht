@@ -88,6 +88,14 @@ a { color: inherit; text-decoration: none; }
 .chip-muted    { background: #E9ECEF; color: #6C7480; }
 .chip-blue     { background: #E8EDFF; color: #3B5BDB; }
 
+/* Status summary cards (Dashboard) */
+.status-card-warning { background: #FFF3CD; color: #7A5700; }
+.status-card-blue    { background: #E8EDFF; color: #1E3A9E; }
+.status-card-success { background: #D1F2E4; color: #1A6B3A; }
+[data-theme="dark"] .status-card-warning { background: rgba(210,153,34,.15); color: #D29522; }
+[data-theme="dark"] .status-card-blue    { background: rgba(88,166,255,.12); color: #58A6FF; }
+[data-theme="dark"] .status-card-success { background: rgba(63,164,107,.15); color: #3FB950; }
+
 /* Dark chip overrides */
 [data-theme="dark"] .chip-warning { background: rgba(210,153,34,.2);  color: #D29522; }
 [data-theme="dark"] .chip-success { background: rgba(63,164,107,.2);  color: #3FB950; }

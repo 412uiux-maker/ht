@@ -9,16 +9,17 @@ interface Props {
   onSwitchLang: () => void
   onNavigate: (tab: Tab) => void
   onInsurance: () => void
+  onFood: () => void
 }
 
 const QUICK = [
-  { icon: '🩺', bg: 'linear-gradient(135deg,#F8915A,#F26B47)', tab: 'consult' as Tab, titleKey: 'dash.consult' as const, subKey: 'dash.consult_sub' as const },
-  { icon: '🥗', bg: 'linear-gradient(135deg,#4ADE80,#22C55E)', tab: 'learn'   as Tab, titleKey: 'dash.food'    as const, subKey: 'dash.food_sub'    as const },
-  { icon: '📚', bg: 'linear-gradient(135deg,#60A5FA,#3B82F6)', tab: 'learn'   as Tab, titleKey: 'dash.learn'   as const, subKey: 'dash.learn_sub'   as const },
-  { icon: '❤️', bg: 'linear-gradient(135deg,#F472B6,#EC4899)', tab: 'pets'    as Tab, titleKey: 'dash.deeds'   as const, subKey: 'dash.deeds_sub'   as const },
+  { icon: '🩺', bg: 'linear-gradient(135deg,#F8915A,#F26B47)', action: 'consult' as const, titleKey: 'dash.consult' as const, subKey: 'dash.consult_sub' as const },
+  { icon: '🥗', bg: 'linear-gradient(135deg,#4ADE80,#22C55E)', action: 'food'    as const, titleKey: 'dash.food'    as const, subKey: 'dash.food_sub'    as const },
+  { icon: '📚', bg: 'linear-gradient(135deg,#60A5FA,#3B82F6)', action: 'learn'   as const, titleKey: 'dash.learn'   as const, subKey: 'dash.learn_sub'   as const },
+  { icon: '❤️', bg: 'linear-gradient(135deg,#F472B6,#EC4899)', action: 'deeds'   as const, titleKey: 'dash.deeds'   as const, subKey: 'dash.deeds_sub'   as const },
 ]
 
-export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance }: Props) {
+export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood }: Props) {
   void lang
   const [featuredDeed, setFeaturedDeed] = useState<Deed | null>(null)
 
@@ -73,7 +74,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance 
           {QUICK.map(q => (
             <button
               key={q.titleKey}
-              onClick={() => onNavigate(q.tab)}
+              onClick={() => q.action === 'food' ? onFood() : onNavigate(q.action === 'consult' ? 'consult' : 'learn')}
               style={{
                 background: 'var(--surface)', border: '1px solid var(--border)',
                 borderRadius: 'var(--r-lg)', padding: '14px',
