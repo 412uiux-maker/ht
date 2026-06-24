@@ -344,7 +344,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                   background: 'rgba(242,120,75,.09)', border: '1px solid rgba(242,120,75,.22)',
                   borderRadius: 'var(--r-lg)', padding: '16px',
                 }}>
-                  <div style={{ fontWeight: 700, fontSize: 12, color: 'var(--primary)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.06em' }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--primary)', marginBottom: 8 }}>
                     {t('food.result_why')}
                   </div>
                   <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65 }}>{whyText}</div>

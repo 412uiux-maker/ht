@@ -511,7 +511,7 @@ export default function Chat({
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginBottom: '12px' }}>
-      <p style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text3)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '.04em' }}>
+      <p style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text3)', marginBottom: '6px' }}>
         {label}
       </p>
       {children}

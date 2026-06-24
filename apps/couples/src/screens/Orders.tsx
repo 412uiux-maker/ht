@@ -180,7 +180,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
               {/* Bottom: price + action */}
               <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.03em' }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
                     {t('orders.price')}
                   </div>
                   <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>

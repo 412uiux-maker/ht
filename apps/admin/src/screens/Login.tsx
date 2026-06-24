@@ -53,7 +53,7 @@ export default function Login({ onLogin }: Props) {
 
         <div className="card">
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>
               Быстрый вход
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

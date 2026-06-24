@@ -145,7 +145,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
               <span style={{ fontSize: 24 }}>{featuredDeed.emoji}</span>
               <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>
                   {t('deeds.title')}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{featuredDeed.title}</div>

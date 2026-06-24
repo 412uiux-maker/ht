@@ -327,7 +327,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
 
             {/* Provider select */}
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>
                 {t('pay.method')}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

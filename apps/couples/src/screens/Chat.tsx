@@ -575,7 +575,7 @@ function CompletionCard({ consultation, vet, hover, setHover, rating, setRating,
         {/* Fallback: plain summary */}
         {!report && summary && (
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
               {t('chat.summary_title')}
             </div>
             <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65 }}>{summary}</div>
