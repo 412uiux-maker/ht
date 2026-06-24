@@ -1,12 +1,22 @@
 import { useState } from 'react'
+import {
+  IconConsultation, IconSettings, IconMoney,
+  IconStar, IconUser, IconMoon, IconSun, IconLogOut,
+} from '@ht/shared'
 import type { VendorSession } from '../types'
 
-const NAV = [
-  { id: 'dashboard', label: '📋 Консультации' },
-  { id: 'services',  label: '⚙️ Услуги'       },
-  { id: 'finances',  label: '💰 Финансы'       },
-  { id: 'reviews',   label: '⭐ Отзывы'        },
-  { id: 'profile',   label: '👤 Профиль'       },
+type NavItem = {
+  id: string
+  label: string
+  Icon: React.ComponentType<{ size?: number; color?: string }>
+}
+
+const NAV: NavItem[] = [
+  { id: 'dashboard', label: 'Консультации', Icon: IconConsultation },
+  { id: 'services',  label: 'Услуги',       Icon: IconSettings      },
+  { id: 'finances',  label: 'Финансы',      Icon: IconMoney         },
+  { id: 'reviews',   label: 'Отзывы',       Icon: IconStar          },
+  { id: 'profile',   label: 'Профиль',      Icon: IconUser          },
 ]
 
 function useTheme() {
@@ -61,22 +71,27 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '4px 8px', overflowY: 'auto' }}>
-          {NAV.map(item => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              style={{
-                width: '100%', textAlign: 'left', padding: '10px 14px',
-                borderRadius: 'var(--r-sm)', fontSize: 14, fontWeight: 500,
-                background: activeScreen === item.id ? 'rgba(242,120,75,.15)' : 'transparent',
-                color: activeScreen === item.id ? 'var(--coral)' : 'var(--text2)',
-                minHeight: 44, border: 'none', cursor: 'pointer',
-                transition: 'all .15s',
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+          {NAV.map(({ id, label, Icon }) => {
+            const isActive = activeScreen === id
+            return (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '10px 14px',
+                  borderRadius: 'var(--r-sm)', fontSize: 14, fontWeight: 500,
+                  background: isActive ? 'rgba(242,120,75,.15)' : 'transparent',
+                  color: isActive ? 'var(--coral)' : 'var(--text2)',
+                  minHeight: 44, border: 'none', cursor: 'pointer',
+                  transition: 'all .15s',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                <Icon size={18} color={isActive ? 'var(--coral)' : 'var(--text2)'} />
+                {label}
+              </button>
+            )
+          })}
         </nav>
 
         {/* Bottom */}
@@ -91,7 +106,10 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}
           >
-            <span>{theme === 'dark' ? '🌙 Тёмная' : '☀️ Светлая'}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {theme === 'dark' ? <IconMoon size={16} /> : <IconSun size={16} />}
+              {theme === 'dark' ? 'Тёмная' : 'Светлая'}
+            </span>
             <div style={{
               width: 38, height: 20, borderRadius: 999, position: 'relative',
               background: theme === 'dark' ? 'var(--coral)' : 'var(--surface3)',
@@ -112,8 +130,10 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
               width: '100%', padding: '9px 14px', borderRadius: 'var(--r-sm)',
               background: 'transparent', border: 'none',
               color: 'var(--text3)', fontSize: 13, cursor: 'pointer', minHeight: 40, textAlign: 'left',
+              display: 'flex', alignItems: 'center', gap: 8,
             }}
           >
+            <IconLogOut size={16} />
             Выйти
           </button>
         </div>

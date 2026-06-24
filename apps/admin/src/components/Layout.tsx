@@ -1,21 +1,33 @@
 import { useState } from 'react'
+import {
+  IconDashboard, IconVerify, IconConsultation, IconOrders, IconMoney,
+  IconUsers, IconContent, IconLearning, IconPromo, IconSettings, IconAudit,
+  IconMoon, IconSun, IconLogOut,
+} from '@ht/shared'
 import type { AdminSession } from '../types'
 
 const ROLE_LABEL: Record<string, string> = { admin: 'Администратор', moderator: 'Модератор', support: 'Поддержка' }
 const ROLE_COLOR: Record<string, string> = { admin: 'var(--primary)', moderator: '#3B5BDB', support: 'var(--success)' }
 
-const NAV = [
-  { id: 'dashboard',     label: '📊 Обзор',           roles: ['admin', 'moderator', 'support'] },
-  { id: 'verification',  label: '🔍 Верификация',      roles: ['admin', 'moderator'] },
-  { id: 'consultations', label: '💬 Консультации',     roles: ['admin', 'support']   },
-  { id: 'orders',        label: '📋 Заказы',           roles: ['admin', 'support']   },
-  { id: 'finances',      label: '💰 Финансы',          roles: ['admin']              },
-  { id: 'users',         label: '👥 Пользователи',     roles: ['admin', 'moderator'] },
-  { id: 'content',       label: '📝 Контент',          roles: ['admin', 'moderator'] },
-  { id: 'learning',      label: '🎓 Обучение',          roles: ['admin', 'moderator'] },
-  { id: 'promos',        label: '🏷️ Промокоды',       roles: ['admin', 'moderator'] },
-  { id: 'settings',      label: '⚙️ Настройки',       roles: ['admin']              },
-  { id: 'audit',         label: '📜 Аудит',            roles: ['admin']              },
+type NavItem = {
+  id: string
+  label: string
+  Icon: React.ComponentType<{ size?: number; color?: string }>
+  roles: string[]
+}
+
+const NAV: NavItem[] = [
+  { id: 'dashboard',     label: 'Обзор',          Icon: IconDashboard,    roles: ['admin', 'moderator', 'support'] },
+  { id: 'verification',  label: 'Верификация',     Icon: IconVerify,       roles: ['admin', 'moderator'] },
+  { id: 'consultations', label: 'Консультации',    Icon: IconConsultation, roles: ['admin', 'support']   },
+  { id: 'orders',        label: 'Заказы',          Icon: IconOrders,       roles: ['admin', 'support']   },
+  { id: 'finances',      label: 'Финансы',         Icon: IconMoney,        roles: ['admin']              },
+  { id: 'users',         label: 'Пользователи',    Icon: IconUsers,        roles: ['admin', 'moderator'] },
+  { id: 'content',       label: 'Контент',         Icon: IconContent,      roles: ['admin', 'moderator'] },
+  { id: 'learning',      label: 'Обучение',        Icon: IconLearning,     roles: ['admin', 'moderator'] },
+  { id: 'promos',        label: 'Промокоды',       Icon: IconPromo,        roles: ['admin', 'moderator'] },
+  { id: 'settings',      label: 'Настройки',       Icon: IconSettings,     roles: ['admin']              },
+  { id: 'audit',         label: 'Аудит',           Icon: IconAudit,        roles: ['admin']              },
 ]
 
 interface Props {
@@ -67,21 +79,26 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
         </div>
 
         <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto' }}>
-          {visibleNav.map(item => (
-            <button
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              style={{
-                width: '100%', textAlign: 'left', padding: '10px 14px',
-                borderRadius: 'var(--r-md)', fontSize: 14, fontWeight: 500,
-                background: activeScreen === item.id ? 'var(--surface-2)' : 'none',
-                color: activeScreen === item.id ? 'var(--primary)' : 'var(--text)',
-                minHeight: 44, transition: 'all .15s', border: 'none', cursor: 'pointer',
-              }}
-            >
-              {item.label}
-            </button>
-          ))}
+          {visibleNav.map(({ id, label, Icon }) => {
+            const isActive = activeScreen === id
+            return (
+              <button
+                key={id}
+                onClick={() => onNavigate(id)}
+                style={{
+                  width: '100%', textAlign: 'left', padding: '10px 14px',
+                  borderRadius: 'var(--r-md)', fontSize: 14, fontWeight: 500,
+                  background: isActive ? 'var(--surface-2)' : 'none',
+                  color: isActive ? 'var(--primary)' : 'var(--text)',
+                  minHeight: 44, transition: 'all .15s', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}
+              >
+                <Icon size={17} color={isActive ? 'var(--primary)' : 'var(--text-muted)'} />
+                {label}
+              </button>
+            )
+          })}
         </nav>
 
         <div style={{ padding: '12px 8px', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -96,7 +113,10 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}
           >
-            <span>{theme === 'dark' ? '🌙 Тёмная тема' : '☀️ Светлая тема'}</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {theme === 'dark' ? <IconMoon size={16} /> : <IconSun size={16} />}
+              {theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
+            </span>
             <div style={{
               width: 40, height: 22, borderRadius: 'var(--r-pill)', position: 'relative',
               background: theme === 'dark' ? 'var(--primary)' : 'var(--border)',
@@ -115,8 +135,9 @@ export default function Layout({ session, activeScreen, onNavigate, onLogout, ch
           <button
             className="btn btn-ghost"
             onClick={onLogout}
-            style={{ width: '100%', color: 'var(--text-muted)', fontSize: 13 }}
+            style={{ width: '100%', color: 'var(--text-muted)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}
           >
+            <IconLogOut size={15} />
             Выйти
           </button>
         </div>
