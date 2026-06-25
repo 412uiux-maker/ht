@@ -2,9 +2,9 @@ const { Router } = require('express');
 const pool = require('../db');
 const router = Router();
 
-// Demo-only payment simulation — no real money movement
-// In production: replace with Click/Payme/Uzum redirect + webhook
+// Demo-only payment simulation — unavailable in production
 router.post('/simulate', async (req, res) => {
+  if (process.env.NODE_ENV === 'production') return res.status(404).json({ error: 'Not found' });
   const { consultation_id, provider, amount_uzs, owner_id } = req.body;
 
   if (!consultation_id || !provider || !amount_uzs) {

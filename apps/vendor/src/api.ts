@@ -1,4 +1,5 @@
 import type { VendorSession, Consultation, Message, Stats, MedicalReport } from './types'
+import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(path, opts)
@@ -8,6 +9,11 @@ async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   }
   return res.json()
 }
+
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${getSession()?.token ?? ''}`,
+})
 
 export const api = {
   sendCode: (phone: string) =>
@@ -31,12 +37,12 @@ export const api = {
       body: JSON.stringify({ email, password })
     }),
 
-  stats: (vet_id: number) =>
-    req<Stats>(`/api/vendor/stats?vet_id=${vet_id}`),
+  stats: (_vet_id: number) =>
+    req<Stats>('/api/vendor/stats', { headers: authHeaders() }),
 
-  consultations: (vet_id: number, status?: string) => {
-    const q = status && status !== 'all' ? `&status=${status}` : ''
-    return req<Consultation[]>(`/api/vendor/consultations?vet_id=${vet_id}${q}`)
+  consultations: (_vet_id: number, status?: string) => {
+    const q = status && status !== 'all' ? `?status=${status}` : ''
+    return req<Consultation[]>(`/api/vendor/consultations${q}`, { headers: authHeaders() })
   },
 
   consultation: (id: string) =>

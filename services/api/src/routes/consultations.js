@@ -3,7 +3,7 @@ const pool = require('../db');
 const router = express.Router();
 
 router.post('/', async (req, res) => {
-  const { vet_id, client_name, pet_name, pet_species, problem, slot_time, pet_id } = req.body;
+  const { vet_id, client_name, pet_name, pet_species, problem, slot_time, pet_id, owner_id } = req.body;
   if (!vet_id || !client_name || !pet_name || !pet_species || !problem) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -14,9 +14,9 @@ router.post('/', async (req, res) => {
     const vetName = vet ? vet.name : 'Ветеринар';
     const durationMin = (vet && vet.consult_duration_min) || 30;
     const { rows: [consult] } = await pool.query(
-      `INSERT INTO consultations (vet_id, client_name, pet_name, pet_species, problem, slot_time, duration_min, pet_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-      [vet_id, client_name, pet_name, pet_species, problem, slot_time || null, durationMin, pet_id || null]
+      `INSERT INTO consultations (vet_id, client_name, pet_name, pet_species, problem, slot_time, duration_min, pet_id, owner_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [vet_id, client_name, pet_name, pet_species, problem, slot_time || null, durationMin, pet_id || null, owner_id || null]
     );
     await pool.query(
       `INSERT INTO messages (consultation_id, sender, text) VALUES ($1,'vet',$2)`,
@@ -29,6 +29,7 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
+  const { owner_id } = req.query;
   try {
     const { rows: [consultation] } = await pool.query(
       `SELECT c.*, v.name AS vet_name, v.specialty, v.avatar_emoji,
@@ -38,6 +39,9 @@ router.get('/:id', async (req, res) => {
       [req.params.id]
     );
     if (!consultation) return res.status(404).json({ error: 'Not found' });
+    if (owner_id && consultation.owner_id && consultation.owner_id !== owner_id) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
     const { rows: messages } = await pool.query(
       'SELECT * FROM messages WHERE consultation_id = $1 ORDER BY created_at',
       [req.params.id]

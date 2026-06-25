@@ -7,6 +7,7 @@ export type VendorSession = {
   rating: number
   avatar_emoji: string
   experience_yr: number
+  token: string
 }
 
 export type ConsultStatus = 'pending' | 'active' | 'completed'

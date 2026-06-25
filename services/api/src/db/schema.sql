@@ -204,3 +204,16 @@ CREATE TABLE IF NOT EXISTS foods (
   rating        NUMERIC(2,1) DEFAULT 4.5,
   is_active     BOOLEAN DEFAULT true
 );
+
+-- Telegram Mini App users (M3)
+CREATE TABLE IF NOT EXISTS users (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  telegram_id TEXT UNIQUE NOT NULL,
+  name        TEXT,
+  locale      TEXT DEFAULT 'ru',
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS users_telegram_idx ON users(telegram_id);
+
+-- IDOR ownership tracking for consultations
+ALTER TABLE consultations ADD COLUMN IF NOT EXISTS owner_id TEXT;

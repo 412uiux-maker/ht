@@ -9,7 +9,7 @@ const DEMO_ACCOUNTS = [
 ]
 
 interface Props {
-  onLogin: (session: AdminSession, pwd: string) => void
+  onLogin: (session: AdminSession) => void
 }
 
 export default function Login({ onLogin }: Props) {
@@ -25,7 +25,7 @@ export default function Login({ onLogin }: Props) {
     setError('')
     try {
       const session = await adminApi.login(email, password)
-      onLogin(session, password)
+      onLogin(session)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка входа')
     } finally {
@@ -40,7 +40,7 @@ export default function Login({ onLogin }: Props) {
     setError('')
     try {
       const session = await adminApi.login(acc.email, acc.password)
-      onLogin(session, acc.password)
+      onLogin(session)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка входа')
     } finally {

@@ -8,8 +8,7 @@ export const setApiSession = (s: AdminSession | null) => { _session = s }
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
-  'X-Admin-Email': _session?.email ?? '',
-  'X-Admin-Password': localStorage.getItem('ht_admin_pwd') ?? '',
+  'Authorization': `Bearer ${_session?.token ?? ''}`,
 })
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {

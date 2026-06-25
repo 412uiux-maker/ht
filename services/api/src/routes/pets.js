@@ -38,9 +38,11 @@ router.post('/', async (req, res) => {
 });
 
 router.get('/:id', async (req, res) => {
+  const { owner_id } = req.query;
   try {
     const { rows: [pet] } = await pool.query('SELECT * FROM pets WHERE id = $1', [req.params.id]);
     if (!pet) return res.status(404).json({ error: 'Not found' });
+    if (owner_id && pet.owner_id !== owner_id) return res.status(403).json({ error: 'Forbidden' });
     res.json(pet);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -48,11 +50,16 @@ router.get('/:id', async (req, res) => {
 });
 
 router.put('/:id', async (req, res) => {
-  const { species, name, breed, sex, birth_date, weight_kg, notes, avatar_emoji } = req.body;
+  const { owner_id, species, name, breed, sex, birth_date, weight_kg, notes, avatar_emoji } = req.body;
   if (!name) return res.status(400).json({ error: 'name is required' });
   if (species && !VALID_SPECIES.includes(species)) return res.status(400).json({ error: 'invalid species' });
   if (sex     && !VALID_SEX.includes(sex))         return res.status(400).json({ error: 'invalid sex' });
   try {
+    if (owner_id) {
+      const { rows: [existing] } = await pool.query('SELECT owner_id FROM pets WHERE id=$1', [req.params.id]);
+      if (!existing) return res.status(404).json({ error: 'Not found' });
+      if (existing.owner_id !== owner_id) return res.status(403).json({ error: 'Forbidden' });
+    }
     const { rows: [pet] } = await pool.query(
       `UPDATE pets SET species=$1, name=$2, breed=$3, sex=$4, birth_date=$5,
        weight_kg=$6, notes=$7, avatar_emoji=$8 WHERE id=$9 RETURNING *`,
@@ -67,7 +74,13 @@ router.put('/:id', async (req, res) => {
 });
 
 router.delete('/:id', async (req, res) => {
+  const { owner_id } = req.query;
   try {
+    if (owner_id) {
+      const { rows: [existing] } = await pool.query('SELECT owner_id FROM pets WHERE id=$1', [req.params.id]);
+      if (!existing) return res.status(404).json({ error: 'Not found' });
+      if (existing.owner_id !== owner_id) return res.status(403).json({ error: 'Forbidden' });
+    }
     const { rowCount } = await pool.query('DELETE FROM pets WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     res.status(204).end();
@@ -78,7 +91,13 @@ router.delete('/:id', async (req, res) => {
 
 // GET /api/pets/:id/consultations — completed consultations with reports for a pet
 router.get('/:id/consultations', async (req, res) => {
+  const { owner_id } = req.query;
   try {
+    if (owner_id) {
+      const { rows: [pet] } = await pool.query('SELECT owner_id FROM pets WHERE id=$1', [req.params.id]);
+      if (!pet) return res.status(404).json({ error: 'Not found' });
+      if (pet.owner_id !== owner_id) return res.status(403).json({ error: 'Forbidden' });
+    }
     const { rows } = await pool.query(
       `SELECT c.id, c.created_at, c.status, c.report, c.summary, c.duration_min, c.call_started_at,
               v.name AS vet_name, v.specialty, v.avatar_emoji
