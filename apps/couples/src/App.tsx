@@ -52,6 +52,8 @@ function devInitialFlow(): Flow | null {
 function devInitialTab(): Tab {
   const p = new URLSearchParams(location.search)
   if (p.has('booking')) return 'consult'
+  const t = p.get('tab')
+  if (t === 'pets' || t === 'learn' || t === 'consult' || t === 'profile') return t as Tab
   return 'home'
 }
 
