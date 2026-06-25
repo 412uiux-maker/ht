@@ -217,3 +217,31 @@ CREATE INDEX IF NOT EXISTS users_telegram_idx ON users(telegram_id);
 
 -- IDOR ownership tracking for consultations
 ALTER TABLE consultations ADD COLUMN IF NOT EXISTS owner_id TEXT;
+
+-- M2: Order lifecycle fields
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS commission_rate NUMERIC(4,2) DEFAULT 0.15;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payout_amount   INTEGER;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS rejected_reason TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancel_reason   TEXT;
+
+-- Extend orders status constraint to include rejected and reviewed
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+ALTER TABLE orders ADD CONSTRAINT orders_status_check
+  CHECK (status IN ('created','paid','accepted','rejected','in_progress','completed','cancelled','refunded','reviewed'));
+
+-- M2: Payments table (replaces ad-hoc simulate flow as single source of truth)
+CREATE TABLE IF NOT EXISTS payments (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id     UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  provider     TEXT NOT NULL CHECK (provider IN ('click','payme','uzum','simulate')),
+  amount_uzs   INTEGER NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending'
+               CHECK (status IN ('pending','paid','refunded','failed')),
+  external_ref TEXT,
+  checkout_url TEXT,
+  paid_at      TIMESTAMPTZ,
+  refunded_at  TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS payments_order_idx  ON payments(order_id);
+CREATE INDEX IF NOT EXISTS payments_status_idx ON payments(status);
