@@ -1,9 +1,21 @@
 import { useEffect, useState } from 'react'
-import { IconPaw, IconMoon, IconSun, IconOrders, IconInfo } from '@ht/shared'
+import { IconPaw, IconMoon, IconSun, IconOrders, IconInfo, IconSettings, IconChevronRight } from '@ht/shared'
 import type { Pet } from '../api'
 import { api, getOwnerId } from '../api'
-import { t } from '../i18n'
+import { t, getLang } from '../i18n'
 import type { Tab } from '../components/BottomNav'
+
+// ── Species colors (same system as Pets.tsx) ──────────────────
+const SC: Record<string, { bg: string; text: string }> = {
+  cat:     { bg: 'rgba(168,85,247,0.10)',  text: '#7C3AED' },
+  dog:     { bg: 'rgba(242,120,75,0.11)',  text: '#C0511F' },
+  rabbit:  { bg: 'rgba(20,184,166,0.10)',  text: '#0F766E' },
+  parrot:  { bg: 'rgba(234,179,8,0.10)',   text: '#92400E' },
+  hamster: { bg: 'rgba(234,88,12,0.10)',   text: '#9A3412' },
+  fish:    { bg: 'rgba(59,130,246,0.10)',  text: '#1D4ED8' },
+  other:   { bg: 'rgba(100,116,139,0.10)', text: '#475569' },
+}
+const sc = (s: string) => SC[s] ?? SC.other
 
 function useTheme() {
   const [theme, setTheme] = useState<'light' | 'dark'>(() =>
@@ -28,6 +40,7 @@ interface Props {
 export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Props) {
   const [pets, setPets] = useState<Pet[]>([])
   const { theme, toggle: toggleTheme } = useTheme()
+  const uz = getLang() === 'uz'
 
   useEffect(() => {
     api.pets(getOwnerId()).then(setPets).catch(() => {})
@@ -35,6 +48,9 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
 
   const ownerId = getOwnerId()
   const shortId = ownerId.slice(0, 8).toUpperCase()
+
+  // Floating pet emojis for card decoration (up to 4)
+  const petEmojis = pets.slice(0, 4).map(p => p.avatar_emoji)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72 }}>
@@ -47,99 +63,212 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
       </header>
 
       <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* User card */}
+
+        {/* ── Identity card ──────────────────────────────────── */}
         <div style={{
           background: 'var(--grad-warm)', borderRadius: 'var(--r-xl)',
-          padding: '20px', color: '#fff',
-          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '20px 20px 18px', color: '#fff', position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: '50%',
-            background: 'rgba(255,255,255,.25)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-          }}><IconPaw size={28} color="#fff" /></div>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>HappyTails</div>
-            <div style={{ fontSize: 12, opacity: 0.85 }}>ID: {shortId}</div>
+          {/* Floating pet emojis as background decoration */}
+          {petEmojis.length > 0 && (
+            <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
+              {petEmojis.map((em, i) => {
+                const positions = [
+                  { right: 14, top: 10 },
+                  { right: 50, top: 28 },
+                  { right: 22, top: 44 },
+                  { right: 58, top: 8 },
+                ]
+                const pos = positions[i]
+                return (
+                  <span key={i} style={{
+                    position: 'absolute', fontSize: 28 + (i % 2) * 4,
+                    opacity: 0.18 + i * 0.04,
+                    ...pos,
+                  }}>{em}</span>
+                )
+              })}
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, position: 'relative' }}>
+            {/* Avatar */}
+            <div style={{
+              width: 58, height: 58, borderRadius: '50%',
+              background: 'rgba(255,255,255,.22)', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: pets.length > 0 ? 30 : 0,
+              border: '2px solid rgba(255,255,255,.35)',
+            }}>
+              {pets.length > 0
+                ? pets[0].avatar_emoji
+                : <IconPaw size={26} color="rgba(255,255,255,.9)" />}
+            </div>
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 17, marginBottom: 3 }}>
+                {uz ? 'Mening profilim' : 'Мой профиль'}
+              </div>
+              <div style={{
+                fontSize: 12, opacity: 0.8,
+                fontFamily: 'monospace', letterSpacing: '0.05em',
+              }}>
+                ID: {shortId}
+              </div>
+            </div>
           </div>
+
+          {/* Pet count hint */}
+          {pets.length > 0 && (
+            <div style={{
+              marginTop: 14, paddingTop: 12,
+              borderTop: '1px solid rgba(255,255,255,.2)',
+              display: 'flex', alignItems: 'center', gap: 6,
+              fontSize: 13, opacity: 0.9, position: 'relative',
+            }}>
+              <span style={{ fontSize: 16 }}>🐾</span>
+              <span style={{ fontWeight: 600 }}>
+                {pets.length}{' '}
+                {uz
+                  ? `hayvon`
+                  : pets.length === 1 ? 'питомец' : pets.length < 5 ? 'питомца' : 'питомцев'}
+              </span>
+              {pets.map(p => (
+                <span key={p.id} style={{ fontSize: 15 }}>{p.avatar_emoji}</span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Pets section */}
-        <Section title={t('profile.my_pets')} action={t('pets.add')} onAction={() => onNavigate('pets')}>
+        {/* ── My pets strip ──────────────────────────────────── */}
+        <div style={{
+          background: 'var(--surface)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)', padding: '14px 16px',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{t('profile.my_pets')}</span>
+            <button
+              onClick={() => onNavigate('pets')}
+              style={{
+                background: 'none', border: 'none', padding: 0,
+                fontSize: 13, color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >{t('pets.add')}</button>
+          </div>
+
           {pets.length === 0 ? (
-            <div style={{ fontSize: 14, color: 'var(--text-muted)', padding: '12px 0' }}>
-              {t('pets.empty')}
-            </div>
-          ) : (
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
-              {pets.map(pet => (
-                <div key={pet.id} style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                  flexShrink: 0, minWidth: 60,
-                }}>
-                  <div style={{
-                    width: 52, height: 52, borderRadius: 'var(--r-md)',
-                    background: 'var(--surface-2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26,
-                  }}>{pet.avatar_emoji}</div>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)' }}>{pet.name}</span>
-                </div>
-              ))}
+            <div style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
+              padding: '16px 0 8px', gap: 8,
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 'var(--r-md)',
+                border: '1.5px dashed var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
+              }}>🐾</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
+                {t('pets.empty')}
+              </div>
               <button
                 onClick={() => onNavigate('pets')}
                 style={{
-                  width: 52, height: 52, borderRadius: 'var(--r-md)',
-                  border: '1.5px dashed var(--border)', background: 'transparent',
-                  fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, alignSelf: 'flex-start',
+                  padding: '8px 20px', borderRadius: 'var(--r-pill)',
+                  background: 'var(--primary)', color: '#fff', border: 'none',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36,
                 }}
+              >
+                {t('pets.add')} →
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+              {pets.map(pet => {
+                const colors = sc(pet.species)
+                return (
+                  <button
+                    key={pet.id}
+                    onClick={() => onNavigate('pets')}
+                    style={{
+                      flexShrink: 0, width: 68, border: '1px solid var(--border)',
+                      borderRadius: 'var(--r-lg)', background: 'var(--bg)',
+                      overflow: 'hidden', cursor: 'pointer', padding: 0,
+                      fontFamily: 'inherit', textAlign: 'left',
+                      transition: 'border-color .15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = colors.text)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                  >
+                    <div style={{
+                      height: 42, background: colors.bg,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 24,
+                    }}>
+                      {pet.avatar_emoji}
+                    </div>
+                    <div style={{
+                      padding: '5px 6px 7px',
+                      fontSize: 11, fontWeight: 700, lineHeight: 1.2,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      color: 'var(--text)',
+                    }}>
+                      {pet.name}
+                    </div>
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => onNavigate('pets')}
+                style={{
+                  flexShrink: 0, width: 68, height: 80,
+                  border: '1.5px dashed var(--border)', borderRadius: 'var(--r-lg)',
+                  background: 'transparent', fontSize: 22,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  alignSelf: 'flex-start',
+                }}
+                aria-label={t('pets.add')}
               >+</button>
             </div>
           )}
-        </Section>
+        </div>
 
-        {/* Language */}
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--r-lg)', overflow: 'hidden',
-        }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 16px', borderBottom: '1px solid var(--border)',
-          }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>{t('profile.language')}</span>
+        {/* ── Personalization group ──────────────────────────── */}
+        <SettingsGroup label={uz ? 'Sozlamalar' : 'Персонализация'}>
+          {/* Language selector */}
+          <SettingsRow
+            iconBg="rgba(242,120,75,0.10)" iconColor="#C0511F"
+            icon="🌐"
+            label={t('profile.language')}
+          >
             <button
               onClick={onSwitchLang}
               style={{
-                padding: '6px 16px', borderRadius: 'var(--r-pill)',
+                padding: '5px 14px', borderRadius: 'var(--r-pill)',
                 border: '1.5px solid var(--primary)', background: 'transparent',
-                fontSize: 13, fontWeight: 700, color: 'var(--primary)', cursor: 'pointer', fontFamily: 'inherit',
+                fontSize: 12, fontWeight: 700, color: 'var(--primary)',
+                cursor: 'pointer', fontFamily: 'inherit', minHeight: 32,
               }}
             >
-              {lang === 'ru' ? "O'zbekcha →" : 'Русский →'}
+              {lang === 'ru' ? "O'zb →" : 'Рус →'}
             </button>
-          </div>
+          </SettingsRow>
 
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '14px 16px', borderBottom: '1px solid var(--border)',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {theme === 'dark' ? <IconMoon size={18} /> : <IconSun size={18} />}
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 600 }}>
-                {theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
-              </span>
-            </div>
+          {/* Theme toggle */}
+          <SettingsRow
+            iconBg={theme === 'dark' ? 'rgba(99,102,241,0.12)' : 'rgba(245,158,11,0.10)'}
+            iconColor={theme === 'dark' ? '#6366F1' : '#B45309'}
+            icon={theme === 'dark' ? '🌙' : '☀️'}
+            label={theme === 'dark'
+              ? (uz ? 'Qorong\'u mavzu' : 'Тёмная тема')
+              : (uz ? 'Yorug\' mavzu' : 'Светлая тема')}
+            last
+          >
             <button
               onClick={toggleTheme}
               aria-label="Toggle theme"
               style={{
                 width: 48, height: 28, borderRadius: 'var(--r-pill)',
-                border: 'none', cursor: 'pointer', position: 'relative',
-                background: theme === 'dark' ? 'var(--primary)' : 'var(--border)',
+                border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0,
+                background: theme === 'dark' ? 'var(--primary)' : 'rgba(100,116,139,0.3)',
                 transition: 'background .2s',
               }}
             >
@@ -151,14 +280,27 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
                 boxShadow: '0 1px 4px rgba(0,0,0,.2)',
               }} />
             </button>
-          </div>
+          </SettingsRow>
+        </SettingsGroup>
 
-          <NavRow icon={<IconOrders size={18} />} label={t('profile.orders')} onClick={onOrders} />
-          <NavRow icon={<IconInfo size={18} />} label={t('profile.about')} last onClick={() => {}} />
-        </div>
+        {/* ── Account group ──────────────────────────────────── */}
+        <SettingsGroup label={uz ? 'Hisob' : 'Аккаунт'}>
+          <SettingsRow
+            iconBg="rgba(242,120,75,0.10)" iconColor="var(--primary)"
+            icon={<IconOrders size={16} />}
+            label={t('profile.orders')}
+            chevron onClick={onOrders}
+          />
+          <SettingsRow
+            iconBg="rgba(59,130,246,0.10)" iconColor="#1D4ED8"
+            icon={<IconInfo size={16} />}
+            label={t('profile.about')}
+            chevron last onClick={() => {}}
+          />
+        </SettingsGroup>
 
         {/* Version */}
-        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', paddingTop: 4 }}>
+        <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--text-muted)', padding: '4px 0 8px' }}>
           HappyTails · {t('profile.version')} 0.1
         </div>
       </div>
@@ -166,45 +308,71 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
   )
 }
 
-function Section({ title, action, onAction, children }: {
-  title: string; action?: string; onAction?: () => void; children: React.ReactNode
-}) {
+// ── SettingsGroup ─────────────────────────────────────────────
+function SettingsGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{
-      background: 'var(--surface)', border: '1px solid var(--border)',
-      borderRadius: 'var(--r-lg)', padding: '14px 16px',
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-        <span style={{ fontWeight: 700, fontSize: 14 }}>{title}</span>
-        {action && (
-          <button
-            onClick={onAction}
-            style={{
-              background: 'none', border: 'none', padding: 0,
-              fontSize: 13, color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >{action}</button>
-        )}
+    <div>
+      <div style={{
+        fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
+        letterSpacing: '0.05em', textTransform: 'uppercase',
+        padding: '0 4px 6px',
+      }}>
+        {label}
       </div>
-      {children}
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 'var(--r-lg)', overflow: 'hidden',
+      }}>
+        {children}
+      </div>
     </div>
   )
 }
 
-function NavRow({ icon, label, last, onClick }: { icon: React.ReactNode; label: string; last?: boolean; onClick: () => void }) {
+// ── SettingsRow ───────────────────────────────────────────────
+function SettingsRow({ iconBg, iconColor, icon, label, children, chevron, last, onClick }: {
+  iconBg: string
+  iconColor: string
+  icon: React.ReactNode
+  label: string
+  children?: React.ReactNode
+  chevron?: boolean
+  last?: boolean
+  onClick?: () => void
+}) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <button
+    <Tag
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
-        padding: '13px 16px', border: 'none', background: 'transparent',
-        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 16px', width: '100%',
+        border: 'none', background: 'transparent',
         borderBottom: last ? 'none' : '1px solid var(--border)',
-      }}
+        cursor: onClick ? 'pointer' : 'default',
+        fontFamily: 'inherit', textAlign: 'left',
+        transition: onClick ? 'background .12s' : undefined,
+      } as React.CSSProperties}
     >
-      <span style={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>{icon}</span>
-      <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-      <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>›</span>
-    </button>
+      {/* Colored icon tile */}
+      <div style={{
+        width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+        background: iconBg, color: iconColor,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: typeof icon === 'string' ? 16 : undefined,
+      }}>
+        {icon}
+      </div>
+
+      <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+        {label}
+      </span>
+
+      {children}
+
+      {chevron && (
+        <IconChevronRight size={16} color="var(--text-muted)" />
+      )}
+    </Tag>
   )
 }
