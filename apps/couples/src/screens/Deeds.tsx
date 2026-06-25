@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconCheck } from '@ht/shared'
 import type { Deed } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -75,7 +76,7 @@ export default function Deeds({ lang }: { lang: string }) {
                       background: '#DCFCE7', color: '#15803D',
                       borderRadius: 'var(--r-pill)', padding: '3px 10px',
                       fontSize: 11, fontWeight: 700, alignSelf: 'flex-start',
-                    }}>✓</span>
+                    }}><IconCheck size={11} /></span>
                   )}
                 </div>
 
@@ -171,7 +172,7 @@ export default function Deeds({ lang }: { lang: string }) {
                   background: '#F0FDF4', color: '#15803D', textAlign: 'center',
                   fontSize: 13, fontWeight: 600,
                 }}>
-                  ✓ {t('deeds.done')}
+                  <IconCheck size={13} /> {t('deeds.done')}
                 </div>
               )}
             </div>

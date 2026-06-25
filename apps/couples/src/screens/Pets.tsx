@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import type { Pet } from '../api'
+import { IconPaw, IconArrowLeft, IconEdit, IconTrash } from '@ht/shared'
+import type { Pet, PetConsultation } from '../api'
 import { api, getOwnerId } from '../api'
 import { t, getLang } from '../i18n'
 
@@ -122,7 +123,7 @@ export default function Pets({ lang }: { lang: string }) {
 
         {!loading && pets.length === 0 && !showAdd && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px', gap: 16, textAlign: 'center' }}>
-            <span style={{ fontSize: 56 }}>🐾</span>
+            <IconPaw size={56} color="var(--text-muted)" />
             <div style={{ fontWeight: 700, fontSize: 18 }}>{t('pets.empty')}</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 260 }}>{t('pets.empty_sub')}</div>
             <button
@@ -246,11 +247,11 @@ function PetCard({ pet, onBack, onEdit }: { pet: Pet; onBack: () => void; onEdit
         padding: '14px 20px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}><IconArrowLeft size={18} /></button>
         <span style={{ fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center', margin: '0 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {pet.name}
         </span>
-        <button onClick={onEdit} aria-label={t('pets.edit_profile')} style={{ ...iconBtn, background: 'var(--surface-2)', border: '1.5px solid var(--border)', fontSize: 14 }}>✏️</button>
+        <button onClick={onEdit} aria-label={t('pets.edit_profile')} style={{ ...iconBtn, background: 'var(--surface-2)', border: '1.5px solid var(--border)' }}><IconEdit size={16} /></button>
       </header>
 
       {/* Avatar */}
@@ -298,6 +299,9 @@ function PetCard({ pet, onBack, onEdit }: { pet: Pet; onBack: () => void; onEdit
             <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>{pet.notes}</div>
           </CardSection>
         )}
+
+        {/* Consultation history */}
+        <PetConsultHistory petId={pet.id} />
 
         <button onClick={onEdit} style={{
           width: '100%', padding: '14px', borderRadius: 'var(--r-pill)',
@@ -384,7 +388,7 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
         padding: '14px 20px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}><IconArrowLeft size={18} /></button>
         <span style={{ fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center', margin: '0 8px' }}>
           {t('pets.edit_profile')}
         </span>
@@ -485,8 +489,8 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
         <div style={{ marginTop: 20, paddingBottom: 8 }}>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
-              style={{ width: '100%', padding: '14px', borderRadius: 'var(--r-pill)', background: 'transparent', border: '1.5px solid var(--danger)', color: 'var(--danger)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 52 }}
-            >🗑 {t('pets.delete')}</button>
+              style={{ width: '100%', padding: '14px', borderRadius: 'var(--r-pill)', background: 'transparent', border: '1.5px solid var(--danger)', color: 'var(--danger)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            ><IconTrash size={16} /> {t('pets.delete')}</button>
           ) : (
             <div style={{ background: 'var(--surface)', border: '1.5px solid var(--danger)', borderRadius: 'var(--r-lg)', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', textAlign: 'center' }}>{t('pets.confirm_delete')}</div>
@@ -503,6 +507,63 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
         </div>
       </div>
     </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PetConsultHistory — consultation records attached to this pet
+// ═══════════════════════════════════════════════════════════════
+function PetConsultHistory({ petId }: { petId: string }) {
+  const [consults, setConsults] = useState<PetConsultation[] | null>(null)
+  const uz = getLang() === 'uz'
+
+  useEffect(() => {
+    api.petConsultations(petId).then(setConsults).catch(() => setConsults([]))
+  }, [petId])
+
+  if (consults === null) return null
+  if (consults.length === 0) return null
+
+  return (
+    <CardSection title={uz ? 'Maslahatlar tarixi' : 'История консультаций'}>
+      {consults.map((c, i) => (
+        <div key={c.id} style={{
+          padding: '12px 16px',
+          borderBottom: i < consults.length - 1 ? '1px solid var(--border)' : 'none',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+            <span style={{ fontSize: 14, fontWeight: 600 }}>{c.avatar_emoji} {c.vet_name}</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+              {fmtDate(c.created_at)}
+            </span>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: c.report ? 6 : 0 }}>
+            {c.specialty}
+          </div>
+          {c.report && (
+            <div style={{
+              fontSize: 13, color: 'var(--text)',
+              background: 'var(--surface-2)', borderRadius: 'var(--r-sm)',
+              padding: '8px 10px', lineHeight: 1.5,
+            }}>
+              <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                {uz ? 'Tashxis:' : 'Диагноз:'} {c.report.diagnosis}
+              </div>
+              {c.report.steps.length > 0 && (
+                <ul style={{ margin: '4px 0 0', paddingLeft: 16, color: 'var(--text-muted)' }}>
+                  {c.report.steps.slice(0, 3).map((s, j) => <li key={j}>{s}</li>)}
+                  {c.report.steps.length > 3 && (
+                    <li style={{ listStyle: 'none', color: 'var(--primary)' }}>
+                      +{c.report.steps.length - 3} {uz ? 'ko\'proq' : 'ещё'}
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </CardSection>
   )
 }
 

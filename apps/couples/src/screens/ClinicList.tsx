@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconSearch, IconStarFilled, IconHeart, IconHeartFilled } from '@ht/shared'
 import { t, getLang } from '../i18n'
 import type { ClinicService } from './ClinicServicePicker'
 
@@ -193,11 +194,11 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
         padding: '14px 16px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn} aria-label={t('back')}>←</button>
+        <button onClick={onBack} style={iconBtn} aria-label={t('back')}><IconArrowLeft size={18} /></button>
         <span style={{ flex: 1, fontWeight: 700, fontSize: 17, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {serviceName}
         </span>
-        <button style={{ ...iconBtn, border: 'none', fontSize: 18 }} aria-label="Поиск">🔍</button>
+        <button style={{ ...iconBtn, border: 'none' }} aria-label="Поиск"><IconSearch size={18} /></button>
       </header>
 
       {/* Filter chips */}
@@ -217,7 +218,7 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
             fontSize: 16,
           }}
           aria-label="Избранные"
-        >♥</button>
+        ><IconHeartFilled size={16} /></button>
 
         {/* Sort by type */}
         <button
@@ -266,7 +267,7 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
       <div style={{ flex: 1, padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {clinics.length === 0 && (
           <div style={{ textAlign: 'center', padding: '64px 24px', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>♡</div>
+            <div style={{ marginBottom: 12 }}><IconHeart size={40} color="var(--text-muted)" /></div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>Нет избранных клиник</div>
           </div>
         )}
@@ -314,7 +315,7 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
                         fontSize: 12, fontWeight: 700, padding: '3px 8px', borderRadius: 'var(--r-pill)',
                         background: '#FFF8E1', color: '#E65100',
                       }}>
-                        ⭐ {clinic.rating.toFixed(1)}
+                        <IconStarFilled size={11} color="#E65100" /> {clinic.rating.toFixed(1)}
                       </span>
                       <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>›</span>
                     </div>
@@ -354,7 +355,7 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
                     transition: 'all .15s',
                   }}
                 >
-                  {isFav ? '♥' : '♡'}
+                  {isFav ? <IconHeartFilled size={20} color="#C62828" /> : <IconHeart size={20} />}
                 </button>
               </div>
             </div>

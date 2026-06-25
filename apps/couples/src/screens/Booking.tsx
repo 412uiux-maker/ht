@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { IconArrowLeft, IconStarFilled, IconCheck, IconPlus } from '@ht/shared'
 import type { Vet, Consultation, Pet } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -86,7 +87,11 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
     setErr('')
     try {
       localStorage.setItem(REMEMBERED_NAME_KEY, form.client_name.trim())
-      const c = await api.createConsultation({ vet_id: vet.id, ...form })
+      const c = await api.createConsultation({
+        vet_id: vet.id,
+        ...form,
+        ...(selectedPetId !== 'new' ? { pet_id: selectedPetId } : {}),
+      })
       onBooked(c)
     } catch {
       setErr(t('error'))
@@ -130,7 +135,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
             fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          ←
+          <IconArrowLeft size={18} />
         </button>
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('book.title')}</span>
       </header>
@@ -159,7 +164,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
                 {vet.price_uzs.toLocaleString('ru-RU')} {t('currency')}
               </span>
               <span style={{ fontSize: 12, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 4 }}>
-                ⭐ {Number(vet.rating).toFixed(1)} · {vet.experience_yr} {t('home.exp')}
+                <IconStarFilled size={12} color="#d97706" /> {Number(vet.rating).toFixed(1)} · {vet.experience_yr} {t('home.exp')}
               </span>
             </div>
           </div>
@@ -237,7 +242,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
                     minWidth: 70, cursor: 'pointer', transition: 'all .15s',
                   }}
                 >
-                  <span style={{ fontSize: 28, lineHeight: 1 }}>➕</span>
+                  <IconPlus size={28} color="var(--text-muted)" />
                   <span style={{
                     fontSize: 11, fontWeight: selectedPetId === 'new' ? 700 : 500,
                     color: selectedPetId === 'new' ? 'var(--primary)' : 'var(--text-muted)',
@@ -378,7 +383,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 700, fontSize: 12,
               }}>
-                {done ? '✓' : n}
+                {done ? <IconCheck size={12} color="#fff" /> : n}
               </div>
               <span style={{
                 fontSize: 11, whiteSpace: 'nowrap',

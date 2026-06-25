@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconContent, IconEye, IconEdit, IconTrash } from '@ht/shared'
 
 type ContentType = 'article' | 'guide' | 'checklist'
 
@@ -100,7 +101,7 @@ export default function Content() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.length === 0 && (
           <div className="card empty">
-            <div className="empty-icon">📄</div>
+            <div className="empty-icon"><IconContent size={40} color="var(--text-muted)" /></div>
             <div>Материалов нет</div>
           </div>
         )}
@@ -123,8 +124,8 @@ export default function Content() {
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>{item.subtitle}</div>
               <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)' }}>
                 <span style={{ color: TYPE_COLOR[item.type], fontWeight: 600 }}>{TYPE_LABEL[item.type]}</span>
-                <span>👁 {item.views}</span>
-                <span>✍️ {item.author}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconEye size={12} /> {item.views}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconEdit size={12} /> {item.author}</span>
                 <span>{item.createdAt}</span>
               </div>
             </div>
@@ -136,8 +137,8 @@ export default function Content() {
               >
                 {item.published ? 'Снять с публ.' : 'Опубликовать'}
               </button>
-              <button className="btn btn-sm btn-ghost" onClick={() => openEdit(item)}>✏️</button>
-              <button className="btn btn-sm btn-danger" onClick={() => openDelete(item)}>🗑</button>
+              <button className="btn btn-sm btn-ghost" onClick={() => openEdit(item)}><IconEdit size={15} /></button>
+              <button className="btn btn-sm btn-danger" onClick={() => openDelete(item)}><IconTrash size={15} /></button>
             </div>
           </div>
         ))}
@@ -191,7 +192,7 @@ export default function Content() {
       {modal === 'delete' && target && (
         <div className="overlay" onClick={e => e.target === e.currentTarget && !saving && close()}>
           <div className="modal" style={{ maxWidth: 400 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>🗑 Удалить материал?</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconTrash size={20} /> Удалить материал?</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>
               «{target.title}» будет удалён безвозвратно.
             </div>

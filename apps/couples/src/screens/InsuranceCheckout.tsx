@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { IconArrowLeft, IconTag, IconHeart } from '@ht/shared'
 import type { Pet, PromoResult } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -147,10 +148,10 @@ export default function InsuranceCheckout({ lang, onBack, onSuccess }: Props) {
             fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          ←
+          <IconArrowLeft size={16} />
         </button>
         <span style={{ flex: 1 }} />
-        <button style={{ width: 36, height: 36, borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)', background: 'transparent', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>♡</button>
+        <button style={{ width: 36, height: 36, borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><IconHeart size={16} /></button>
         <button style={{ width: 36, height: 36, borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)', background: 'transparent', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⎗</button>
       </header>
 
@@ -368,8 +369,8 @@ export default function InsuranceCheckout({ lang, onBack, onSuccess }: Props) {
           <span style={{
             width: 36, height: 36, borderRadius: 'var(--r-md)',
             background: '#FEF3C7', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: 18, flexShrink: 0,
-          }}>🏷️</span>
+            justifyContent: 'center', flexShrink: 0,
+          }}><IconTag size={18} color="#92400E" /></span>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: promo ? '#15803D' : 'var(--text)' }}>
               {promo ? `${t('pay.promo_ok')}: ${promo.code}` : t('ins.promo_row')}

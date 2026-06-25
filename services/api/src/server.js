@@ -31,13 +31,64 @@ const wss = new WebSocketServer({ server, path: '/ws/signal' });
 
 // rooms: Map<consultationId, Map<ws, { role: 'client'|'vet' }>>
 const rooms = new Map();
+// vetLobby: Map<vetId, Set<ws>> — vendor cabinets waiting for incoming calls
+const vetLobby = new Map();
+
+function sendTo(ws, obj) {
+  if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(obj));
+}
+function sendToLobby(vetId, obj) {
+  const set = vetLobby.get(String(vetId));
+  if (!set) return;
+  set.forEach(peer => sendTo(peer, obj));
+}
+function sendToRoom(roomId, obj, except) {
+  const room = rooms.get(roomId);
+  if (!room) return;
+  room.forEach((_, peer) => { if (peer !== except) sendTo(peer, obj); });
+}
 
 wss.on('connection', (ws) => {
   let roomId = null;
+  let lobbyVetId = null;
 
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return; }
+
+    // ── Vet cabinet subscribes to its incoming-call lobby ──────
+    if (msg.type === 'subscribe-vet') {
+      lobbyVetId = String(msg.vet_id);
+      if (!vetLobby.has(lobbyVetId)) vetLobby.set(lobbyVetId, new Set());
+      vetLobby.get(lobbyVetId).add(ws);
+      return;
+    }
+
+    // ── Client rings the vet ───────────────────────────────────
+    if (msg.type === 'call-invite') {
+      sendToLobby(msg.vet_id, {
+        type: 'incoming-call',
+        room: msg.room,
+        vet_id: msg.vet_id,
+        client_name: msg.client_name,
+        pet_name: msg.pet_name,
+        pet_species: msg.pet_species,
+        problem: msg.problem,
+      });
+      return;
+    }
+
+    // ── Client cancels (hung up / no answer) ───────────────────
+    if (msg.type === 'call-cancel') {
+      sendToLobby(msg.vet_id, { type: 'call-cancelled', room: msg.room });
+      return;
+    }
+
+    // ── Vet declines from the lobby → tell the waiting client ──
+    if (msg.type === 'call-decline') {
+      sendToRoom(msg.room, { type: 'call-declined', room: msg.room });
+      return;
+    }
 
     if (msg.type === 'join') {
       roomId = msg.room;
@@ -65,6 +116,10 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
+    if (lobbyVetId && vetLobby.has(lobbyVetId)) {
+      vetLobby.get(lobbyVetId).delete(ws);
+      if (vetLobby.get(lobbyVetId).size === 0) vetLobby.delete(lobbyVetId);
+    }
     if (!roomId || !rooms.has(roomId)) return;
     rooms.get(roomId).delete(ws);
     rooms.get(roomId).forEach((_, peer) => {

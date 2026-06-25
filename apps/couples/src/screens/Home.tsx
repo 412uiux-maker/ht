@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { IconShield, IconSearch, IconAlertCircle, IconStarFilled } from '@ht/shared'
 import type { Vet } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
@@ -98,8 +99,8 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
             width: 48, height: 48, borderRadius: 'var(--r-md)',
             background: 'rgba(255,255,255,.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, flexShrink: 0,
-          }}>🛡️</div>
+            flexShrink: 0,
+          }}><IconShield size={24} color="rgba(255,255,255,.9)" /></div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 2 }}>
               {t('ins.banner_title')}
@@ -123,8 +124,9 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
         <div style={{ position: 'relative' }}>
           <span style={{
             position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-            fontSize: 16, color: 'var(--text-muted)', pointerEvents: 'none',
-          }}>🔍</span>
+            color: 'var(--text-muted)', pointerEvents: 'none',
+            display: 'flex', alignItems: 'center',
+          }}><IconSearch size={16} /></span>
           <input
             type="search"
             value={search}
@@ -173,7 +175,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
         )}
         {error && !loading && (
           <div style={{ textAlign: 'center', padding: '48px 16px' }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+            <div style={{ marginBottom: 12 }}><IconAlertCircle size={32} color="var(--text-muted)" /></div>
             <div style={{ color: 'var(--text-muted)', marginBottom: 16 }}>{t('error')}</div>
             <button
               onClick={load}
@@ -232,7 +234,7 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
           <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>{vet.specialty}</div>
           <div style={{ display: 'flex', gap: 12, fontSize: 13, flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#d97706', fontWeight: 600 }}>
-              ⭐ {Number(vet.rating).toFixed(1)}
+              <IconStarFilled size={13} color="#d97706" /> {Number(vet.rating).toFixed(1)}
             </span>
             <span style={{ color: 'var(--text-muted)' }}>
               {vet.experience_yr} {t('home.exp')}
@@ -241,7 +243,7 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
               background: '#dcfce7', color: '#15803d',
               borderRadius: 'var(--r-pill)', padding: '1px 8px', fontSize: 12, fontWeight: 600,
             }}>
-              🟢 {t('home.available')}
+              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#15803d', marginRight: 4, verticalAlign: 'middle' }} />{t('home.available')}
             </span>
           </div>
         </div>

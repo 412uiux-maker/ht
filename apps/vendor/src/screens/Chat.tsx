@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { IconArrowLeft, IconPlay, IconCheck, IconOrders } from '@ht/shared'
 import { api } from '../api'
 import type { VendorSession, Consultation, Message, MedicalReport, Medication } from '../types'
 
@@ -50,11 +51,13 @@ export default function Chat({
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [report, setReport] = useState<ReportDraft>(emptyReport())
+  const [draftReport, setDraftReport] = useState<ReportDraft | null>(null)
   const [showComplete, setShowComplete] = useState(false)
   const [sending, setSending] = useState(false)
   const [accepting, setAccepting] = useState(false)
   const [completing, setCompleting] = useState(false)
   const [error, setError] = useState('')
+  const [elapsed, setElapsed] = useState<number | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const consultRef = useRef<Consultation | null>(null)
 
@@ -78,6 +81,16 @@ export default function Chat({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages.length])
+
+  // Timer: count up from call_started_at
+  useEffect(() => {
+    if (!consult?.call_started_at) return
+    const start = new Date(consult.call_started_at).getTime()
+    const tick = () => setElapsed(Math.floor((Date.now() - start) / 1000))
+    tick()
+    const iv = setInterval(tick, 1000)
+    return () => clearInterval(iv)
+  }, [consult?.call_started_at])
 
   const send = async () => {
     const t = text.trim()
@@ -105,13 +118,21 @@ export default function Chat({
     }
   }
 
-  const complete = async () => {
-    if (!report.diagnosis.trim() || completing) return
+  const saveDraft = () => {
+    if (!report.diagnosis.trim()) return
+    setDraftReport({ ...report })
+    setShowComplete(false)
+  }
+
+  const complete = async (r?: ReportDraft | null) => {
+    const data = r ?? report
+    if (!data.diagnosis.trim() || completing) return
     setCompleting(true)
     setError('')
     try {
-      await api.complete(consultId, toMedicalReport(report))
+      await api.complete(consultId, toMedicalReport(data))
       setShowComplete(false)
+      setDraftReport(null)
       await load()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Ошибка')
@@ -145,6 +166,13 @@ export default function Chat({
   const isDone = consult?.status === 'completed'
   const isPending = consult?.status === 'pending'
 
+  const fmtElapsed = (s: number) => {
+    const m = Math.floor(s / 60)
+    const sec = s % 60
+    const over = consult?.duration_min && s > consult.duration_min * 60
+    return { text: `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`, over: !!over }
+  }
+
   const inp: React.CSSProperties = {
     background: 'var(--surface3)', border: '1px solid var(--surface3)',
     borderRadius: 'var(--r-sm)', padding: '8px 10px', color: 'var(--text)',
@@ -165,10 +193,10 @@ export default function Chat({
             background: 'var(--surface2)', border: '1px solid var(--surface3)',
             borderRadius: 'var(--r-sm)', padding: '8px 14px',
             color: 'var(--text2)', fontSize: '20px', minHeight: '44px', minWidth: '44px',
-            cursor: 'pointer',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
-          ←
+          <IconArrowLeft size={18} />
         </button>
         {consult ? (
           <>
@@ -182,6 +210,16 @@ export default function Chat({
             <span className={`pill pill-${consult.status}`}>
               {consult.status === 'pending' ? 'Ожидает' : consult.status === 'active' ? 'Активна' : 'Завершена'}
             </span>
+            {elapsed !== null && (
+              <span style={{
+                fontSize: '13px', fontVariantNumeric: 'tabular-nums',
+                fontWeight: 700, padding: '4px 8px', borderRadius: 'var(--r-sm)',
+                background: fmtElapsed(elapsed).over ? 'rgba(220,38,38,.12)' : 'rgba(76,175,125,.12)',
+                color: fmtElapsed(elapsed).over ? 'var(--danger)' : 'var(--green)',
+              }}>
+                {fmtElapsed(elapsed).text}
+              </span>
+            )}
             {!isDone && !isPending && (
               <a
                 href={`http://localhost:8080/video.html?id=${consultId}&role=vet`}
@@ -193,7 +231,7 @@ export default function Chat({
                   minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px',
                 }}
               >
-                📹 Видео
+                <IconPlay size={14} /> Видео
               </a>
             )}
           </>
@@ -222,7 +260,7 @@ export default function Chat({
               opacity: accepting ? 0.7 : 1, cursor: 'pointer',
             }}
           >
-            {accepting ? 'Принимаем…' : '✓ Принять консультацию'}
+            {accepting ? 'Принимаем…' : <><IconCheck size={14} /> Принять консультацию</>}
           </button>
         </div>
       )}
@@ -258,7 +296,7 @@ export default function Chat({
             borderRadius: 'var(--r-md)', padding: '16px 18px', marginTop: '8px',
           }}>
             <p style={{ color: 'var(--green)', fontWeight: 700, marginBottom: '12px', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              ✓ Заключение выдано
+              <IconCheck size={14} /> Заключение выдано
             </p>
             <p style={{ color: 'var(--text2)', fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
               {consult.report.diagnosis}
@@ -275,7 +313,7 @@ export default function Chat({
             background: 'rgba(76,175,125,.07)', border: '1px solid rgba(76,175,125,.25)',
             borderRadius: 'var(--r-md)', padding: '14px 18px', marginTop: '8px',
           }}>
-            <p style={{ color: 'var(--green)', fontWeight: 600, marginBottom: '4px', fontSize: '13px' }}>✓ Заключение врача</p>
+            <p style={{ color: 'var(--green)', fontWeight: 600, marginBottom: '4px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}><IconCheck size={12} /> Заключение врача</p>
             <p style={{ color: 'var(--text2)', fontSize: '14px' }}>{consult.summary}</p>
           </div>
         )}
@@ -289,6 +327,51 @@ export default function Chat({
           background: 'var(--surface)', borderTop: '1px solid var(--surface3)',
           padding: '12px 16px', flexShrink: 0, maxHeight: '70vh', overflowY: 'auto',
         }}>
+          {/* Draft banner — issued separately after review */}
+          {draftReport && !showComplete && (
+            <div style={{
+              background: 'rgba(245,166,35,.08)', border: '1px solid rgba(245,166,35,.3)',
+              borderRadius: 'var(--r-md)', padding: '12px 14px', marginBottom: '10px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: '12px', color: 'var(--amber)', fontWeight: 700, marginBottom: '4px' }}>
+                    📝 Черновик заключения
+                  </p>
+                  <p style={{ fontSize: '13px', color: 'var(--text2)', marginBottom: 0 }}>
+                    {draftReport.diagnosis}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    onClick={() => complete(draftReport)}
+                    disabled={completing}
+                    style={{
+                      background: 'var(--green)', color: '#fff', border: 'none',
+                      borderRadius: 'var(--r-sm)', padding: '8px 14px',
+                      fontSize: '13px', fontWeight: 700, minHeight: '36px',
+                      cursor: completing ? 'default' : 'pointer',
+                      opacity: completing ? 0.6 : 1, whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {completing ? '…' : '✓ Выдать клиенту'}
+                  </button>
+                  <button
+                    onClick={() => { setReport(draftReport); setDraftReport(null); setShowComplete(true) }}
+                    style={{
+                      background: 'transparent', color: 'var(--text3)', border: '1px solid var(--surface3)',
+                      borderRadius: 'var(--r-sm)', padding: '6px 14px',
+                      fontSize: '12px', minHeight: '32px', cursor: 'pointer', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    Изменить
+                  </button>
+                </div>
+              </div>
+              {error && <p style={{ color: 'var(--danger)', fontSize: '12px', marginTop: '6px' }}>{error}</p>}
+            </div>
+          )}
+
           {/* Quick replies */}
           {!showComplete && (
             <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
@@ -316,8 +399,8 @@ export default function Chat({
                 padding: '14px 16px', marginBottom: '12px',
                 border: '1px solid rgba(245,166,35,.2)',
               }}>
-                <p style={{ color: 'var(--amber)', fontWeight: 700, fontSize: '14px', marginBottom: '14px' }}>
-                  📋 Медицинское заключение
+                <p style={{ color: 'var(--amber)', fontWeight: 700, fontSize: '14px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <IconOrders size={14} /> Медицинское заключение
                 </p>
 
                 {/* Diagnosis */}
@@ -413,17 +496,17 @@ export default function Chat({
 
                 <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
                   <button
-                    onClick={complete}
-                    disabled={completing || !report.diagnosis.trim()}
+                    onClick={saveDraft}
+                    disabled={!report.diagnosis.trim()}
                     style={{
-                      background: 'var(--green)', color: '#fff', border: 'none',
+                      background: 'var(--amber)', color: '#000', border: 'none',
                       borderRadius: 'var(--r-sm)', padding: '10px 20px',
                       fontSize: '14px', fontWeight: 700, minHeight: '44px',
-                      cursor: completing || !report.diagnosis.trim() ? 'default' : 'pointer',
-                      opacity: completing || !report.diagnosis.trim() ? 0.6 : 1,
+                      cursor: !report.diagnosis.trim() ? 'default' : 'pointer',
+                      opacity: !report.diagnosis.trim() ? 0.6 : 1,
                     }}
                   >
-                    {completing ? 'Сохраняем…' : '✓ Завершить и выдать заключение'}
+                    <IconCheck size={14} /> Сохранить черновик
                   </button>
                   <button
                     onClick={() => setShowComplete(false)}
@@ -491,16 +574,17 @@ export default function Chat({
           fontWeight: 600, fontSize: '14px', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px',
         }}>
-          ✓ Консультация завершена
+          <IconCheck size={14} /> Консультация завершена
           <button
             onClick={onBack}
             style={{
+              display: 'flex', alignItems: 'center', gap: '4px',
               background: 'transparent', border: '1px solid var(--green)',
               borderRadius: 'var(--r-sm)', padding: '6px 14px',
               color: 'var(--green)', fontSize: '13px', cursor: 'pointer',
             }}
           >
-            ← К списку
+            <IconArrowLeft size={14} /> К списку
           </button>
         </div>
       )}

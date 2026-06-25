@@ -3,9 +3,9 @@ import type { AdminSession } from '../types'
 import { adminApi } from '../api'
 
 const DEMO_ACCOUNTS = [
-  { label: '👑 Администратор', email: 'admin@happytails.uz', password: 'admin123' },
-  { label: '✏️ Модератор',     email: 'moder@happytails.uz', password: 'moder123' },
-  { label: '💬 Поддержка',     email: 'support@happytails.uz', password: 'supp123' },
+  { label: 'Администратор', email: 'admin@happytails.uz', password: 'admin123' },
+  { label: 'Модератор',     email: 'moder@happytails.uz', password: 'moder123' },
+  { label: 'Поддержка',     email: 'support@happytails.uz', password: 'supp123' },
 ]
 
 interface Props {

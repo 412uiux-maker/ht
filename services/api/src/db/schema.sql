@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS consultations (
   created_at   TIMESTAMPTZ DEFAULT NOW()
 );
 ALTER TABLE consultations ADD COLUMN IF NOT EXISTS report JSONB;
+-- Video call: consultation duration (tariff snapshot) and authoritative call start
+ALTER TABLE vets          ADD COLUMN IF NOT EXISTS consult_duration_min INTEGER DEFAULT 30;
+ALTER TABLE consultations ADD COLUMN IF NOT EXISTS duration_min    INTEGER;
+ALTER TABLE consultations ADD COLUMN IF NOT EXISTS call_started_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS messages (
   id                SERIAL PRIMARY KEY,
@@ -51,6 +55,7 @@ CREATE TABLE IF NOT EXISTS pets (
 );
 
 CREATE INDEX IF NOT EXISTS pets_owner_idx ON pets(owner_id);
+ALTER TABLE consultations ADD COLUMN IF NOT EXISTS pet_id UUID REFERENCES pets(id) ON DELETE SET NULL;
 
 CREATE TABLE IF NOT EXISTS learn_items (
   id           SERIAL PRIMARY KEY,

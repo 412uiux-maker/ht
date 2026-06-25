@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { IconTag, IconAlertCircle } from '@ht/shared'
 import type { PromoCode, AdminSession } from '../types'
 import { adminApi } from '../api'
 
@@ -77,7 +78,7 @@ export default function Promos({ session }: Props) {
         {loading && <div className="loading">Загрузка...</div>}
         {!loading && promos.length === 0 && (
           <div className="empty">
-            <div className="empty-icon">🏷️</div>
+            <div className="empty-icon"><IconTag size={40} color="var(--text-muted)" /></div>
             <div>Промокоды не созданы</div>
           </div>
         )}
@@ -122,7 +123,7 @@ export default function Promos({ session }: Props) {
                     </td>
                     <td style={{ fontSize: 13, color: exp ? 'var(--danger)' : 'var(--text-muted)' }}>
                       {fmtDate(p.expires_at)}
-                      {exp && <span style={{ marginLeft: 4 }}>⚠️</span>}
+                      {exp && <IconAlertCircle size={14} color="var(--danger)" style={{ marginLeft: 4, verticalAlign: 'middle' }} />}
                     </td>
                     <td>
                       <span className={p.is_active && !exp && !exhausted ? 'chip chip-success' : 'chip chip-muted'}>

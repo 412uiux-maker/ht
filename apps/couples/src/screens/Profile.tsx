@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconPaw, IconMoon, IconSun, IconOrders, IconInfo } from '@ht/shared'
 import type { Pet } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -56,8 +57,8 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
             width: 56, height: 56, borderRadius: '50%',
             background: 'rgba(255,255,255,.25)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 28, flexShrink: 0,
-          }}>🐾</div>
+            flexShrink: 0,
+          }}><IconPaw size={28} color="#fff" /></div>
           <div>
             <div style={{ fontWeight: 700, fontSize: 16 }}>HappyTails</div>
             <div style={{ fontSize: 12, opacity: 0.85 }}>ID: {shortId}</div>
@@ -125,8 +126,8 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
             padding: '14px 16px', borderBottom: '1px solid var(--border)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>
-                {theme === 'dark' ? '🌙' : '☀️'}
+              <span style={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {theme === 'dark' ? <IconMoon size={18} /> : <IconSun size={18} />}
               </span>
               <span style={{ fontSize: 14, fontWeight: 600 }}>
                 {theme === 'dark' ? 'Тёмная тема' : 'Светлая тема'}
@@ -152,8 +153,8 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
             </button>
           </div>
 
-          <NavRow icon="📋" label={t('profile.orders')} onClick={onOrders} />
-          <NavRow icon="ℹ️" label={t('profile.about')} last onClick={() => {}} />
+          <NavRow icon={<IconOrders size={18} />} label={t('profile.orders')} onClick={onOrders} />
+          <NavRow icon={<IconInfo size={18} />} label={t('profile.about')} last onClick={() => {}} />
         </div>
 
         {/* Version */}
@@ -190,7 +191,7 @@ function Section({ title, action, onAction, children }: {
   )
 }
 
-function NavRow({ icon, label, last, onClick }: { icon: string; label: string; last?: boolean; onClick: () => void }) {
+function NavRow({ icon, label, last, onClick }: { icon: React.ReactNode; label: string; last?: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -201,7 +202,7 @@ function NavRow({ icon, label, last, onClick }: { icon: string; label: string; l
         borderBottom: last ? 'none' : '1px solid var(--border)',
       }}
     >
-      <span style={{ fontSize: 18, width: 22, textAlign: 'center' }}>{icon}</span>
+      <span style={{ width: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>{icon}</span>
       <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
       <span style={{ color: 'var(--text-muted)', fontSize: 14 }}>›</span>
     </button>

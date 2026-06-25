@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconLearning, IconCheckCircle, IconEye, IconClock, IconEdit, IconTrash } from '@ht/shared'
 
 type LessonType = 'video' | 'course' | 'quiz' | 'checklist'
 type Level = 'beginner' | 'intermediate' | 'advanced'
@@ -137,13 +138,13 @@ export default function Learning() {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
-        {[
-          { label: 'Всего уроков',  value: stats.total,      icon: '📚' },
-          { label: 'Опубликовано',  value: stats.published,  icon: '✅' },
-          { label: 'Просмотров',    value: stats.totalViews.toLocaleString('ru'), icon: '👁' },
-        ].map(s => (
+        {([
+          { label: 'Всего уроков',  value: stats.total,      Icon: IconLearning },
+          { label: 'Опубликовано',  value: stats.published,  Icon: IconCheckCircle },
+          { label: 'Просмотров',    value: stats.totalViews.toLocaleString('ru'), Icon: IconEye },
+        ] as { label: string; value: string | number; Icon: React.ComponentType<{ size?: number; color?: string }> }[]).map(s => (
           <div key={s.label} className="card" style={{ padding: '16px 20px' }}>
-            <div style={{ fontSize: 22, marginBottom: 6 }}>{s.icon}</div>
+            <div style={{ marginBottom: 6 }}><s.Icon size={22} color="var(--primary)" /></div>
             <div style={{ fontSize: 24, fontWeight: 700 }}>{s.value}</div>
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.label}</div>
           </div>
@@ -175,7 +176,7 @@ export default function Learning() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.length === 0 && (
           <div className="card empty">
-            <div className="empty-icon">📚</div>
+            <div className="empty-icon"><IconLearning size={40} color="var(--text-muted)" /></div>
             <div>Уроков не найдено</div>
           </div>
         )}
@@ -202,9 +203,9 @@ export default function Learning() {
               <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', flexWrap: 'wrap' }}>
                 <span style={{ color: TYPE_COLOR[item.type], fontWeight: 600 }}>{TYPE_LABEL[item.type]}</span>
                 <span style={{ color: LEVEL_COLOR[item.level], fontWeight: 600 }}>{LEVEL_LABEL[item.level]}</span>
-                <span>⏱ {item.duration_min} мин</span>
-                <span>👁 {item.views.toLocaleString('ru')}</span>
-                <span>✍️ {item.author}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconClock size={12} /> {item.duration_min} мин</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconEye size={12} /> {item.views.toLocaleString('ru')}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconEdit size={12} /> {item.author}</span>
                 {item.tags.map(tag => (
                   <span key={tag} style={{
                     background: 'var(--surface-2)', padding: '1px 7px',
@@ -223,8 +224,8 @@ export default function Learning() {
               >
                 {item.published ? 'Снять с публ.' : 'Опубликовать'}
               </button>
-              <button className="btn btn-sm btn-ghost" onClick={() => openEdit(item)}>✏️</button>
-              <button className="btn btn-sm btn-danger" onClick={() => openDelete(item)}>🗑</button>
+              <button className="btn btn-sm btn-ghost" onClick={() => openEdit(item)}><IconEdit size={15} /></button>
+              <button className="btn btn-sm btn-danger" onClick={() => openDelete(item)}><IconTrash size={15} /></button>
             </div>
           </div>
         ))}
@@ -235,16 +236,19 @@ export default function Learning() {
         <div className="overlay" onClick={e => e.target === e.currentTarget && !saving && close()}>
           <div className="modal" style={{ maxWidth: 560 }}>
             <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
-              {modal === 'create' ? '📚 Новый урок' : '✏️ Редактировать урок'}
+              {modal === 'create'
+                ? <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconLearning size={20} /> Новый урок</span>
+                : <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><IconEdit size={20} /> Редактировать урок</span>
+              }
             </div>
             <form onSubmit={save} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: 12 }}>
                 <Field label="Тип *">
                   <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value as LessonType }))} style={inputStyle}>
-                    <option value="video">📹 Видео</option>
-                    <option value="course">📖 Курс</option>
-                    <option value="quiz">🧠 Тест</option>
-                    <option value="checklist">✅ Чек-лист</option>
+                    <option value="video">Видео</option>
+                    <option value="course">Курс</option>
+                    <option value="quiz">Тест</option>
+                    <option value="checklist">Чек-лист</option>
                   </select>
                 </Field>
                 <Field label="Уровень *">
@@ -329,7 +333,7 @@ export default function Learning() {
       {modal === 'delete' && target && (
         <div className="overlay" onClick={e => e.target === e.currentTarget && !saving && close()}>
           <div className="modal" style={{ maxWidth: 400 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>🗑 Удалить урок?</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}><IconTrash size={20} /> Удалить урок?</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>
               «{target.title}» будет удалён безвозвратно.
             </div>

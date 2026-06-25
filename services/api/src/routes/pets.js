@@ -76,4 +76,22 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// GET /api/pets/:id/consultations — completed consultations with reports for a pet
+router.get('/:id/consultations', async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT c.id, c.created_at, c.status, c.report, c.summary, c.duration_min, c.call_started_at,
+              v.name AS vet_name, v.specialty, v.avatar_emoji
+       FROM consultations c
+       JOIN vets v ON v.id = c.vet_id
+       WHERE c.pet_id = $1 AND c.report IS NOT NULL
+       ORDER BY c.created_at DESC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

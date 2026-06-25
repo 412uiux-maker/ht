@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconMoney, IconCalendar, IconPhone } from '@ht/shared'
 import { t } from '../i18n'
 
 interface Props {
@@ -100,7 +101,7 @@ export default function Insurance({ lang, onBack, onStart }: Props) {
               fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            ←
+            <IconArrowLeft size={16} />
           </button>
           <span style={{ fontWeight: 700, fontSize: 17 }}>{t('ins.title')}</span>
         </div>
@@ -151,9 +152,9 @@ export default function Insurance({ lang, onBack, onStart }: Props) {
               {t('ins.hero_title')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <HeroFeature icon="💰" label={t('ins.cost_from')} />
-              <HeroFeature icon="📅" label={t('ins.validity')} />
-              <HeroFeature icon="📞" label={t('ins.vet247')} />
+              <HeroFeature icon={<IconMoney size={12} color="rgba(255,255,255,.9)" />} label={t('ins.cost_from')} />
+              <HeroFeature icon={<IconCalendar size={12} color="rgba(255,255,255,.9)" />} label={t('ins.validity')} />
+              <HeroFeature icon={<IconPhone size={12} color="rgba(255,255,255,.9)" />} label={t('ins.vet247')} />
             </div>
           </div>
         </div>
@@ -373,7 +374,7 @@ export default function Insurance({ lang, onBack, onStart }: Props) {
   )
 }
 
-function HeroFeature({ icon, label }: { icon: string; label: string }) {
+function HeroFeature({ icon, label }: { icon: React.ReactNode; label: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <span style={{

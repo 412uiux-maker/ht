@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconArrowLeft, IconOrders, IconChat } from '@ht/shared'
 import type { Order } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -77,7 +78,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
         padding: '14px 20px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}><IconArrowLeft size={18} /></button>
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('orders.title')}</span>
       </header>
 
@@ -105,7 +106,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
 
         {!loading && filtered.length === 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '64px 24px', gap: 14, textAlign: 'center' }}>
-            <span style={{ fontSize: 52 }}>📋</span>
+            <IconOrders size={52} color="var(--text-muted)" />
             <div style={{ fontWeight: 700, fontSize: 18 }}>{t('orders.empty')}</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 260 }}>{t('orders.empty_sub')}</div>
           </div>
@@ -206,7 +207,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
                       fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', minHeight: 44,
                     }}
                   >
-                    💬 {t('orders.open_chat')}
+                    <IconChat size={14} /> {t('orders.open_chat')}
                   </button>
                 )}
               </div>

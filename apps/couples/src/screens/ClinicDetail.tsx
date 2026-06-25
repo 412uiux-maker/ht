@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconStarFilled, IconCalendar, IconMapPin, IconHeart, IconHeartFilled, IconPhone, IconStethoscope } from '@ht/shared'
 import { t, getLang } from '../i18n'
 import type { Clinic } from './ClinicList'
 import type { ClinicService } from './ClinicServicePicker'
@@ -34,16 +35,16 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
         padding: '14px 16px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn} aria-label={t('back')}>←</button>
+        <button onClick={onBack} style={iconBtn} aria-label={t('back')}><IconArrowLeft size={18} /></button>
         <span style={{ flex: 1, fontWeight: 700, fontSize: 17 }}>
           {lang === 'uz' ? 'Klinika' : 'Клиника'}
         </span>
         <button
           onClick={() => setFav(f => !f)}
           aria-label={fav ? 'Убрать из избранного' : 'В избранное'}
-          style={{ ...iconBtn, color: fav ? '#C62828' : 'var(--text-muted)', fontSize: 20 }}
+          style={{ ...iconBtn, color: fav ? '#C62828' : 'var(--text-muted)' }}
         >
-          {fav ? '♥' : '♡'}
+          {fav ? <IconHeartFilled size={20} color="#C62828" /> : <IconHeart size={20} />}
         </button>
         <button
           aria-label={t('clinic.share')}
@@ -86,7 +87,7 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
         }}>
           {[
             { val: `${clinic.experience_yr} ${lang === 'uz' ? 'yil' : 'лет'}`, label: t('clinic.experience') },
-            { val: `${clinic.rating.toFixed(2)} ⭐`, label: t('clinic.rating') },
+            { val: <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconStarFilled size={13} color="#F59E0B" /> {clinic.rating.toFixed(2)}</span>, label: t('clinic.rating') },
             { val: clinic.consultations.toLocaleString('ru-RU'), label: t('clinic.consults') },
           ].map((s, i) => (
             <div key={i} style={{
@@ -162,7 +163,7 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
             padding: '14px 16px', gap: 12,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 18 }}>📞</span>
+              <IconPhone size={18} color="var(--text-muted)" />
               <span style={{ fontSize: 14, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
                 {phoneRevealed ? clinic.phone_full : clinic.phone_masked}
               </span>
@@ -184,7 +185,7 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
           {/* Schedule */}
           <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>📅</span>
+              <span style={{ flexShrink: 0, marginTop: 1 }}><IconCalendar size={18} color="var(--text-muted)" /></span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {clinic.schedule.map((s, i) => (
                   <div key={i} style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
@@ -201,7 +202,7 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
           {/* Address */}
           <div style={{ borderTop: '1px solid var(--border)', padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-              <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>📍</span>
+              <span style={{ flexShrink: 0, marginTop: 1 }}><IconMapPin size={18} color="var(--text-muted)" /></span>
               <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{address}</div>
             </div>
           </div>
@@ -213,7 +214,7 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
           background: '#D1F2E4', borderRadius: 'var(--r-md)',
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <span style={{ fontSize: 16 }}>🟢</span>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#1A7A4A', flexShrink: 0 }} />
           <span style={{ fontSize: 13, fontWeight: 600, color: '#1A7A4A' }}>
             {lang === 'uz' ? 'Bugun ishlaydi' : 'Сегодня работает'}: {hours}
           </span>
@@ -234,9 +235,9 @@ export default function ClinicDetail({ clinic, onBack, onViewOthers }: Props) {
             width: 44, height: 44, borderRadius: 'var(--r-md)',
             background: 'linear-gradient(135deg,#F8915A,#F26B47)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, flexShrink: 0,
+            flexShrink: 0,
           }}>
-            🏥
+            <IconStethoscope size={22} color="#fff" />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>

@@ -116,6 +116,22 @@ html, body {
   animation: timerPulse 1s ease-in-out infinite;
 }
 @keyframes timerPulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+.info-timer.warn { color: #C77700; }
+.info-timer.warn .timer-dot { background: #E8911A; }
+.info-timer.crit { color: #E5534A; }
+
+/* ── TIME BANNER (soft over-time / warning) ───────────── */
+#time-banner {
+  position: fixed; left: 16px; right: 16px; bottom: 160px; z-index: 11;
+  display: none; align-items: center; gap: 10px;
+  background: rgba(229,83,74,.95); color: #fff; backdrop-filter: blur(12px);
+  border-radius: 16px; padding: 12px 16px; font-size: 14px; font-weight: 600;
+  box-shadow: 0 8px 28px rgba(0,0,0,.35);
+  animation: bannerIn .35s ease;
+}
+#time-banner.show { display: flex; }
+#time-banner.amber { background: rgba(232,145,26,.95); }
+@keyframes bannerIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
 /* ── CONTROLS BAR ─────────────────────────────────────── */
 #controls {
@@ -213,6 +229,9 @@ html, body {
   </div>
 </div>
 
+<!-- Time banner (warning / over-time) -->
+<div id="time-banner"><span id="time-banner-txt"></span></div>
+
 <!-- Controls -->
 <div id="controls">
   <button class="ctrl-btn" id="mic-btn" onclick="toggleMic()">
@@ -269,6 +288,14 @@ let timerInterval = null;
 let iceBuf       = [];
 let remoteDescSet = false;
 let isInitiator  = false; // client creates offer
+let connected    = false; // peer connection established
+let ringTimeout  = null;  // client: no-answer timer
+let durationMs   = 0;     // consultation length from tariff
+let serverOffset = 0;     // serverNow - clientNow (clock skew correction)
+let warnAmberShown = false, warnCritShown = false, overtimeShown = false;
+
+// consultation data (filled by loadVetInfo)
+let CONSULT = null;
 
 // ── STUN servers (public Google) ────────────────────────────
 const RTC_CONFIG = {
@@ -287,10 +314,19 @@ async function loadVetInfo() {
     if (!r.ok) return;
     const { consultation: c } = await r.json();
     if (c) {
+      CONSULT = c;
       document.getElementById('info-name').textContent = c.vet_name || 'Ветеринар';
       document.getElementById('info-spec').textContent = c.specialty || 'Онлайн-консультация';
-      const avatarMap = { '👨‍⚕️':'👨‍⚕️','👩‍⚕️':'👩‍⚕️','🧑‍⚕️':'🧑‍⚕️' };
-      // vet_name not available as emoji - use default
+      // Waiting overlay copy depends on role
+      const wt = document.querySelector('#waiting .w-title');
+      const wsub = document.querySelector('#waiting .w-sub');
+      if (ROLE === 'client') {
+        if (wt)  wt.textContent = 'Вызываем врача…';
+        if (wsub) wsub.textContent = `${c.vet_name || 'Ветеринар'} получает уведомление о вызове.`;
+      } else {
+        if (wt)  wt.textContent = 'Подключение…';
+        if (wsub) wsub.textContent = `Консультация для ${c.pet_name || 'питомца'}.`;
+      }
     }
   } catch {}
 }
@@ -359,15 +395,64 @@ function toggleCam() {
   btn.querySelector('svg').style.opacity = camOn ? '' : '.35';
 }
 
-// ── Timer ───────────────────────────────────────────────────
-function startTimer() {
-  callStart = Date.now();
+// ── Timer (countdown to end of consultation) ────────────────
+function fmt(totalSec) {
+  const s = Math.max(0, Math.floor(totalSec));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+
+async function startTimer() {
   document.getElementById('timer-dot').style.display = '';
-  timerInterval = setInterval(() => {
-    const s = Math.floor((Date.now() - callStart) / 1000);
-    const m = Math.floor(s / 60), sec = s % 60;
-    document.getElementById('timer-txt').textContent = m + ':' + String(sec).padStart(2, '0');
-  }, 1000);
+  // Authoritative start + tariff duration from the server (idempotent)
+  try {
+    const r = await fetch('/api/consultations/' + CONSULT_ID + '/call/start', { method: 'POST' });
+    const d = await r.json();
+    callStart    = Date.parse(d.call_started_at);
+    durationMs   = (d.duration_min || 30) * 60000;
+    if (d.now) serverOffset = Date.parse(d.now) - Date.now();
+  } catch {
+    callStart  = Date.now();
+    durationMs = 30 * 60000;
+  }
+  tickTimer();
+  timerInterval = setInterval(tickTimer, 1000);
+}
+
+function tickTimer() {
+  const nowSrv    = Date.now() + serverOffset;
+  const remaining = durationMs - (nowSrv - callStart); // ms
+  const el   = document.getElementById('timer-txt');
+  const strip = document.querySelector('#info-strip .info-timer');
+
+  if (remaining > 0) {
+    el.textContent = fmt(remaining / 1000);
+    if (remaining <= 30000) {
+      strip.classList.add('crit'); strip.classList.remove('warn');
+      if (!warnCritShown) { warnCritShown = true; showBanner('Осталось меньше минуты до конца консультации', 'amber', 6000); }
+    } else if (remaining <= 120000) {
+      strip.classList.add('warn');
+      if (!warnAmberShown) { warnAmberShown = true; showBanner('До конца консультации 2 минуты', 'amber', 5000); }
+    }
+  } else {
+    // Soft over-time: keep the call alive, just inform.
+    el.textContent = '0:00';
+    strip.classList.add('crit'); strip.classList.remove('warn');
+    if (!overtimeShown) {
+      overtimeShown = true;
+      showBanner('Время консультации истекло. Можно завершить звонок.', '', 0);
+    }
+  }
+}
+
+let bannerTimer = null;
+function showBanner(text, cls, autoHideMs) {
+  const b = document.getElementById('time-banner');
+  document.getElementById('time-banner-txt').textContent = text;
+  b.classList.remove('amber');
+  if (cls) b.classList.add(cls);
+  b.classList.add('show');
+  if (bannerTimer) { clearTimeout(bannerTimer); bannerTimer = null; }
+  if (autoHideMs > 0) bannerTimer = setTimeout(() => b.classList.remove('show'), autoHideMs);
 }
 
 function stopTimer() {
@@ -376,9 +461,8 @@ function stopTimer() {
 
 function callDuration() {
   if (!callStart) return '';
-  const s = Math.floor((Date.now() - callStart) / 1000);
-  const m = Math.floor(s / 60), sec = s % 60;
-  return `Длительность: ${m}:${String(sec).padStart(2, '0')}`;
+  const elapsed = (Date.now() + serverOffset - callStart) / 1000;
+  return `Длительность: ${fmt(elapsed)}`;
 }
 
 // ── Navigation ───────────────────────────────────────────────
@@ -394,6 +478,8 @@ function endCall() {
 
 function cleanup(navigate = false) {
   stopTimer();
+  clearRingTimeout();
+  if (!connected) cancelCall(); // hung up before the vet picked up
   if (pc) { pc.close(); pc = null; }
   if (ws) { ws.close(); ws = null; }
   if (localStream) { localStream.getTracks().forEach(t => t.stop()); localStream = null; }
@@ -463,6 +549,19 @@ function connectSignaling() {
 
   ws.onopen = () => {
     ws.send(JSON.stringify({ type: 'join', room: CONSULT_ID, role: ROLE }));
+    if (ROLE === 'client') {
+      // Ring the vet's cabinet
+      ws.send(JSON.stringify({
+        type: 'call-invite',
+        room: CONSULT_ID,
+        vet_id: CONSULT && CONSULT.vet_id,
+        client_name: CONSULT && CONSULT.client_name,
+        pet_name: CONSULT && CONSULT.pet_name,
+        pet_species: CONSULT && CONSULT.pet_species,
+        problem: CONSULT && CONSULT.problem,
+      }));
+      startRingTimeout();
+    }
   };
 
   ws.onmessage = async (evt) => {
@@ -471,6 +570,8 @@ function connectSignaling() {
 
     switch (msg.type) {
       case 'peer-joined':
+        // The other side joined the room → the vet picked up. Stop ringing.
+        clearRingTimeout();
         // One of us just joined. The 'client' side initiates.
         if (ROLE === 'client') {
           isInitiator = true;
@@ -479,6 +580,10 @@ function connectSignaling() {
         } else if (ROLE === 'vet') {
           if (!pc) createPeerConnection();
         }
+        break;
+
+      case 'call-declined':
+        showCallFailed('Врач отклонил вызов', 'Попробуйте позвонить позже или напишите в чат.');
         break;
 
       case 'offer':
@@ -518,6 +623,8 @@ function connectSignaling() {
 }
 
 function onCallConnected() {
+  connected = true;
+  clearRingTimeout();
   document.getElementById('waiting').style.display = 'none';
   document.getElementById('info-strip').style.display = 'flex';
   startTimer();
@@ -527,6 +634,37 @@ function onPeerLeft() {
   if (!document.getElementById('ended').classList.contains('show')) {
     endCall();
   }
+}
+
+// ── Ring lifecycle (client side) ────────────────────────────
+function startRingTimeout() {
+  clearRingTimeout();
+  ringTimeout = setTimeout(() => {
+    if (!connected) showCallFailed('Врач не ответил', 'Ветеринар сейчас недоступен. Попробуйте позже или напишите в чат.');
+  }, 45000);
+}
+function clearRingTimeout() {
+  if (ringTimeout) { clearTimeout(ringTimeout); ringTimeout = null; }
+}
+
+function cancelCall() {
+  // Tell the vet's cabinet to stop ringing
+  if (ws && ws.readyState === WebSocket.OPEN && ROLE === 'client' && CONSULT) {
+    ws.send(JSON.stringify({ type: 'call-cancel', room: CONSULT_ID, vet_id: CONSULT.vet_id }));
+  }
+}
+
+function showCallFailed(title, sub) {
+  clearRingTimeout();
+  cancelCall();
+  const w = document.getElementById('waiting');
+  w.style.display = 'flex';
+  w.querySelector('.w-emoji').textContent = '📵';
+  w.querySelector('.w-title').textContent = title;
+  w.querySelector('.w-sub').textContent = sub;
+  const dots = w.querySelector('.w-dots'); if (dots) dots.style.display = 'none';
+  const copyBtn = document.getElementById('copy-vet-link'); if (copyBtn) copyBtn.style.display = 'none';
+  cleanup(false);
 }
 
 // ── Init ─────────────────────────────────────────────────────

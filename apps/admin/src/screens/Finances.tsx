@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconCheckCircle, IconClose } from '@ht/shared'
 
 interface Transaction {
   id: string
@@ -195,7 +196,10 @@ export default function Finances() {
         <div className="overlay" onClick={e => e.target === e.currentTarget && !processing && setConfirm(null)}>
           <div className="modal" style={{ maxWidth: 400 }}>
             <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 12 }}>
-              {confirm.action === 'approve' ? '✅ Одобрить выплату?' : '❌ Отклонить выплату?'}
+              {confirm.action === 'approve'
+                ? <><IconCheckCircle size={20} color="var(--success)" style={{ marginRight: 8 }} /> Одобрить выплату?</>
+                : <><IconClose size={20} color="var(--danger)" style={{ marginRight: 8 }} /> Отклонить выплату?</>
+              }
             </div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 20 }}>
               <strong>{confirm.payout.vendor}</strong> — {fmt(confirm.payout.amount)} сум<br />

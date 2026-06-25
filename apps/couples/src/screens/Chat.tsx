@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { IconArrowLeft, IconPlay, IconOrders, IconCheck, IconAlertCircle, IconCheckCircle, IconStarFilled, IconCalendar, IconSyringe } from '@ht/shared'
 import type { Vet, Message, Consultation, MedicalReport } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
@@ -134,7 +135,7 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
             flexShrink: 0,
           }}
         >
-          ←
+          <IconArrowLeft size={18} />
         </button>
 
         {/* Avatar + online dot */}
@@ -184,11 +185,11 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
                 width: 40, height: 40, borderRadius: 'var(--r-md)',
                 background: 'var(--grad-warm)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, textDecoration: 'none',
+                textDecoration: 'none',
                 boxShadow: '0 2px 8px rgba(242,120,75,.25)',
               }}
             >
-              📹
+              <IconPlay size={18} color="#fff" />
             </a>
           )}
           {!isActive && (
@@ -430,7 +431,7 @@ function MedReportCard({ report }: { report: MedicalReport }) {
       {report.medications.length > 0 && (
         <div>
           <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-            💊 Препараты
+            <IconSyringe size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} /> Препараты
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {report.medications.map((m, i) => (
@@ -460,8 +461,8 @@ function MedReportCard({ report }: { report: MedicalReport }) {
       {/* Steps checklist */}
       {report.steps.length > 0 && (
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-            📋 Инструкции
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconOrders size={14} /> Инструкции
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {report.steps.map((step, i) => {
@@ -485,7 +486,7 @@ function MedReportCard({ report }: { report: MedicalReport }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 11, color: '#fff', transition: 'all .15s',
                   }}>
-                    {done ? '✓' : ''}
+                    {done ? <IconCheck size={11} color="#fff" /> : null}
                   </div>
                   <span style={{
                     fontSize: 13, lineHeight: 1.5,
@@ -508,7 +509,7 @@ function MedReportCard({ report }: { report: MedicalReport }) {
           display: 'flex', gap: 10, alignItems: 'flex-start',
           background: 'var(--surface-2)', borderRadius: 'var(--r-md)', padding: '10px 12px',
         }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>📅</span>
+          <span style={{ flexShrink: 0 }}><IconCalendar size={20} color="var(--text-muted)" /></span>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 2 }}>Наблюдение</div>
             <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{report.followup}</div>
@@ -523,7 +524,7 @@ function MedReportCard({ report }: { report: MedicalReport }) {
           background: 'rgba(245,166,35,.07)', border: '1px solid rgba(245,166,35,.2)',
           borderRadius: 'var(--r-md)', padding: '10px 12px',
         }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+          <span style={{ flexShrink: 0 }}><IconAlertCircle size={20} color="#856404" /></span>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#856404', marginBottom: 2 }}>Ограничения</div>
             <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{report.restrictions}</div>
@@ -553,7 +554,7 @@ function CompletionCard({ consultation, vet, hover, setHover, rating, setRating,
         padding: '14px 18px',
         display: 'flex', alignItems: 'center', gap: 10,
       }}>
-        <span style={{ fontSize: 24 }}>✅</span>
+        <IconCheckCircle size={24} color="#fff" />
         <div style={{ color: '#fff' }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{t('chat.done')}</div>
           <div style={{ fontSize: 12, opacity: .85 }}>{vet.name}</div>
@@ -597,7 +598,7 @@ function CompletionCard({ consultation, vet, hover, setHover, rating, setRating,
                   transition: 'filter .12s, transform .12s',
                 }}
               >
-                ⭐
+                <IconStarFilled size={28} color="#F59E0B" />
               </button>
             ))}
           </div>

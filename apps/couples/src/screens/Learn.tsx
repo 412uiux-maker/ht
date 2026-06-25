@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconArrowLeft, IconCheck, IconContent, IconBook } from '@ht/shared'
 import type { LearnItem } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -6,9 +7,9 @@ import { t } from '../i18n'
 type Filter = 'all' | 'checklist' | 'guide' | 'article'
 
 const TYPE_COLOR: Record<string, { bg: string; color: string; label: string }> = {
-  checklist: { bg: '#DCFCE7', color: '#15803D', label: '✓ Чек-лист' },
-  guide:     { bg: '#DBEAFE', color: '#1D4ED8', label: '📖 Гайд' },
-  article:   { bg: '#FEF3C7', color: '#92400E', label: '📄 Статья' },
+  checklist: { bg: '#DCFCE7', color: '#15803D', label: 'Чек-лист' },
+  guide:     { bg: '#DBEAFE', color: '#1D4ED8', label: 'Гайд' },
+  article:   { bg: '#FEF3C7', color: '#92400E', label: 'Статья' },
 }
 
 export default function Learn({ lang }: { lang: string }) {
@@ -88,9 +89,9 @@ export default function Learn({ lang }: { lang: string }) {
               <div style={{
                 width: 48, height: 48, borderRadius: 'var(--r-md)',
                 background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 22, flexShrink: 0,
+                flexShrink: 0,
               }}>
-                {item.type === 'checklist' ? '✓' : item.type === 'guide' ? '📖' : '📄'}
+                {item.type === 'checklist' ? <IconCheck size={22} color={meta.color} /> : item.type === 'guide' ? <IconBook size={22} color={meta.color} /> : <IconContent size={22} color={meta.color} />}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 4 }}>
@@ -133,7 +134,7 @@ function ItemDetail({ item, onBack }: { item: LearnItem; onBack: () => void }) {
             fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
           }}
-        >←</button>
+        ><IconArrowLeft size={16} /></button>
         <span style={{ flex: 1, fontWeight: 700, fontSize: 16, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
       </header>
 
@@ -179,7 +180,7 @@ function ItemDetail({ item, onBack }: { item: LearnItem; onBack: () => void }) {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 12, fontWeight: 700, transition: 'all .15s',
                   }}>
-                    {done ? '✓' : idx + 1}
+                    {done ? <IconCheck size={12} color="#fff" /> : idx + 1}
                   </div>
                   <span style={{
                     fontSize: 14, lineHeight: 1.5,

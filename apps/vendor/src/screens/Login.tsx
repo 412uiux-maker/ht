@@ -3,10 +3,10 @@ import { api } from '../api'
 import type { VendorSession } from '../types'
 
 const DEMOS = [
-  { label: '🩺 Азиз',    phone: '+998901234567' },
-  { label: '🔬 Малика',  phone: '+998901234568' },
-  { label: '🧬 Санжар',  phone: '+998901234569' },
-  { label: '👶 Дилноза', phone: '+998901234570' },
+  { label: 'Азиз',    phone: '+998901234567' },
+  { label: 'Малика',  phone: '+998901234568' },
+  { label: 'Санжар',  phone: '+998901234569' },
+  { label: 'Дилноза', phone: '+998901234570' },
 ]
 
 type Step = 'phone' | 'code'

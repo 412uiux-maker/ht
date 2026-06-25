@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconCheckCircle, IconStethoscope, IconMoney, IconRefresh } from '@ht/shared'
 
 interface Transaction {
   id: number
@@ -83,7 +84,7 @@ export default function Finances() {
           fontWeight: 600, fontSize: 14, marginBottom: 20,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          ✅ Заявка на вывод отправлена. Средства поступят в течение 1–2 рабочих дней.
+          <IconCheckCircle size={16} color="var(--green)" /> Заявка на вывод отправлена. Средства поступят в течение 1–2 рабочих дней.
         </div>
       )}
 
@@ -111,7 +112,7 @@ export default function Finances() {
                 ? 'rgba(76,175,125,.12)'
                 : 'rgba(239,68,68,.12)',
             }}>
-              {tx.type === 'consult' ? '🩺' : tx.type === 'payout' ? '💳' : '↩️'}
+              {tx.type === 'consult' ? <IconStethoscope size={17} /> : tx.type === 'payout' ? <IconMoney size={17} /> : <IconRefresh size={17} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>

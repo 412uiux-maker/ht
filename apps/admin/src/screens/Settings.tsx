@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconCheck, IconEdit } from '@ht/shared'
 
 type SettingsTab = 'commissions' | 'payments' | 'notifications'
 
@@ -95,7 +96,7 @@ export default function Settings() {
         <div className="page-title" style={{ marginBottom: 0 }}>Настройки</div>
         {savedMsg && (
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)', background: 'var(--success)22', padding: '6px 12px', borderRadius: 'var(--r-pill)' }}>
-            ✓ {savedMsg}
+            <IconCheck size={14} /> {savedMsg}
           </span>
         )}
       </div>
@@ -122,8 +123,8 @@ export default function Settings() {
                 }}>
                   {c.unit === 'percent' ? `${c.value}%` : `${c.value.toLocaleString('ru-RU')} сум`}
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => { setEditComm(c); setEditValue(String(c.value)) }}>
-                  ✏️ Изменить
+                <button className="btn btn-sm btn-ghost" onClick={() => { setEditComm(c); setEditValue(String(c.value)) }} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <IconEdit size={14} /> Изменить
                 </button>
               </div>
             </div>

@@ -9,6 +9,7 @@ import Finances from './screens/Finances'
 import Reviews from './screens/Reviews'
 import VendorProfile from './screens/VendorProfile'
 import Layout from './components/Layout'
+import IncomingCall from './components/IncomingCall'
 
 type Screen =
   | 'login'
@@ -53,17 +54,22 @@ export default function App() {
 
   if (typeof screen === 'object' && screen.name === 'chat') {
     return (
-      <Chat
-        consultId={screen.consultId}
-        session={session}
-        onBack={() => setScreen('dashboard')}
-      />
+      <>
+        <IncomingCall vetId={session.vet_id} />
+        <Chat
+          consultId={screen.consultId}
+          session={session}
+          onBack={() => setScreen('dashboard')}
+        />
+      </>
     )
   }
 
   const activeScreen = typeof screen === 'string' ? screen : 'dashboard'
 
   return (
+    <>
+    <IncomingCall vetId={session.vet_id} />
     <Layout
       session={session}
       activeScreen={activeScreen}
@@ -84,5 +90,6 @@ export default function App() {
         <VendorProfile session={session} onSessionUpdate={handleSessionUpdate} />
       )}
     </Layout>
+    </>
   )
 }
