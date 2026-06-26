@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { IconAudit, IconArrowLeft, IconArrowRight } from '@ht/shared'
 import type { AuditEntry } from '../types'
 import { adminApi } from '../api'
 
@@ -50,7 +51,7 @@ export default function Audit() {
         {error && <div className="error-banner" style={{ margin: 16 }}>{error}</div>}
         {!loading && !error && entries.length === 0 && (
           <div className="empty">
-            <div className="empty-icon">📜</div>
+            <div className="empty-icon"><IconAudit size={40} color="var(--text-muted)" /></div>
             <div>Действий пока нет</div>
           </div>
         )}

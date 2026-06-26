@@ -7,6 +7,7 @@ export type VendorSession = {
   rating: number
   avatar_emoji: string
   experience_yr: number
+  token: string
 }
 
 export type ConsultStatus = 'pending' | 'active' | 'completed'
@@ -37,6 +38,9 @@ export type Consultation = {
   summary: string | null
   report: MedicalReport | null
   created_at: string
+  call_started_at: string | null
+  duration_min: number
+  pet_id: string | null
 }
 
 export type Message = {

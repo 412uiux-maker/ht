@@ -1,5 +1,8 @@
 const BASE = '/api'
 
+export const getJwt = () => localStorage.getItem('ht_jwt')
+export const setJwt = (token: string) => localStorage.setItem('ht_jwt', token)
+
 export type Vet = {
   id: number
   name: string
@@ -60,11 +63,31 @@ export type Consultation = {
   summary: string | null
   report: MedicalReport | null
   created_at: string
+  call_started_at: string | null
+  duration_min: number
+  pet_id: string | null
+}
+
+export type PetConsultation = {
+  id: string
+  created_at: string
+  status: string
+  report: MedicalReport | null
+  summary: string | null
+  duration_min: number
+  call_started_at: string | null
+  vet_name: string
+  specialty: string
+  avatar_emoji: string
 }
 
 const req = async <T>(path: string, opts?: RequestInit): Promise<T> => {
+  const jwt = getJwt()
   const r = await fetch(BASE + path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
+    },
     ...opts,
   })
   if (!r.ok) throw new Error(r.statusText)
@@ -88,6 +111,11 @@ export type PromoResult = {
 
 export type LearnStep = { id: number; text: string }
 
+export type LearnProgress = {
+  status: 'started' | 'completed'
+  checked_steps: number[]
+}
+
 export type LearnItem = {
   id: number
   type: 'checklist' | 'guide' | 'article'
@@ -97,6 +125,9 @@ export type LearnItem = {
   body: string | null
   steps: LearnStep[] | null
   species: string[]
+  duration_min: number
+  emoji: string
+  progress: LearnProgress | null
 }
 
 export type Order = {
@@ -138,6 +169,12 @@ export const getOwnerId = () => {
 }
 
 export const api = {
+  authTelegram: (initData: string) =>
+    req<{ token: string; user: { id: string; name: string; locale: string } }>('/auth/telegram', {
+      method: 'POST',
+      body: JSON.stringify({ initData }),
+    }),
+
   vets: () => req<Vet[]>('/vets'),
   pets: (ownerId: string) => req<Pet[]>(`/pets?owner_id=${encodeURIComponent(ownerId)}`),
   createConsultation: (body: {
@@ -146,7 +183,10 @@ export const api = {
     pet_name: string
     pet_species: string
     problem: string
+    pet_id?: string
   }) => req<Consultation>('/consultations', { method: 'POST', body: JSON.stringify(body) }),
+  petConsultations: (petId: string) =>
+    req<PetConsultation[]>(`/pets/${petId}/consultations`),
   getConsultation: (id: string) =>
     req<{ consultation: Consultation; messages: Message[] }>(`/consultations/${id}`),
   sendMessage: (id: string, text: string) =>
@@ -165,6 +205,11 @@ export const api = {
     req<{ used: boolean }>('/promos/use', { method: 'POST', body: JSON.stringify({ code }) }),
   learn: (ownerId: string) => req<LearnItem[]>(`/learn?owner_id=${encodeURIComponent(ownerId)}`),
   learnItem: (id: number, ownerId: string) => req<LearnItem>(`/learn/${id}?owner_id=${encodeURIComponent(ownerId)}`),
+  learnProgress: (id: number, ownerId: string, status: 'started' | 'completed', checkedSteps: number[]) =>
+    req<{ ok: boolean }>(`/learn/${id}/progress`, {
+      method: 'POST',
+      body: JSON.stringify({ owner_id: ownerId, status, checked_steps: checkedSteps }),
+    }),
   deeds: (ownerId: string) => req<Deed[]>(`/deeds?owner_id=${encodeURIComponent(ownerId)}`),
   participateDeed: (id: number, type: 'donate' | 'volunteer' | 'share', amount?: number) =>
     req<{ ok: boolean }>(`/deeds/${id}/participate`, {

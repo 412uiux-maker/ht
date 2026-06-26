@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconSearch } from '@ht/shared'
 import { t, getLang } from '../i18n'
 
 export interface ClinicService {
@@ -44,7 +45,7 @@ export default function ClinicServicePicker({ onBack, onSelectService }: Props) 
         padding: '14px 16px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn} aria-label={t('back')}>←</button>
+        <button onClick={onBack} style={iconBtn} aria-label={t('back')}><IconArrowLeft size={18} /></button>
         {searching ? (
           <input
             autoFocus
@@ -63,7 +64,7 @@ export default function ClinicServicePicker({ onBack, onSelectService }: Props) 
           onClick={() => { setSearching(s => !s); setQuery('') }}
           style={{ ...iconBtn, border: 'none', fontSize: 18 }}
           aria-label="Поиск"
-        >🔍</button>
+        ><IconSearch size={18} /></button>
       </header>
 
       {/* Service list */}

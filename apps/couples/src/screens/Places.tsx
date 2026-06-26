@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconStarFilled, IconPaw, IconClock, IconMapPin, IconHeart, IconHeartFilled, IconPhone } from '@ht/shared'
 import { t, getLang } from '../i18n'
 
 type PlaceType = 'park' | 'cafe' | 'shop' | 'grooming' | 'hotel'
@@ -120,14 +121,14 @@ export default function Places({ onBack }: Props) {
           padding: '14px 16px', background: 'var(--surface)',
           borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
         }}>
-          <button onClick={() => setSelected(null)} style={iconBtn} aria-label={t('back')}>←</button>
+          <button onClick={() => setSelected(null)} style={iconBtn} aria-label={t('back')}><IconArrowLeft size={18} /></button>
           <span style={{ flex: 1, fontWeight: 700, fontSize: 17 }}>{name}</span>
           <button
             onClick={e => toggleFav(selected.id, e)}
-            style={{ ...iconBtn, color: isFav ? '#C62828' : 'var(--text-muted)', fontSize: 20, border: 'none' }}
+            style={{ ...iconBtn, color: isFav ? '#C62828' : 'var(--text-muted)', border: 'none' }}
             aria-label={isFav ? 'Убрать' : 'В избранное'}
           >
-            {isFav ? '♥' : '♡'}
+            {isFav ? <IconHeartFilled size={20} color="#C62828" /> : <IconHeart size={20} />}
           </button>
         </header>
 
@@ -166,7 +167,7 @@ export default function Places({ onBack }: Props) {
             border: '1px solid var(--border)',
           }}>
             {[
-              { val: `${selected.rating} ⭐`, label: lang === 'uz' ? 'Reyting' : 'Рейтинг' },
+              { val: <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}><IconStarFilled size={13} color="#F59E0B" /> {selected.rating}</span>, label: lang === 'uz' ? 'Reyting' : 'Рейтинг' },
               { val: selected.reviews, label: lang === 'uz' ? 'Sharhlar' : 'Отзывов' },
             ].map((s, i) => (
               <div key={i} style={{ background: 'var(--surface)', padding: '14px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -199,15 +200,15 @@ export default function Places({ onBack }: Props) {
             border: '1px solid var(--border)',
           }}>
             {[
-              { icon: '🐾', label: lang === 'uz' ? 'Hayvonlar' : 'Питомцы', val: selected.petsAllowed.join(', ') },
-              { icon: '🕐', label: lang === 'uz' ? 'Ish vaqti' : 'Время работы', val: selected.workingHours },
-              { icon: '📍', label: lang === 'uz' ? 'Manzil' : 'Адрес', val: address },
+              { icon: <IconPaw size={18} color="var(--text-muted)" />, key: 'pets', label: lang === 'uz' ? 'Hayvonlar' : 'Питомцы', val: selected.petsAllowed.join(', ') },
+              { icon: <IconClock size={18} color="var(--text-muted)" />, key: 'time', label: lang === 'uz' ? 'Ish vaqti' : 'Время работы', val: selected.workingHours },
+              { icon: <IconMapPin size={18} color="var(--text-muted)" />, key: 'addr', label: lang === 'uz' ? 'Manzil' : 'Адрес', val: address },
             ].map((row, i, arr) => (
-              <div key={row.icon} style={{
+              <div key={row.key} style={{
                 display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 16px',
                 borderBottom: i < arr.length - 1 ? '1px solid var(--border)' : 'none',
               }}>
-                <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{row.icon}</span>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>{row.icon}</span>
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, marginBottom: 2 }}>{row.label}</div>
                   <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>{row.val}</div>
@@ -235,7 +236,7 @@ export default function Places({ onBack }: Props) {
               boxShadow: `0 4px 20px ${selected.color}55`,
             } as React.CSSProperties}
           >
-            📞 {lang === 'uz' ? "Qo'ng'iroq qilish" : 'Позвонить'}
+            <IconPhone size={16} color="#fff" style={{ verticalAlign: 'middle' }} /> {lang === 'uz' ? "Qo'ng'iroq qilish" : 'Позвонить'}
           </a>
         </div>
       </div>
@@ -250,7 +251,7 @@ export default function Places({ onBack }: Props) {
         padding: '14px 16px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} style={iconBtn} aria-label={t('back')}>←</button>
+        <button onClick={onBack} style={iconBtn} aria-label={t('back')}><IconArrowLeft size={18} /></button>
         <span style={{ flex: 1, fontWeight: 700, fontSize: 17 }}>{t('places.title')}</span>
       </header>
 
@@ -323,19 +324,19 @@ export default function Places({ onBack }: Props) {
                     fontSize: 11, fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--r-pill)',
                     background: place.color + '18', color: place.color,
                   }}>{typeLabel}</span>
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{place.rating} ⭐ · {place.reviews}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 2 }}><IconStarFilled size={11} color="#F59E0B" /> {place.rating} · {place.reviews}</span>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                  📍 {address}
+                  <IconMapPin size={12} color="var(--text-muted)" style={{ verticalAlign: 'middle' }} /> {address}
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <button
                   onClick={e => toggleFav(place.id, e)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: isFav ? '#C62828' : 'var(--text-muted)', padding: 4, minHeight: 36 }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: isFav ? '#C62828' : 'var(--text-muted)', padding: 4, minHeight: 36, display: 'flex', alignItems: 'center' }}
                   aria-label={isFav ? 'Убрать' : 'В избранное'}
                 >
-                  {isFav ? '♥' : '♡'}
+                  {isFav ? <IconHeartFilled size={20} color="#C62828" /> : <IconHeart size={20} />}
                 </button>
                 <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>›</span>
               </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconTrash } from '@ht/shared'
 
 interface Service {
   id: number
@@ -206,7 +207,7 @@ export default function Services() {
             padding: 28, maxWidth: 360, width: '90%',
             boxShadow: '0 16px 40px rgba(0,0,0,.25)',
           }}>
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🗑️</div>
+            <div style={{ marginBottom: 12 }}><IconTrash size={32} color="var(--danger)" /></div>
             <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Удалить услугу?</h2>
             <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 24 }}>
               «{deleting.title_ru}» будет удалена. Это действие нельзя отменить.

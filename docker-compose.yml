@@ -44,6 +44,20 @@ services:
     depends_on:
       - api
 
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: apps/telegram-bot/Dockerfile
+    image: petplatform-telegram-bot
+    container_name: petplatform-telegram-bot
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      API_BASE_URL: http://petplatform-api:8080
+      MINI_APP_URL: ${MINI_APP_URL:-https://t.me/HappyTailsUzBot/app}
+    depends_on:
+      - api
+
   admin:
     build:
       context: .

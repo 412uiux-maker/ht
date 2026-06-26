@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcrypt');
 const pool = require('../db');
 
 const SEED_VETS = [
@@ -366,9 +367,28 @@ const SEED_LEARN = [
   },
 ];
 
+const isBcrypt = s => typeof s === 'string' && (s.startsWith('$2b$') || s.startsWith('$2a$'));
+
+async function migratePasswords() {
+  const { rows: vendors } = await pool.query('SELECT id, password FROM vendor_credentials');
+  for (const row of vendors) {
+    if (!isBcrypt(row.password)) {
+      await pool.query('UPDATE vendor_credentials SET password=$1 WHERE id=$2', [await bcrypt.hash(row.password, 10), row.id]);
+    }
+  }
+  const { rows: admins } = await pool.query('SELECT id, password FROM admin_users');
+  for (const row of admins) {
+    if (!isBcrypt(row.password)) {
+      await pool.query('UPDATE admin_users SET password=$1 WHERE id=$2', [await bcrypt.hash(row.password, 10), row.id]);
+    }
+  }
+}
+
 async function initDb() {
   const schema = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
   await pool.query(schema);
+
+  await migratePasswords();
 
   const { rows: dr } = await pool.query('SELECT COUNT(*) FROM good_deeds');
   if (dr[0].count === '0') {
@@ -387,15 +407,15 @@ async function initDb() {
 
   const { rows: vcr } = await pool.query('SELECT COUNT(*) FROM vendor_credentials');
   if (vcr[0].count === '0') {
-    // Fetch vet IDs in insertion order
     const { rows: vetRows } = await pool.query('SELECT id FROM vets ORDER BY id');
     for (const cred of SEED_VENDOR_CREDS) {
       const vet = vetRows[cred.vet_index];
       if (!vet) continue;
+      const hashed = await bcrypt.hash(cred.password, 10);
       await pool.query(
         `INSERT INTO vendor_credentials (vet_id, email, password, phone) VALUES ($1,$2,$3,$4)
          ON CONFLICT DO NOTHING`,
-        [vet.id, cred.email, cred.password, cred.phone]
+        [vet.id, cred.email, hashed, cred.phone]
       );
     }
     console.log('DB seeded:', SEED_VENDOR_CREDS.length, 'vendor credentials');
@@ -451,12 +471,18 @@ async function initDb() {
 
   const { rows: au } = await pool.query('SELECT COUNT(*) FROM admin_users');
   if (au[0].count === '0') {
-    await pool.query(`
-      INSERT INTO admin_users (email, password, name, role) VALUES
-      ('admin@happytails.uz', 'admin123', 'Главный администратор', 'admin'),
-      ('moder@happytails.uz', 'moder123', 'Модератор Контента', 'moderator'),
-      ('support@happytails.uz', 'supp123', 'Агент Поддержки', 'support')
-    `);
+    const adminSeed = [
+      { email: 'admin@happytails.uz',   password: 'admin123', name: 'Главный администратор', role: 'admin' },
+      { email: 'moder@happytails.uz',   password: 'moder123', name: 'Модератор Контента',    role: 'moderator' },
+      { email: 'support@happytails.uz', password: 'supp123',  name: 'Агент Поддержки',       role: 'support' },
+    ];
+    for (const u of adminSeed) {
+      const hashed = await bcrypt.hash(u.password, 10);
+      await pool.query(
+        `INSERT INTO admin_users (email, password, name, role) VALUES ($1,$2,$3,$4)`,
+        [u.email, hashed, u.name, u.role]
+      );
+    }
     console.log('DB seeded: 3 admin users');
   }
 

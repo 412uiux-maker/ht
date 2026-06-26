@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { IconConsultation, IconClose } from '@ht/shared'
 import type { ConsultationRow } from '../types'
 import { adminApi } from '../api'
 
@@ -61,7 +62,7 @@ export default function Consultations() {
         {error   && <div className="error-banner" style={{ margin: 16 }}>{error}</div>}
         {!loading && !error && rows.length === 0 && (
           <div className="empty">
-            <div className="empty-icon">💬</div>
+            <div className="empty-icon"><IconConsultation size={40} color="var(--text-muted)" /></div>
             <div>Консультации не найдены</div>
           </div>
         )}
@@ -149,7 +150,7 @@ export default function Consultations() {
                   {detail.vet_name} · {new Date(detail.created_at).toLocaleDateString('ru')}
                 </div>
               </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setDetail(null)}>✕</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => setDetail(null)}><IconClose size={16} /></button>
             </div>
 
             {detail.report && (() => {

@@ -1,6 +1,10 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const pool = require('../db');
+const { requireVendor, signToken } = require('../middleware/auth');
+
 const router = express.Router();
+const DEV = process.env.NODE_ENV !== 'production';
 
 // In-memory OTP store: phone → { code, expires }
 const otpStore = new Map();
@@ -20,7 +24,9 @@ router.post('/auth/send-code', async (req, res) => {
     otpStore.set(normalized, { code, expires: Date.now() + 5 * 60 * 1000 });
     console.log(`[OTP] ${normalized} → ${code}`);
     // TODO: replace with real SMS gateway (Click SMS, SMSC, etc.)
-    res.json({ sent: true, _dev_code: code });
+    const resp = { sent: true };
+    if (DEV) resp._dev_code = code;  // Never expose OTP in production
+    res.json(resp);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -41,13 +47,14 @@ router.post('/auth/verify-code', async (req, res) => {
   otpStore.delete(normalized);
   try {
     const { rows: [row] } = await pool.query(
-      `SELECT vc.vet_id, v.name, v.specialty, v.avatar_emoji, v.rating, v.experience_yr, v.bio, v.price_uzs
+      `SELECT vc.vet_id, vc.email, v.name, v.specialty, v.avatar_emoji, v.rating, v.experience_yr, v.bio, v.price_uzs
        FROM vendor_credentials vc JOIN vets v ON v.id = vc.vet_id
        WHERE vc.phone = $1`,
       [normalized]
     );
     if (!row) return res.status(404).json({ error: 'Ветеринар не найден' });
-    res.json(row);
+    const token = signToken({ sub: row.vet_id, type: 'vendor', email: row.email }, '7d');
+    res.json({ ...row, token });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -58,27 +65,47 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'email and password required' });
   try {
-    const { rows: [row] } = await pool.query(
-      `SELECT vc.vet_id, v.name, v.specialty, v.avatar_emoji, v.rating, v.experience_yr, v.bio, v.price_uzs
+    const { rows: [cred] } = await pool.query(
+      `SELECT vc.vet_id, vc.email, vc.password,
+              v.name, v.specialty, v.avatar_emoji, v.rating, v.experience_yr, v.bio, v.price_uzs
        FROM vendor_credentials vc JOIN vets v ON v.id = vc.vet_id
-       WHERE vc.email = $1 AND vc.password = $2`,
-      [email.toLowerCase().trim(), password]
+       WHERE vc.email = $1`,
+      [email.toLowerCase().trim()]
     );
-    if (!row) return res.status(401).json({ error: 'Неверный email или пароль' });
-    res.json({ ...row, email: email.toLowerCase().trim() });
+    if (!cred) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+    const ok = await bcrypt.compare(password, cred.password);
+    if (!ok) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+    const { password: _omit, ...rest } = cred;
+    const token = signToken({ sub: cred.vet_id, type: 'vendor', email: cred.email }, '7d');
+    res.json({ ...rest, token });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET /api/vendor/profile?vet_id=
-router.get('/profile', async (req, res) => {
-  const { vet_id } = req.query;
-  if (!vet_id) return res.status(400).json({ error: 'vet_id required' });
+// POST /api/vendor/link-telegram  (protected) — stores vet's Telegram chat ID for push notifications
+router.post('/link-telegram', requireVendor, async (req, res) => {
+  const { telegram_id } = req.body;
+  if (!telegram_id) return res.status(400).json({ error: 'telegram_id required' });
+  try {
+    await pool.query(
+      'UPDATE vendor_credentials SET telegram_id=$1 WHERE vet_id=$2',
+      [String(telegram_id), req.vendor.vet_id]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/vendor/profile  (protected)
+router.get('/profile', requireVendor, async (req, res) => {
   try {
     const { rows: [vet] } = await pool.query(
       `SELECT v.*, vc.email FROM vets v JOIN vendor_credentials vc ON vc.vet_id = v.id WHERE v.id = $1`,
-      [vet_id]
+      [req.vendor.vet_id]
     );
     if (!vet) return res.status(404).json({ error: 'Not found' });
     res.json(vet);
@@ -87,15 +114,14 @@ router.get('/profile', async (req, res) => {
   }
 });
 
-// GET /api/vendor/consultations?vet_id=&status=
-router.get('/consultations', async (req, res) => {
-  const { vet_id, status } = req.query;
-  if (!vet_id) return res.status(400).json({ error: 'vet_id required' });
+// GET /api/vendor/consultations  (protected)
+router.get('/consultations', requireVendor, async (req, res) => {
+  const { status } = req.query;
   try {
     let q = `SELECT c.*, v.name AS vet_name, v.specialty, v.price_uzs
              FROM consultations c JOIN vets v ON v.id = c.vet_id
              WHERE c.vet_id = $1`;
-    const params = [vet_id];
+    const params = [req.vendor.vet_id];
     if (status) { params.push(status); q += ` AND c.status = $${params.length}`; }
     q += ' ORDER BY c.created_at DESC';
     const { rows } = await pool.query(q, params);
@@ -105,11 +131,10 @@ router.get('/consultations', async (req, res) => {
   }
 });
 
-// GET /api/vendor/stats?vet_id=
-router.get('/stats', async (req, res) => {
-  const { vet_id } = req.query;
-  if (!vet_id) return res.status(400).json({ error: 'vet_id required' });
+// GET /api/vendor/stats  (protected)
+router.get('/stats', requireVendor, async (req, res) => {
   try {
+    const vet_id = req.vendor.vet_id;
     const { rows: [counts] } = await pool.query(
       `SELECT
          COUNT(*)                                      AS total,

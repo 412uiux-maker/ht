@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconUser, IconStarFilled } from '@ht/shared'
 
 interface Review {
   id: number
@@ -59,7 +60,7 @@ export default function Reviews() {
           return (
             <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <span style={{ fontSize: 12, color: 'var(--text2)', width: 10, textAlign: 'right' }}>{s}</span>
-              <span style={{ fontSize: 13 }}>⭐</span>
+              <IconStarFilled size={13} color="#F59E0B" />
               <div style={{ flex: 1, height: 6, background: 'var(--surface3)', borderRadius: 99, overflow: 'hidden' }}>
                 <div style={{
                   width: `${(cnt / reviews.length) * 100}%`, height: '100%',
@@ -78,7 +79,7 @@ export default function Reviews() {
         <Chip active={filter === null} onClick={() => setFilter(null)}>Все</Chip>
         {STARS.map(s => (
           <Chip key={s} active={filter === s} onClick={() => setFilter(f => f === s ? null : s)}>
-            {'⭐'.repeat(s)} ·{reviews.filter(r => r.rating === s).length}
+            <span style={{ display: 'inline-flex', gap: 1 }}>{Array.from({ length: s }, (_, i) => <IconStarFilled key={i} size={10} color="#F59E0B" />)}</span> ·{reviews.filter(r => r.rating === s).length}
           </Chip>
         ))}
       </div>
@@ -96,9 +97,8 @@ export default function Reviews() {
                 width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
                 background: 'var(--surface2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18,
               }}>
-                👤
+                <IconUser size={20} color="var(--text2)" />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{r.client}</div>
@@ -167,7 +167,7 @@ export default function Reviews() {
 
         {filtered.length === 0 && (
           <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text2)' }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>⭐</div>
+            <div style={{ marginBottom: 10 }}><IconStarFilled size={36} color="#F59E0B" /></div>
             <div style={{ fontSize: 14 }}>Нет отзывов с таким рейтингом</div>
           </div>
         )}
@@ -180,7 +180,9 @@ function Stars({ value }: { value: number }) {
   return (
     <div style={{ display: 'flex', gap: 1 }}>
       {[1, 2, 3, 4, 5].map(i => (
-        <span key={i} style={{ fontSize: 12, opacity: i <= Math.round(value) ? 1 : 0.25 }}>⭐</span>
+        <span key={i} style={{ opacity: i <= Math.round(value) ? 1 : 0.25 }}>
+          <IconStarFilled size={12} color="#F59E0B" />
+        </span>
       ))}
     </div>
   )

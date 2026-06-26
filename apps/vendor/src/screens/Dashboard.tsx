@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { IconStar, IconLearning, IconMoney, IconAlertCircle, IconCheckCircle } from '@ht/shared'
 import { api } from '../api'
 import type { VendorSession, Consultation, Stats } from '../types'
 
@@ -27,6 +28,7 @@ export default function Dashboard({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [acceptingId, setAcceptingId] = useState<string | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
 
   const loadStats = useCallback(() => {
     api.stats(session.vet_id).then(setStats).catch(() => {})
@@ -60,6 +62,16 @@ export default function Dashboard({
     finally { setAcceptingId(null) }
   }
 
+  const rejectConsult = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRejectingId(id)
+    try {
+      await api.reject(id)
+      await Promise.all([loadConsultations(), loadStats()])
+    } catch {}
+    finally { setRejectingId(null) }
+  }
+
   const STATUS_TABS = [
     { key: 'all',       label: 'Все',          count: stats ? stats.total : null },
     { key: 'pending',   label: 'Ожидают',      count: stats ? stats.pending : null },
@@ -90,14 +102,14 @@ export default function Dashboard({
             <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '2px' }}>{session.name}</div>
             <div style={{ color: 'var(--text2)', fontSize: '14px', marginBottom: '6px' }}>{session.specialty}</div>
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text3)' }}>
-                ⭐ {session.rating} рейтинг
+              <span style={{ fontSize: '13px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconStar size={13} color="var(--amber)" /> {session.rating} рейтинг
               </span>
-              <span style={{ fontSize: '13px', color: 'var(--text3)' }}>
-                🎓 {session.experience_yr} лет опыта
+              <span style={{ fontSize: '13px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconLearning size={13} color="var(--text3)" /> {session.experience_yr} лет опыта
               </span>
-              <span style={{ fontSize: '13px', color: 'var(--text3)' }}>
-                💰 {session.price_uzs.toLocaleString('ru-RU')} сум / консультация
+              <span style={{ fontSize: '13px', color: 'var(--text3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <IconMoney size={13} color="var(--text3)" /> {session.price_uzs.toLocaleString('ru-RU')} сум / консультация
               </span>
             </div>
           </div>
@@ -114,11 +126,11 @@ export default function Dashboard({
             display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
             gap: '12px', marginBottom: '20px',
           }}>
-            <StatCard label="Доход" value={`${stats.income.toLocaleString('ru-RU')} сум`} color="var(--coral)" />
+            <StatCard label="Доход" value={`${stats.income.toLocaleString('ru-RU')} сум`} color="var(--coral)" Icon={IconMoney} />
             <StatCard label="Всего" value={stats.total} />
             <StatCard label="Активных" value={stats.active} color="var(--green)" />
             <StatCard label="Ожидают" value={stats.pending} color="var(--amber)" />
-            <StatCard label="Рейтинг" value={`⭐ ${stats.rating}`} />
+            <StatCard label="Рейтинг" value={stats.rating} color="var(--amber)" Icon={IconStar} />
           </div>
         )}
 
@@ -130,7 +142,7 @@ export default function Dashboard({
             color: 'var(--amber)', fontSize: '14px', fontWeight: 500,
             display: 'flex', alignItems: 'center', gap: '8px',
           }}>
-            <span>⚡</span>
+            <IconAlertCircle size={16} color="var(--amber)" />
             <span>
               У вас {stats.pending} {stats.pending === 1 ? 'ожидающая консультация' : 'ожидающих консультации'} — ответьте как можно скорее
             </span>
@@ -190,7 +202,9 @@ export default function Dashboard({
                 key={c.id}
                 c={c}
                 accepting={acceptingId === c.id}
+                rejecting={rejectingId === c.id}
                 onAccept={(e) => acceptConsult(c.id, e)}
+                onReject={(e) => rejectConsult(c.id, e)}
                 onClick={() => onOpenChat(c.id)}
               />
             ))}
@@ -201,14 +215,19 @@ export default function Dashboard({
   )
 }
 
-function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
+type IconComponent = React.ComponentType<{ size?: number; color?: string }>
+
+function StatCard({ label, value, color, Icon }: { label: string; value: string | number; color?: string; Icon?: IconComponent }) {
   return (
     <div style={{
       background: 'var(--surface)', borderRadius: 'var(--r-md)',
       padding: '16px 18px', border: '1px solid var(--surface3)',
     }}>
-      <div style={{ fontSize: '20px', fontWeight: 700, color: color ?? 'var(--text)', marginBottom: '4px' }}>
-        {value}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '4px' }}>
+        <div style={{ fontSize: '20px', fontWeight: 700, color: color ?? 'var(--text)' }}>
+          {value}
+        </div>
+        {Icon && <Icon size={16} color={color ?? 'var(--text2)'} />}
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text2)' }}>
         {label}
@@ -218,12 +237,14 @@ function StatCard({ label, value, color }: { label: string; value: string | numb
 }
 
 function ConsultCard({
-  c, onClick, onAccept, accepting
+  c, onClick, onAccept, onReject, accepting, rejecting
 }: {
   c: Consultation
   onClick: () => void
   onAccept: (e: React.MouseEvent) => void
+  onReject: (e: React.MouseEvent) => void
   accepting: boolean
+  rejecting: boolean
 }) {
   return (
     <div
@@ -261,18 +282,33 @@ function ConsultCard({
           {timeAgo(c.created_at)}
         </span>
         {c.status === 'pending' && (
-          <button
-            onClick={onAccept}
-            disabled={accepting}
-            style={{
-              background: 'var(--amber)', color: '#000', border: 'none',
-              borderRadius: 'var(--r-sm)', padding: '5px 12px',
-              fontSize: '12px', fontWeight: 700, minHeight: '32px',
-              cursor: 'pointer', opacity: accepting ? 0.7 : 1, whiteSpace: 'nowrap',
-            }}
-          >
-            {accepting ? '…' : '✓ Принять'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <button
+              onClick={onAccept}
+              disabled={accepting || rejecting}
+              style={{
+                background: 'var(--amber)', color: '#000', border: 'none',
+                borderRadius: 'var(--r-sm)', padding: '5px 12px',
+                fontSize: '12px', fontWeight: 700, minHeight: '32px',
+                cursor: 'pointer', opacity: accepting ? 0.7 : 1, whiteSpace: 'nowrap',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              {accepting ? '…' : <><IconCheckCircle size={13} color="#000" /> Принять</>}
+            </button>
+            <button
+              onClick={onReject}
+              disabled={accepting || rejecting}
+              style={{
+                background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)',
+                borderRadius: 'var(--r-sm)', padding: '5px 12px',
+                fontSize: '12px', fontWeight: 600, minHeight: '32px',
+                cursor: 'pointer', opacity: rejecting ? 0.7 : 1, whiteSpace: 'nowrap',
+              }}
+            >
+              {rejecting ? '…' : 'Отклонить'}
+            </button>
+          </div>
         )}
         {c.status === 'active' && (
           <span style={{

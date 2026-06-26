@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconCheckCircle, IconShield, IconCheck } from '@ht/shared'
 import type { Vet, Consultation, PaymentResult, PromoResult } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
@@ -131,9 +132,9 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
             width: 96, height: 96, borderRadius: '50%',
             background: '#D1F2E4',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 52, marginBottom: 24,
+            marginBottom: 24,
           }}>
-            ✅
+            <IconCheckCircle size={52} color="#1A7A4A" />
           </div>
 
           <div style={{ fontWeight: 800, fontSize: 26, marginBottom: 6 }}>
@@ -208,7 +209,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
                 fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              ←
+              <IconArrowLeft size={18} />
             </button>
             <span style={{ fontWeight: 700, fontSize: 17 }}>{t('pay.title')}</span>
           </header>
@@ -316,7 +317,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
               </div>
               {promo && (
                 <div style={{ marginTop: 8, fontSize: 13, color: '#2E7D32', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  ✅ {t('pay.promo_ok')}
+                  <IconCheckCircle size={14} color="#2E7D32" /> {t('pay.promo_ok')}
                 </div>
               )}
               {promoErr && (
@@ -403,7 +404,7 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
               textAlign: 'center', fontSize: 12,
               color: 'var(--text-muted)', padding: '0 8px',
             }}>
-              🔒 {t('pay.demo')}
+              <IconShield size={12} style={{ verticalAlign: 'middle' }} /> {t('pay.demo')}
             </div>
           </div>
         </>
@@ -442,7 +443,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 700, fontSize: 12,
               }}>
-                {done ? '✓' : n}
+                {done ? <IconCheck size={12} color="#fff" /> : n}
               </div>
               <span style={{
                 fontSize: 11, whiteSpace: 'nowrap',

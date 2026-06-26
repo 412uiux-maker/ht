@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { IconOrders } from '@ht/shared'
 import type { Order, AdminSession } from '../types'
 import { adminApi } from '../api'
 
@@ -92,7 +93,7 @@ export default function Orders({ session }: Props) {
         {error && <div className="error-banner" style={{ margin: 16 }}>{error}</div>}
         {!loading && !error && orders.length === 0 && (
           <div className="empty">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><IconOrders size={40} color="var(--text-muted)" /></div>
             <div>Заказы не найдены</div>
           </div>
         )}

@@ -26,16 +26,14 @@ export default function App() {
 
   useEffect(() => { setApiSession(session) }, [session])
 
-  const handleLogin = (s: AdminSession, pwd: string) => {
+  const handleLogin = (s: AdminSession) => {
     localStorage.setItem('ht_admin', JSON.stringify(s))
-    localStorage.setItem('ht_admin_pwd', pwd)
     setApiSession(s)
     setSession(s)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('ht_admin')
-    localStorage.removeItem('ht_admin_pwd')
     setApiSession(null)
     setSession(null)
   }

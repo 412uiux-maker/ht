@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconCheckCircle, IconStar, IconChat, IconMoney, IconConsultation, IconCertificate } from '@ht/shared'
 import type { VendorSession } from '../types'
 import { setSession } from '../types'
 
@@ -49,7 +50,7 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
           fontWeight: 600, fontSize: 14, marginBottom: 20,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          ✅ Профиль обновлён
+          <IconCheckCircle size={16} color="var(--green)" /> Профиль обновлён
         </div>
       )}
 
@@ -76,8 +77,9 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
             <span style={{
               fontSize: 12, padding: '3px 10px', borderRadius: 999, fontWeight: 700,
               background: 'rgba(242,120,75,.12)', color: 'var(--coral)',
+              display: 'inline-flex', alignItems: 'center', gap: 4,
             }}>
-              ⭐ {session.rating.toFixed(1)}
+              <IconStar size={12} color="var(--coral)" /> {session.rating.toFixed(1)}
             </span>
             <span style={{
               fontSize: 12, padding: '3px 10px', borderRadius: 999, fontWeight: 700,
@@ -94,16 +96,16 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
         background: 'var(--surface)', borderRadius: 'var(--r-md)',
         border: '1px solid var(--surface3)', overflow: 'hidden', marginBottom: 16,
       }}>
-        {[
-          { icon: '💬', label: 'О себе', value: session.bio || '—' },
-          { icon: '💰', label: 'Цена за консультацию', value: `${session.price_uzs.toLocaleString('ru-RU')} сум` },
-        ].map((row, i) => (
+        {([
+          { Icon: IconChat, label: 'О себе', value: session.bio || '—' },
+          { Icon: IconMoney, label: 'Цена за консультацию', value: `${session.price_uzs.toLocaleString('ru-RU')} сум` },
+        ] as { Icon: React.FC<{ size?: number; color?: string }>; label: string; value: string }[]).map((row, i) => (
           <div key={row.label} style={{
             padding: '14px 16px',
             borderTop: i === 0 ? 'none' : '1px solid var(--surface3)',
           }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4 }}>
-              {row.icon} {row.label}
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <row.Icon size={13} color="var(--text2)" /> {row.label}
             </div>
             <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
           </div>
@@ -112,17 +114,19 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-        {[
-          { icon: '📋', label: 'Консультаций', value: '48' },
-          { icon: '⭐', label: 'Рейтинг',       value: session.rating.toFixed(1) },
-          { icon: '🏆', label: 'Опыт',           value: `${session.experience_yr} лет` },
-        ].map(s => (
+        {([
+          { Icon: IconConsultation, label: 'Консультаций', value: '48' },
+          { Icon: IconStar,         label: 'Рейтинг',       value: session.rating.toFixed(1) },
+          { Icon: IconCertificate,  label: 'Опыт',           value: `${session.experience_yr} лет` },
+        ] as { Icon: React.FC<{ size?: number; color?: string }>; label: string; value: string }[]).map(s => (
           <div key={s.label} style={{
             background: 'var(--surface)', borderRadius: 'var(--r-md)',
             border: '1px solid var(--surface3)', padding: '14px',
             textAlign: 'center',
           }}>
-            <div style={{ fontSize: 20, marginBottom: 6 }}>{s.icon}</div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+              <s.Icon size={20} color="var(--coral)" />
+            </div>
             <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', marginBottom: 2 }}>{s.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{s.label}</div>
           </div>

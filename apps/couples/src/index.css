@@ -15,6 +15,17 @@
   --r-xl: 32px;
   --r-pill: 999px;
   --font: 'Onest', system-ui, sans-serif;
+
+  /* ── Learn content-type colors (light mode defaults) ── */
+  --type-checklist-bg:     #DCFCE7;
+  --type-checklist-text:   #15803D;
+  --type-checklist-accent: #16A34A;
+  --type-guide-bg:         #DBEAFE;
+  --type-guide-text:       #1D4ED8;
+  --type-guide-accent:     #2563EB;
+  --type-article-bg:       #FEF3C7;
+  --type-article-text:     #92400E;
+  --type-article-accent:   #B45309;
 }
 
 /* ── Light mode ───────────────────────────────────────────────── */
@@ -39,6 +50,13 @@
   --text-muted: #8B949E;
   --primary-strong: #FF9A74;
   --shadow: 0 8px 28px rgba(0,0,0,.4);
+
+  --type-checklist-bg:   rgba(34, 197, 94,  0.12);
+  --type-checklist-text: #4ade80;
+  --type-guide-bg:       rgba(59, 130, 246, 0.12);
+  --type-guide-text:     #60a5fa;
+  --type-article-bg:     rgba(245, 158, 11, 0.12);
+  --type-article-text:   #fbbf24;
 }
 
 /* ── System preference fallback (no manual override) ─────────── */
@@ -64,6 +82,13 @@
     --text-muted: #8B949E;
     --primary-strong: #FF9A74;
     --shadow: 0 8px 28px rgba(0,0,0,.4);
+
+    --type-checklist-bg:   rgba(34, 197, 94,  0.12);
+    --type-checklist-text: #4ade80;
+    --type-guide-bg:       rgba(59, 130, 246, 0.12);
+    --type-guide-text:     #60a5fa;
+    --type-article-bg:     rgba(245, 158, 11, 0.12);
+    --type-article-text:   #fbbf24;
   }
 }
 
@@ -89,7 +114,22 @@ input, select, textarea { font-family: var(--font); color: var(--text); backgrou
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+@keyframes slide-in {
+  from { transform: translateX(14px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes scale-in {
+  from { transform: scale(0.94); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
 @media (prefers-reduced-motion: reduce) {
   [style*="dot-pulse"] { animation: none !important; opacity: 1 !important; }
   [style*="spin"]      { animation: none !important; }
+  [style*="shimmer"]   { animation: none !important; opacity: 0.5 !important; }
+  [style*="slide-in"]  { animation: none !important; }
+  [style*="scale-in"]  { animation: none !important; }
 }

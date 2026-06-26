@@ -3,13 +3,13 @@ import type { AdminSession } from '../types'
 import { adminApi } from '../api'
 
 const DEMO_ACCOUNTS = [
-  { label: '👑 Администратор', email: 'admin@happytails.uz', password: 'admin123' },
-  { label: '✏️ Модератор',     email: 'moder@happytails.uz', password: 'moder123' },
-  { label: '💬 Поддержка',     email: 'support@happytails.uz', password: 'supp123' },
+  { label: 'Администратор', email: 'admin@happytails.uz', password: 'admin123' },
+  { label: 'Модератор',     email: 'moder@happytails.uz', password: 'moder123' },
+  { label: 'Поддержка',     email: 'support@happytails.uz', password: 'supp123' },
 ]
 
 interface Props {
-  onLogin: (session: AdminSession, pwd: string) => void
+  onLogin: (session: AdminSession) => void
 }
 
 export default function Login({ onLogin }: Props) {
@@ -25,7 +25,7 @@ export default function Login({ onLogin }: Props) {
     setError('')
     try {
       const session = await adminApi.login(email, password)
-      onLogin(session, password)
+      onLogin(session)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка входа')
     } finally {
@@ -40,7 +40,7 @@ export default function Login({ onLogin }: Props) {
     setError('')
     try {
       const session = await adminApi.login(acc.email, acc.password)
-      onLogin(session, acc.password)
+      onLogin(session)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка входа')
     } finally {

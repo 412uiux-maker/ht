@@ -1,17 +1,31 @@
 import { useEffect, useState } from 'react'
-import type { Pet } from '../api'
+import { IconPaw, IconArrowLeft, IconEdit, IconTrash } from '@ht/shared'
+import type { Pet, PetConsultation } from '../api'
 import { api, getOwnerId } from '../api'
 import { t, getLang } from '../i18n'
 
 // ── Species config ────────────────────────────────────────────
 const SPECIES = [
-  { key: 'cat',    emoji: '🐱', ru: 'Кошка',   uz: 'Mushuk' },
-  { key: 'dog',    emoji: '🐶', ru: 'Собака',  uz: 'It' },
-  { key: 'rabbit', emoji: '🐰', ru: 'Кролик',  uz: 'Quyon' },
-  { key: 'parrot', emoji: '🦜', ru: 'Попугай', uz: "To'ti" },
-  { key: 'hamster',emoji: '🐹', ru: 'Хомяк',   uz: 'Hamster' },
-  { key: 'other',  emoji: '🐾', ru: 'Другое',  uz: 'Boshqa' },
+  { key: 'cat',     emoji: '🐱', ru: 'Кошка',   uz: 'Mushuk' },
+  { key: 'dog',     emoji: '🐶', ru: 'Собака',  uz: 'It' },
+  { key: 'rabbit',  emoji: '🐰', ru: 'Кролик',  uz: 'Quyon' },
+  { key: 'parrot',  emoji: '🦜', ru: 'Попугай', uz: "To'ti" },
+  { key: 'hamster', emoji: '🐹', ru: 'Хомяк',   uz: 'Hamster' },
+  { key: 'other',   emoji: '🐾', ru: 'Другое',  uz: 'Boshqa' },
 ]
+
+// Species → visual identity (background tint + text color)
+const SPECIES_COLORS: Record<string, { bg: string; text: string }> = {
+  cat:     { bg: 'rgba(168,85,247,0.09)',  text: '#7C3AED' },
+  dog:     { bg: 'rgba(242,120,75,0.10)',  text: '#C0511F' },
+  rabbit:  { bg: 'rgba(20,184,166,0.09)',  text: '#0F766E' },
+  parrot:  { bg: 'rgba(234,179,8,0.09)',   text: '#92400E' },
+  hamster: { bg: 'rgba(234,88,12,0.09)',   text: '#9A3412' },
+  fish:    { bg: 'rgba(59,130,246,0.09)',  text: '#1D4ED8' },
+  other:   { bg: 'rgba(100,116,139,0.09)', text: '#475569' },
+}
+const sc = (species: string) => SPECIES_COLORS[species] ?? SPECIES_COLORS.other
+
 const speciesEmoji = (key: string) => SPECIES.find(s => s.key === key)?.emoji ?? '🐾'
 const speciesLabel = (key: string) => {
   const s = SPECIES.find(x => x.key === key)
@@ -28,7 +42,21 @@ const sexLabel = (sex: string) => {
   return t('pets.unknown')
 }
 
-// ── Extended fields (microchip etc. — stored in localStorage) ─
+// ── Age calculator ────────────────────────────────────────────
+const calcAge = (birthDate: string | null) => {
+  if (!birthDate) return null
+  try {
+    const months = (new Date().getFullYear() - new Date(birthDate).getFullYear()) * 12
+      + (new Date().getMonth() - new Date(birthDate).getMonth())
+    if (months < 1) return null
+    if (months < 12) return getLang() === 'uz' ? `${months} oy` : `${months} мес.`
+    const y = Math.floor(months / 12)
+    if (getLang() === 'uz') return `${y} yil`
+    return `${y} ${y === 1 ? 'год' : y < 5 ? 'года' : 'лет'}`
+  } catch { return null }
+}
+
+// ── Extended fields (stored in localStorage) ─────────────────
 type PetExt = { microchip: string; allergies: string; vet_name: string; vet_phone: string; vet_website: string; sterilized: string }
 const EXT0: PetExt = { microchip: '', allergies: '', vet_name: '', vet_phone: '', vet_website: '', sterilized: 'unknown' }
 const loadExt = (id: string): PetExt => { try { return { ...EXT0, ...JSON.parse(localStorage.getItem(`ht_pet_ext_${id}`) ?? '{}') } } catch { return { ...EXT0 } } }
@@ -47,8 +75,8 @@ type View = { t: 'list' } | { t: 'card'; pet: Pet } | { t: 'edit'; pet: Pet }
 // ═══════════════════════════════════════════════════════════════
 export default function Pets({ lang }: { lang: string }) {
   void lang
-  const [view, setView]   = useState<View>({ t: 'list' })
-  const [pets, setPets]   = useState<Pet[]>([])
+  const [view, setView] = useState<View>({ t: 'list' })
+  const [pets, setPets] = useState<Pet[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [addForm, setAddForm] = useState({ name: '', species: 'cat', sex: 'male' })
@@ -61,7 +89,6 @@ export default function Pets({ lang }: { lang: string }) {
   }
   useEffect(() => { load() }, [])
 
-  // ── Add pet ──────────────────────────────────────────────────
   const addPet = async () => {
     if (!addForm.name.trim()) { setAddErr(t('book.pet_empty')); return }
     setSaving(true); setAddErr('')
@@ -80,7 +107,6 @@ export default function Pets({ lang }: { lang: string }) {
     finally { setSaving(false) }
   }
 
-  // ── Routing ──────────────────────────────────────────────────
   if (view.t === 'card') return (
     <PetCard
       pet={view.pet}
@@ -97,7 +123,7 @@ export default function Pets({ lang }: { lang: string }) {
     />
   )
 
-  // ── List view ────────────────────────────────────────────────
+  // ── List view ─────────────────────────────────────────────────
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72 }}>
       <header style={{
@@ -106,97 +132,108 @@ export default function Pets({ lang }: { lang: string }) {
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('pets.title')}</span>
-        <button
-          onClick={() => setShowAdd(true)}
-          aria-label={t('pets.add')}
-          style={{
-            width: 44, height: 44, borderRadius: 'var(--r-md)',
-            background: 'var(--primary)', color: '#fff', border: 'none',
-            fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-          }}
-        >+</button>
+        {!showAdd && (
+          <button
+            onClick={() => setShowAdd(true)}
+            aria-label={t('pets.add')}
+            style={{
+              width: 44, height: 44, borderRadius: 'var(--r-md)',
+              background: 'var(--primary)', color: '#fff', border: 'none',
+              fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', fontWeight: 400,
+            }}
+          >+</button>
+        )}
       </header>
 
-      <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {loading && <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0' }}>{t('loading')}</div>}
+      <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
+        {/* Shimmer loading */}
+        {loading && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} style={{
+                height: 146, borderRadius: 'var(--r-lg)',
+                background: 'linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%)',
+                backgroundSize: '200% 100%',
+                animation: `shimmer 1.5s ease-in-out infinite`,
+                animationDelay: `${i * 0.1}s`,
+              }} />
+            ))}
+          </div>
+        )}
+
+        {/* Empty state */}
         {!loading && pets.length === 0 && !showAdd && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '60px 24px', gap: 16, textAlign: 'center' }}>
-            <span style={{ fontSize: 56 }}>🐾</span>
+            <IconPaw size={56} color="var(--text-muted)" />
             <div style={{ fontWeight: 700, fontSize: 18 }}>{t('pets.empty')}</div>
             <div style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 260 }}>{t('pets.empty_sub')}</div>
             <button
               onClick={() => setShowAdd(true)}
-              style={{ padding: '12px 28px', borderRadius: 'var(--r-pill)', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit' }}
+              style={{
+                padding: '12px 28px', borderRadius: 'var(--r-pill)',
+                background: 'var(--primary)', color: '#fff', border: 'none',
+                fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'inherit',
+              }}
             >{t('pets.add')}</button>
           </div>
         )}
 
-        {!loading && pets.map(pet => (
-          <button
-            key={pet.id}
-            onClick={() => setView({ t: 'card', pet })}
-            style={{
-              background: 'var(--surface)', border: '1px solid var(--border)',
-              borderRadius: 'var(--r-lg)', padding: '14px 16px',
-              display: 'flex', alignItems: 'center', gap: 14,
-              cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', width: '100%',
-              transition: 'border-color .15s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--primary)')}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-          >
-            <div style={{
-              width: 52, height: 52, borderRadius: 'var(--r-md)',
-              background: 'var(--surface-2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, flexShrink: 0,
-            }}>{pet.avatar_emoji}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{pet.name}</div>
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2, display: 'flex', gap: 6 }}>
-                <span>{speciesEmoji(pet.species)} {speciesLabel(pet.species)}</span>
-                <span>·</span>
-                <span>{sexLabel(pet.sex)}</span>
-                {pet.breed && <><span>·</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pet.breed}</span></>}
-              </div>
-            </div>
-            <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>›</span>
-          </button>
-        ))}
+        {/* 2-column pet grid */}
+        {!loading && pets.length > 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            {pets.map(pet => (
+              <PetTile key={pet.id} pet={pet} onOpen={() => setView({ t: 'card', pet })} />
+            ))}
+          </div>
+        )}
 
         {/* Add form */}
         {showAdd && (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '18px 16px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 'var(--r-lg)', padding: '18px 16px',
+            display: 'flex', flexDirection: 'column', gap: 14,
+            animation: 'scale-in 160ms ease-out',
+          }}>
             <div style={{ fontWeight: 700, fontSize: 16 }}>{t('pets.add')}</div>
 
             <Field label={t('pets.add_name')}>
               <input
+                autoFocus
                 value={addForm.name}
                 onChange={e => setAddForm(f => ({ ...f, name: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && addPet()}
                 placeholder="Барсик"
                 maxLength={50}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)', fontSize: 15, fontFamily: 'inherit', minHeight: 44, boxSizing: 'border-box' }}
+                style={inputStyle}
               />
             </Field>
 
             <Field label={t('pets.add_species')}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {SPECIES.map(s => (
-                  <button key={s.key} onClick={() => setAddForm(f => ({ ...f, species: s.key }))}
-                    style={{
-                      padding: '10px 8px', borderRadius: 'var(--r-lg)',
-                      border: `2px solid ${addForm.species === s.key ? 'var(--primary)' : 'var(--border)'}`,
-                      background: addForm.species === s.key ? 'var(--surface-2)' : 'transparent',
-                      cursor: 'pointer', fontFamily: 'inherit',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                    }}
-                  >
-                    <span style={{ fontSize: 24 }}>{s.emoji}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: addForm.species === s.key ? 'var(--primary)' : 'var(--text-muted)' }}>
-                      {getLang() === 'uz' ? s.uz : s.ru}
-                    </span>
-                  </button>
-                ))}
+                {SPECIES.map(s => {
+                  const colors = sc(s.key)
+                  const active = addForm.species === s.key
+                  return (
+                    <button key={s.key} onClick={() => setAddForm(f => ({ ...f, species: s.key }))}
+                      style={{
+                        padding: '10px 8px', borderRadius: 'var(--r-lg)',
+                        border: `2px solid ${active ? colors.text : 'var(--border)'}`,
+                        background: active ? colors.bg : 'transparent',
+                        cursor: 'pointer', fontFamily: 'inherit',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                        transition: 'all .12s',
+                      }}
+                    >
+                      <span style={{ fontSize: 24 }}>{s.emoji}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: active ? colors.text : 'var(--text-muted)' }}>
+                        {getLang() === 'uz' ? s.uz : s.ru}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </Field>
 
@@ -225,93 +262,238 @@ export default function Pets({ lang }: { lang: string }) {
   )
 }
 
+// ─── PetTile — 2-column grid card ─────────────────────────────
+function PetTile({ pet, onOpen }: { pet: Pet; onOpen: () => void }) {
+  const colors = sc(pet.species)
+  const age = calcAge(pet.birth_date)
+
+  return (
+    <button
+      onClick={onOpen}
+      style={{
+        borderRadius: 'var(--r-lg)', background: 'var(--surface)',
+        border: '1px solid var(--border)', overflow: 'hidden',
+        cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+        padding: 0, display: 'flex', flexDirection: 'column',
+        transition: 'border-color .15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.borderColor = colors.text)}
+      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+    >
+      {/* Colored zone with emoji */}
+      <div style={{
+        background: colors.bg,
+        height: 88, width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 44, flexShrink: 0,
+      }}>
+        {pet.avatar_emoji}
+      </div>
+
+      {/* Info */}
+      <div style={{ padding: '10px 12px 12px' }}>
+        <div style={{
+          fontWeight: 700, fontSize: 15, lineHeight: 1.2,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          marginBottom: 5,
+        }}>
+          {pet.name}
+        </div>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{
+            fontSize: 10, fontWeight: 700, padding: '2px 7px',
+            borderRadius: 'var(--r-pill)', background: colors.bg, color: colors.text,
+          }}>
+            {speciesLabel(pet.species)}
+          </span>
+          {age && (
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>
+              {age}
+            </span>
+          )}
+        </div>
+      </div>
+    </button>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════
 // PetCard — detail view
 // ═══════════════════════════════════════════════════════════════
 function PetCard({ pet, onBack, onEdit }: { pet: Pet; onBack: () => void; onEdit: () => void }) {
   const ext = loadExt(pet.id)
+  const colors = sc(pet.species)
+  const age = calcAge(pet.birth_date)
   const sex = normSex(pet.sex)
+  const uz = getLang() === 'uz'
 
   const sterilLabel = () => {
     if (ext.sterilized === 'yes') return t('pets.steril_yes')
     if (ext.sterilized === 'no')  return t('pets.steril_no')
-    return t('pets.unknown')
+    return null
   }
 
+  // Only render rows that have a value
+  const basicRows = [
+    { label: t('pets.breed'),     value: pet.breed ?? null },
+    { label: t('pets.birthday'),  value: fmtDate(pet.birth_date) },
+    { label: t('pets.gender'),    value: sex !== 'unknown' ? sexLabel(pet.sex) : null },
+    { label: t('pets.sterilized'), value: sterilLabel() },
+  ].filter(r => r.value !== null)
+
+  const bodyRows = [
+    { label: t('pets.weight_label'), value: pet.weight_kg ? `${pet.weight_kg} кг` : null },
+    { label: t('pets.microchip'),    value: ext.microchip || null },
+  ].filter(r => r.value !== null)
+
+  const healthRows = [
+    { label: t('pets.allergies'), value: ext.allergies || null },
+  ].filter(r => r.value !== null)
+
+  const vetRows = [
+    { label: t('pets.vet_name'),    value: ext.vet_name || null },
+    { label: t('pets.vet_phone'),   value: ext.vet_phone || null },
+    { label: t('pets.vet_website'), value: ext.vet_website || null },
+  ].filter(r => r.value !== null)
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72, background: 'var(--bg)' }}>
-      {/* Header */}
+    <div style={{
+      display: 'flex', flexDirection: 'column', minHeight: '100vh',
+      paddingBottom: 72, background: 'var(--bg)',
+      animation: 'slide-in 180ms ease-out',
+    }}>
+      {/* Sticky header */}
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 20px', background: 'var(--surface)',
+        padding: '12px 16px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
-        <span style={{ fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center', margin: '0 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>
+          <IconArrowLeft size={18} />
+        </button>
+        <span style={{
+          fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center',
+          margin: '0 8px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
           {pet.name}
         </span>
-        <button onClick={onEdit} aria-label={t('pets.edit_profile')} style={{ ...iconBtn, background: 'var(--surface-2)', border: '1.5px solid var(--border)', fontSize: 14 }}>✏️</button>
+        <button onClick={onEdit} aria-label={t('pets.edit_profile')} style={{ ...iconBtn, background: 'var(--surface-2)', border: '1.5px solid var(--border)' }}>
+          <IconEdit size={16} />
+        </button>
       </header>
 
-      {/* Avatar */}
-      <div style={{ padding: '28px 20px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, background: 'var(--surface)', borderBottom: '1px solid var(--border)' }}>
+      {/* Species-colored hero */}
+      <div style={{
+        background: colors.bg,
+        padding: '28px 20px 24px',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+      }}>
         <div style={{
-          width: 88, height: 88, borderRadius: 'var(--r-xl)',
-          background: 'var(--surface-2)', border: '3px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48,
-        }}>{pet.avatar_emoji}</div>
-        <div style={{ fontWeight: 800, fontSize: 22 }}>{pet.name}</div>
-        <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{speciesEmoji(pet.species)} {speciesLabel(pet.species)}</div>
+          width: 82, height: 82, borderRadius: 'var(--r-xl)',
+          background: 'rgba(255,255,255,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 46,
+        }}>
+          {pet.avatar_emoji}
+        </div>
+        <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)' }}>{pet.name}</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '3px 10px',
+            borderRadius: 'var(--r-pill)',
+            background: 'rgba(255,255,255,0.65)', color: colors.text,
+          }}>
+            {speciesEmoji(pet.species)} {speciesLabel(pet.species)}
+          </span>
+          {age && (
+            <span style={{
+              fontSize: 11, fontWeight: 600, padding: '3px 10px',
+              borderRadius: 'var(--r-pill)',
+              background: 'rgba(255,255,255,0.65)', color: 'var(--text-muted)',
+            }}>
+              🎂 {age}
+            </span>
+          )}
+          {pet.breed && (
+            <span style={{
+              fontSize: 11, fontWeight: 600, padding: '3px 10px',
+              borderRadius: 'var(--r-pill)',
+              background: 'rgba(255,255,255,0.65)', color: 'var(--text-muted)',
+            }}>
+              {pet.breed}
+            </span>
+          )}
+        </div>
       </div>
 
       <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        {/* Basic info */}
-        <CardSection title={getLang() === 'uz' ? 'Asosiy ma\'lumot' : 'Основное'}>
-          <InfoRow label={t('pets.breed')}    value={pet.breed} />
-          <InfoRow label={t('pets.birthday')} value={fmtDate(pet.birth_date)} />
-          <InfoRow label={t('pets.gender')}   value={sex === 'male' ? t('pets.male') : sex === 'female' ? t('pets.female') : t('pets.unknown')} />
-          <InfoRow label={t('pets.sterilized')} value={sterilLabel()} last />
-        </CardSection>
-
-        {/* Body */}
-        <CardSection title={getLang() === 'uz' ? 'Tana' : 'Тело'}>
-          <InfoRow label={t('pets.weight_label')} value={pet.weight_kg ? `${pet.weight_kg} кг` : null} />
-          <InfoRow label={t('pets.microchip')}    value={ext.microchip || null} last />
-        </CardSection>
-
-        {/* Health */}
-        <CardSection title={getLang() === 'uz' ? 'Salomatlik' : 'Здоровье'}>
-          <InfoRow label={t('pets.allergies')} value={ext.allergies || null} last />
-        </CardSection>
-
-        {/* Vet */}
-        <CardSection title={getLang() === 'uz' ? 'Veterinar' : 'Ветеринар'}>
-          <InfoRow label={t('pets.vet_name')}    value={ext.vet_name || null} />
-          <InfoRow label={t('pets.vet_phone')}   value={ext.vet_phone || null} />
-          <InfoRow label={t('pets.vet_website')} value={ext.vet_website || null} last />
-        </CardSection>
-
-        {/* Notes */}
-        {(pet.notes || null) && (
-          <CardSection title={t('pets.notes_label')}>
-            <div style={{ padding: '12px 16px', fontSize: 14, color: 'var(--text)', lineHeight: 1.6 }}>{pet.notes}</div>
-          </CardSection>
+        {basicRows.length > 0 && (
+          <InfoSection title={uz ? 'Asosiy' : 'Основное'} rows={basicRows} />
         )}
 
-        <button onClick={onEdit} style={{
-          width: '100%', padding: '14px', borderRadius: 'var(--r-pill)',
-          background: 'transparent', border: '1.5px solid var(--primary)',
-          color: 'var(--primary)', fontSize: 15, fontWeight: 700,
-          cursor: 'pointer', fontFamily: 'inherit', minHeight: 52,
-        }}>{t('pets.edit_profile')}</button>
+        {bodyRows.length > 0 && (
+          <InfoSection title={uz ? 'Tana' : 'Тело'} rows={bodyRows} />
+        )}
+
+        {healthRows.length > 0 && (
+          <InfoSection title={uz ? 'Salomatlik' : 'Здоровье'} rows={healthRows} />
+        )}
+
+        {vetRows.length > 0 && (
+          <InfoSection title={uz ? 'Veterinar' : 'Ветеринар'} rows={vetRows} />
+        )}
+
+        {pet.notes && (
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 'var(--r-lg)', padding: '14px 16px',
+          }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
+              {t('pets.notes_label')}
+            </div>
+            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65 }}>{pet.notes}</div>
+          </div>
+        )}
+
+        {/* Consultation history */}
+        <PetConsultHistory petId={pet.id} />
       </div>
     </div>
   )
 }
 
+// ─── InfoSection ──────────────────────────────────────────────
+function InfoSection({ title, rows }: { title: string; rows: { label: string; value: string | null }[] }) {
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 'var(--r-lg)', overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '9px 16px', borderBottom: '1px solid var(--border)',
+        fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
+      }}>
+        {title}
+      </div>
+      {rows.map((r, i) => (
+        <div key={r.label} style={{
+          display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+          padding: '11px 16px', gap: 12,
+          borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none',
+        }}>
+          <span style={{ fontSize: 14, color: 'var(--text-muted)', flexShrink: 0 }}>{r.label}</span>
+          <span style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>
+            {r.value}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════
-// PetEditForm — edit / delete
+// PetEditForm
 // ═══════════════════════════════════════════════════════════════
 function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
   pet: Pet
@@ -321,13 +503,13 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
 }) {
   const ext0 = loadExt(pet.id)
   const [f, setF] = useState({
-    name:      pet.name,
-    species:   pet.species,
-    sex:       normSex(pet.sex),
-    birth_date: pet.birth_date ?? '',
-    breed:     pet.breed ?? '',
-    weight_kg: pet.weight_kg != null ? String(pet.weight_kg) : '',
-    notes:     pet.notes ?? '',
+    name:        pet.name,
+    species:     pet.species,
+    sex:         normSex(pet.sex),
+    birth_date:  pet.birth_date ?? '',
+    breed:       pet.breed ?? '',
+    weight_kg:   pet.weight_kg != null ? String(pet.weight_kg) : '',
+    notes:       pet.notes ?? '',
     avatar_emoji: pet.avatar_emoji,
     microchip:   ext0.microchip,
     allergies:   ext0.allergies,
@@ -377,19 +559,26 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72 }}>
-      {/* Header */}
+    <div style={{
+      display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72,
+      animation: 'slide-in 180ms ease-out',
+    }}>
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 20px', background: 'var(--surface)',
+        padding: '12px 16px', background: 'var(--surface)',
         borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={onBack} aria-label={t('back')} style={iconBtn}>←</button>
+        <button onClick={onBack} aria-label={t('back')} style={iconBtn}><IconArrowLeft size={18} /></button>
         <span style={{ fontWeight: 700, fontSize: 16, flex: 1, textAlign: 'center', margin: '0 8px' }}>
           {t('pets.edit_profile')}
         </span>
         <button onClick={save} disabled={saving}
-          style={{ padding: '8px 18px', borderRadius: 'var(--r-pill)', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36, opacity: saving ? 0.6 : 1 }}
+          style={{
+            padding: '8px 18px', borderRadius: 'var(--r-pill)',
+            background: 'var(--primary)', color: '#fff', border: 'none',
+            fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+            minHeight: 36, opacity: saving ? 0.6 : 1,
+          }}
         >{saving ? '…' : t('pets.save')}</button>
       </header>
 
@@ -397,16 +586,22 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
 
         {/* Avatar picker */}
         <div style={{ padding: '20px 0 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 72, height: 72, borderRadius: 'var(--r-xl)', background: 'var(--surface-2)', border: '2px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40 }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 'var(--r-xl)',
+            background: sc(f.species).bg,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 40,
+          }}>
             {f.avatar_emoji}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {SPECIES.map(s => (
               <button key={s.key} onClick={() => { upd('species', s.key); upd('avatar_emoji', s.emoji) }}
                 style={{
-                  width: 40, height: 40, borderRadius: 'var(--r-md)', border: `2px solid ${f.species === s.key ? 'var(--primary)' : 'var(--border)'}`,
-                  background: f.species === s.key ? 'var(--surface-2)' : 'transparent',
+                  width: 40, height: 40, borderRadius: 'var(--r-md)',
+                  border: `2px solid ${f.species === s.key ? sc(s.key).text : 'var(--border)'}`,
+                  background: f.species === s.key ? sc(s.key).bg : 'transparent',
                   fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all .12s',
                 }}
               >{s.emoji}</button>
             ))}
@@ -479,17 +674,30 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
           </FormRow>
         </FormCard>
 
-        {err && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 8 }}>{err}</div>}
+        {err && <div style={{ color: 'var(--danger)', fontSize: 13, marginTop: 4 }}>{err}</div>}
 
         {/* Delete */}
         <div style={{ marginTop: 20, paddingBottom: 8 }}>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)}
-              style={{ width: '100%', padding: '14px', borderRadius: 'var(--r-pill)', background: 'transparent', border: '1.5px solid var(--danger)', color: 'var(--danger)', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 52 }}
-            >🗑 {t('pets.delete')}</button>
+              style={{
+                width: '100%', padding: '14px', borderRadius: 'var(--r-pill)',
+                background: 'transparent', border: '1.5px solid var(--danger)', color: 'var(--danger)',
+                fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                minHeight: 52, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              }}
+            >
+              <IconTrash size={16} /> {t('pets.delete')}
+            </button>
           ) : (
-            <div style={{ background: 'var(--surface)', border: '1.5px solid var(--danger)', borderRadius: 'var(--r-lg)', padding: '16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', textAlign: 'center' }}>{t('pets.confirm_delete')}</div>
+            <div style={{
+              background: 'var(--surface)', border: '1.5px solid var(--danger)',
+              borderRadius: 'var(--r-lg)', padding: '16px',
+              display: 'flex', flexDirection: 'column', gap: 12,
+            }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', textAlign: 'center' }}>
+                {t('pets.confirm_delete')}
+              </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => setConfirmDelete(false)}
                   style={{ flex: 1, padding: '12px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--border)', background: 'transparent', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 48 }}
@@ -507,13 +715,89 @@ function PetEditForm({ pet, onBack, onSaved, onDeleted }: {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// Helpers
+// PetConsultHistory
+// ═══════════════════════════════════════════════════════════════
+function PetConsultHistory({ petId }: { petId: string }) {
+  const [consults, setConsults] = useState<PetConsultation[] | null>(null)
+  const uz = getLang() === 'uz'
+
+  useEffect(() => {
+    api.petConsultations(petId).then(setConsults).catch(() => setConsults([]))
+  }, [petId])
+
+  if (!consults || consults.length === 0) return null
+
+  return (
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 'var(--r-lg)', overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '9px 16px', borderBottom: '1px solid var(--border)',
+        fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
+      }}>
+        {uz ? 'Maslahatlar tarixi' : 'История консультаций'}
+      </div>
+
+      {consults.map((c, i) => (
+        <div key={c.id} style={{
+          padding: '14px 16px',
+          borderBottom: i < consults.length - 1 ? '1px solid var(--border)' : 'none',
+        }}>
+          {/* Vet row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: c.report ? 10 : 0 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+              background: 'var(--surface-2)', border: '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
+            }}>
+              {c.avatar_emoji}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, lineHeight: 1.2 }}>{c.vet_name}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 1 }}>{c.specialty}</div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+              {fmtDate(c.created_at)}
+            </div>
+          </div>
+
+          {/* Diagnosis block */}
+          {c.report && (
+            <div style={{
+              background: 'rgba(34,197,94,0.06)',
+              border: '1px solid rgba(34,197,94,0.18)',
+              borderRadius: 'var(--r-md)', padding: '10px 12px',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--success)', marginBottom: 4 }}>
+                {uz ? 'Tashxis' : 'Диагноз'}: {c.report.diagnosis}
+              </div>
+              {c.report.steps.length > 0 && (
+                <ul style={{ margin: 0, paddingLeft: 16, color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.6 }}>
+                  {c.report.steps.slice(0, 3).map((s, j) => <li key={j}>{s}</li>)}
+                  {c.report.steps.length > 3 && (
+                    <li style={{ listStyle: 'none', color: 'var(--primary)', fontWeight: 600 }}>
+                      +{c.report.steps.length - 3} {uz ? "ko'proq" : 'ещё'}
+                    </li>
+                  )}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Primitives
 // ═══════════════════════════════════════════════════════════════
 
 const iconBtn: React.CSSProperties = {
   width: 44, height: 44, borderRadius: 'var(--r-md)',
   border: '1.5px solid var(--border)', background: 'transparent',
-  fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
 }
 
 const inputStyle: React.CSSProperties = {
@@ -522,35 +806,12 @@ const inputStyle: React.CSSProperties = {
   minHeight: 44, boxSizing: 'border-box', background: 'var(--bg)', color: 'var(--text)',
 }
 
-function CardSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden' }}>
-      <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
-        {title}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function InfoRow({ label, value, last }: { label: string; value: string | null | undefined; last?: boolean }) {
-  return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
-      padding: '11px 16px', gap: 12,
-      borderBottom: last ? 'none' : '1px solid var(--border)',
-    }}>
-      <span style={{ fontSize: 14, color: 'var(--text-muted)', flexShrink: 0 }}>{label}</span>
-      <span style={{ fontSize: 14, color: value ? 'var(--text)' : 'var(--text-muted)', fontWeight: value ? 600 : 400, textAlign: 'right', maxWidth: '60%' }}>
-        {value || t('pets.not_set')}
-      </span>
-    </div>
-  )
-}
-
 function FormCard({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', overflow: 'hidden', marginBottom: 12 }}>
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 'var(--r-lg)', overflow: 'hidden', marginBottom: 12,
+    }}>
       {children}
     </div>
   )
@@ -583,7 +844,11 @@ function SegmentToggle({ options, value, onChange }: {
   onChange: (v: string) => void
 }) {
   return (
-    <div style={{ display: 'flex', borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)', overflow: 'hidden', background: 'var(--surface-2)' }}>
+    <div style={{
+      display: 'flex', borderRadius: 'var(--r-md)',
+      border: '1.5px solid var(--border)', overflow: 'hidden',
+      background: 'var(--surface-2)',
+    }}>
       {options.map((o, i) => (
         <button key={o.k} onClick={() => onChange(o.k)}
           style={{

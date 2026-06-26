@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconArrowLeft, IconCheck, IconPaw } from '@ht/shared'
 import { api, getOwnerId } from '../api'
 import { t, setLang, getLang } from '../i18n'
 
@@ -70,7 +71,7 @@ export default function Onboarding({ onDone }: Props) {
             border: '1.5px solid var(--border)', background: 'transparent',
             fontSize: 16, cursor: 'pointer',
           }}
-        >←</button>
+        ><IconArrowLeft size={16} /></button>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', gap: 6 }}>
             {['lang', 'welcome', 'pet'].map((s, i) => (
@@ -92,8 +93,9 @@ export default function Onboarding({ onDone }: Props) {
       </div>
 
       <div style={{ flex: 1, padding: '8px 24px 32px', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 6 }}>
-          {lang === 'ru' ? '🐾 Расскажите о питомце' : '🐾 Hayvon haqida aytib bering'}
+        <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <IconPaw size={22} color="var(--primary)" />
+          {lang === 'ru' ? 'Расскажите о питомце' : 'Hayvon haqida aytib bering'}
         </div>
         <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 28 }}>
           {lang === 'ru' ? 'Мы подберём персональные рекомендации' : 'Shaxsiy tavsiyalar tanlaymiz'}
@@ -196,7 +198,7 @@ function LangStep({ onChoose }: { onChoose: (l: string) => void }) {
       padding: '32px 24px',
     }}>
       {/* Logo */}
-      <div style={{ fontSize: 52, marginBottom: 12 }}>🐾</div>
+      <div style={{ marginBottom: 12 }}><IconPaw size={52} color="var(--primary)" /></div>
       <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>HappyTails</div>
       <div style={{ fontSize: 14, color: 'var(--text-muted)', marginBottom: 52, textAlign: 'center' }}>
         Маркетплейс для питомцев · Uy hayvonlari marketi
@@ -306,7 +308,7 @@ function WelcomeStep({ lang, onNext }: { lang: string; onNext: () => void }) {
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{f.title}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{f.sub}</div>
               </div>
-              <div style={{ marginLeft: 'auto', color: 'var(--primary)', fontSize: 16 }}>✓</div>
+              <div style={{ marginLeft: 'auto', color: 'var(--primary)' }}><IconCheck size={16} /></div>
             </div>
           ))}
         </div>

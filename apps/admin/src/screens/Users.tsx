@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { IconUser } from '@ht/shared'
 import type { AdminRole } from '../types'
 
 type UserRole = 'owner' | 'vendor' | 'admin' | 'moderator' | 'support'
@@ -119,7 +120,7 @@ export default function Users({ sessionRole }: { sessionRole: AdminRole }) {
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
         {filtered.length === 0 && (
           <div className="empty">
-            <div className="empty-icon">👤</div>
+            <div className="empty-icon"><IconUser size={40} color="var(--text-muted)" /></div>
             <div>Пользователи не найдены</div>
           </div>
         )}

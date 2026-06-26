@@ -5,6 +5,7 @@ export interface AdminSession {
   email: string
   name: string
   role: AdminRole
+  token: string
 }
 
 export interface VendorVerification {

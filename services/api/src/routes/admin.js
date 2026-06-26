@@ -1,22 +1,9 @@
 const { Router } = require('express');
+const bcrypt = require('bcrypt');
 const pool = require('../db');
-const router = Router();
+const { requireAdmin, signToken } = require('../middleware/auth');
 
-function requireRole(...roles) {
-  return (req, res, next) => {
-    const email = req.headers['x-admin-email'];
-    const password = req.headers['x-admin-password'];
-    if (!email || !password) return res.status(401).json({ error: 'Unauthorized' });
-    pool.query('SELECT * FROM admin_users WHERE email=$1 AND password=$2 AND is_active=true', [email, password])
-      .then(r => {
-        if (!r.rows[0]) return res.status(401).json({ error: 'Invalid credentials' });
-        if (!roles.includes(r.rows[0].role)) return res.status(403).json({ error: 'Forbidden' });
-        req.adminUser = r.rows[0];
-        next();
-      })
-      .catch(err => res.status(500).json({ error: err.message }));
-  };
-}
+const router = Router();
 
 async function writeAudit(actorId, actorRole, action, targetType, targetId, detail) {
   try {
@@ -31,19 +18,32 @@ async function writeAudit(actorId, actorRole, action, targetType, targetId, deta
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'email and password required' });
   try {
     const r = await pool.query(
-      'SELECT * FROM admin_users WHERE email=$1 AND password=$2 AND is_active=true',
-      [email, password]
+      'SELECT * FROM admin_users WHERE email=$1 AND is_active=true',
+      [email.toLowerCase().trim()]
     );
-    if (!r.rows[0]) return res.status(401).json({ error: 'Неверный email или пароль' });
-    const { id, name, role } = r.rows[0];
-    res.json({ id, email, name, role });
+    const user = r.rows[0];
+    if (!user) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) return res.status(401).json({ error: 'Неверный email или пароль' });
+
+    const token = signToken({
+      sub: user.id,
+      type: 'admin',
+      email: user.email,
+      name: user.name,
+      role: user.role,
+    }, '8h');
+
+    res.json({ id: user.id, email: user.email, name: user.name, role: user.role, token });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── VENDORS / VERIFICATION ──────────────────────────────────────────────────
-router.get('/vendors', requireRole('admin', 'moderator'), async (req, res) => {
+router.get('/vendors', requireAdmin('admin', 'moderator'), async (req, res) => {
   const { status = 'pending' } = req.query;
   try {
     const r = await pool.query(
@@ -61,7 +61,7 @@ router.get('/vendors', requireRole('admin', 'moderator'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.get('/vendors/:id', requireRole('admin', 'moderator'), async (req, res) => {
+router.get('/vendors/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT v.*, vv.status as verification_status, vv.comment, vc.email
@@ -76,7 +76,7 @@ router.get('/vendors/:id', requireRole('admin', 'moderator'), async (req, res) =
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/vendors/:id/verify', requireRole('admin', 'moderator'), async (req, res) => {
+router.post('/vendors/:id/verify', requireAdmin('admin', 'moderator'), async (req, res) => {
   const { action, comment } = req.body;
   if (!['approve', 'reject'].includes(action)) return res.status(400).json({ error: 'Invalid action' });
   const status = action === 'approve' ? 'verified' : 'rejected';
@@ -96,7 +96,7 @@ router.post('/vendors/:id/verify', requireRole('admin', 'moderator'), async (req
 });
 
 // ─── ORDERS ──────────────────────────────────────────────────────────────────
-router.get('/orders', requireRole('admin', 'support'), async (req, res) => {
+router.get('/orders', requireAdmin('admin', 'support'), async (req, res) => {
   const { status, q, page = 1, limit = 20 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
   try {
@@ -119,7 +119,7 @@ router.get('/orders', requireRole('admin', 'support'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.get('/orders/:id', requireRole('admin', 'support'), async (req, res) => {
+router.get('/orders/:id', requireAdmin('admin', 'support'), async (req, res) => {
   try {
     const r = await pool.query(
       `SELECT o.*, v.name as vet_name FROM orders o LEFT JOIN vets v ON v.id=o.vet_id WHERE o.id=$1`,
@@ -130,7 +130,7 @@ router.get('/orders/:id', requireRole('admin', 'support'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/orders/:id/refund', requireRole('admin', 'support'), async (req, res) => {
+router.post('/orders/:id/refund', requireAdmin('admin', 'support'), async (req, res) => {
   const { reason } = req.body;
   try {
     const r = await pool.query(
@@ -144,7 +144,7 @@ router.post('/orders/:id/refund', requireRole('admin', 'support'), async (req, r
 });
 
 // ─── AUDIT LOG ───────────────────────────────────────────────────────────────
-router.get('/audit', requireRole('admin'), async (req, res) => {
+router.get('/audit', requireAdmin('admin'), async (req, res) => {
   const { page = 1, limit = 50, action } = req.query;
   try {
     const params = [Number(limit), (Number(page) - 1) * Number(limit)];
@@ -164,7 +164,7 @@ router.get('/audit', requireRole('admin'), async (req, res) => {
 });
 
 // ─── DASHBOARD STATS ─────────────────────────────────────────────────────────
-router.get('/stats', requireRole('admin', 'moderator', 'support'), async (req, res) => {
+router.get('/stats', requireAdmin('admin', 'moderator', 'support'), async (req, res) => {
   try {
     const [rev, revToday, consultStats, vetStats, verif, users] = await Promise.all([
       pool.query(`SELECT COALESCE(SUM(price_uzs),0) AS total FROM orders WHERE status IN ('paid','completed')`),
@@ -176,21 +176,21 @@ router.get('/stats', requireRole('admin', 'moderator', 'support'), async (req, r
     ]);
     const cMap = Object.fromEntries(consultStats.rows.map(r => [r.status, parseInt(r.cnt)]));
     res.json({
-      revenue_total:    parseInt(rev.rows[0].total),
-      revenue_today:    parseInt(revToday.rows[0].total),
-      consult_pending:  cMap.pending || 0,
-      consult_active:   cMap.active  || 0,
-      consult_completed:cMap.completed || 0,
-      vets_total:       parseInt(vetStats.rows[0].total),
-      vets_available:   parseInt(vetStats.rows[0].available),
-      verif_pending:    parseInt(verif.rows[0].cnt),
-      users_total:      parseInt(users.rows[0].cnt),
+      revenue_total:     parseInt(rev.rows[0].total),
+      revenue_today:     parseInt(revToday.rows[0].total),
+      consult_pending:   cMap.pending || 0,
+      consult_active:    cMap.active  || 0,
+      consult_completed: cMap.completed || 0,
+      vets_total:        parseInt(vetStats.rows[0].total),
+      vets_available:    parseInt(vetStats.rows[0].available),
+      verif_pending:     parseInt(verif.rows[0].cnt),
+      users_total:       parseInt(users.rows[0].cnt),
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ─── CONSULTATIONS ────────────────────────────────────────────────────────────
-router.get('/consultations', requireRole('admin', 'support'), async (req, res) => {
+router.get('/consultations', requireAdmin('admin', 'support'), async (req, res) => {
   const { status, q, page = 1, limit = 20 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
   try {
@@ -216,14 +216,14 @@ router.get('/consultations', requireRole('admin', 'support'), async (req, res) =
 });
 
 // ─── PROMO CODES ─────────────────────────────────────────────────────────────
-router.get('/promos', requireRole('admin', 'moderator'), async (req, res) => {
+router.get('/promos', requireAdmin('admin', 'moderator'), async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM promo_codes ORDER BY created_at DESC');
     res.json(r.rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/promos', requireRole('admin'), async (req, res) => {
+router.post('/promos', requireAdmin('admin'), async (req, res) => {
   const { code, discount_type, discount_value, max_uses, expires_at } = req.body;
   if (!code || !discount_type || !discount_value)
     return res.status(400).json({ error: 'code, discount_type, discount_value required' });
@@ -242,7 +242,7 @@ router.post('/promos', requireRole('admin'), async (req, res) => {
   }
 });
 
-router.patch('/promos/:id', requireRole('admin'), async (req, res) => {
+router.patch('/promos/:id', requireAdmin('admin'), async (req, res) => {
   const { is_active } = req.body;
   try {
     const r = await pool.query(

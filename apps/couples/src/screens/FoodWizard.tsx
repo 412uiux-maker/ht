@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { IconArrowLeft, IconPaw, IconOrders, IconStethoscope, IconFood, IconCheckCircle, IconCheck, IconMoney, IconPlus, IconRefresh } from '@ht/shared'
 import type { Pet } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
@@ -165,7 +166,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
         background: 'var(--surface)', borderBottom: '1px solid var(--border)',
         position: 'sticky', top: 0, zIndex: 20,
       }}>
-        <button onClick={step === 1 ? onBack : goPrev} style={iconBtn}>←</button>
+        <button onClick={step === 1 ? onBack : goPrev} style={iconBtn}><IconArrowLeft size={18} /></button>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 17 }}>{t('food.title')}</div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('food.step_label')} {step} / 4</div>
@@ -182,7 +183,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
         {/* ── Step 1: Pet selection ────────────────────────────────────────── */}
         {step === 1 && (
           <>
-            <WizStep icon="🐾" title={t('food.step_pet')} sub={t('food.step_pet_sub')} />
+            <WizStep icon={<IconPaw size={36} color="var(--primary)" />} title={t('food.step_pet')} sub={t('food.step_pet_sub')} />
 
             {loading ? (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 40 }}>{t('loading')}</div>
@@ -203,8 +204,8 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                   </div>
                 )}
 
-                <button onClick={() => { setSelectedPet(null); goNext() }} style={outlineBtn}>
-                  ➕ {t('food.no_pet')}
+                <button onClick={() => { setSelectedPet(null); goNext() }} style={{ ...outlineBtn, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <IconPlus size={14} /> {t('food.no_pet')}
                 </button>
               </>
             )}
@@ -214,7 +215,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
         {/* ── Step 2: Pet profile ──────────────────────────────────────────── */}
         {step === 2 && (
           <>
-            <WizStep icon="📋" title={t('food.step_profile')} sub={selectedPet?.name ?? ''} />
+            <WizStep icon={<IconOrders size={36} color="var(--primary)" />} title={t('food.step_profile')} sub={selectedPet?.name ?? ''} />
 
             {/* Species */}
             <FieldBlock label={t('food.species')}>
@@ -271,7 +272,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
         {/* ── Step 3: Health concerns ─────────────────────────────────────── */}
         {step === 3 && (
           <>
-            <WizStep icon="🏥" title={t('food.step_health')} sub={t('food.health_sub')} />
+            <WizStep icon={<IconStethoscope size={36} color="var(--primary)" />} title={t('food.step_health')} sub={t('food.health_sub')} />
 
             {/* "All good" option */}
             <button onClick={() => setConcerns(new Set())} style={{
@@ -281,11 +282,11 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
               background: concerns.size === 0 ? 'rgba(242,120,75,.08)' : 'var(--surface)',
               fontFamily: 'inherit', cursor: 'pointer', transition: 'all .15s',
             }}>
-              <span style={{ fontSize: 22 }}>✅</span>
+              <IconCheckCircle size={22} color={concerns.size === 0 ? 'var(--primary)' : 'var(--text-muted)'} />
               <span style={{ flex: 1, textAlign: 'left', fontWeight: 600, fontSize: 14, color: concerns.size === 0 ? 'var(--primary)' : 'var(--text)' }}>
                 {t('food.health_none')}
               </span>
-              {concerns.size === 0 && <span style={{ color: 'var(--primary)', fontSize: 16 }}>✓</span>}
+              {concerns.size === 0 && <IconCheck size={16} color="var(--primary)" />}
             </button>
 
             {CONCERN_DATA.map(c => {
@@ -308,7 +309,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                     background: on ? 'var(--primary)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: '#fff', fontSize: 12,
-                  }}>{on ? '✓' : ''}</span>
+                  }}>{on ? <IconCheck size={12} color="#fff" /> : null}</span>
                 </button>
               )
             })}
@@ -318,7 +319,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
         {/* ── Step 4: Results ─────────────────────────────────────────────── */}
         {step === 4 && (
           <>
-            <WizStep icon="🥗" title={t('food.result_title')} sub="" />
+            <WizStep icon={<IconFood size={36} color="var(--primary)" />} title={t('food.result_title')} sub="" />
 
             {isExotic ? (
               <div style={{
@@ -326,15 +327,15 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                 borderRadius: 'var(--r-xl)', padding: '28px 20px', textAlign: 'center',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
               }}>
-                <span style={{ fontSize: 56 }}>🩺</span>
+                <IconStethoscope size={56} color="var(--primary)" />
                 <div style={{ fontWeight: 700, fontSize: 18 }}>{t('food.other_species')}</div>
                 <div style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 280, lineHeight: 1.6 }}>
                   {lang === 'uz'
                     ? "Bu turdagi hayvonlar uchun veterinar-dietolog bilan shaxsiy maslahat o'tkazish tavsiya etiladi"
                     : 'Для грызунов, птиц и экзотических животных рекомендуем персональную консультацию ветеринара-диетолога'}
                 </div>
-                <button onClick={onConsult} style={{ ...primaryBtn, maxWidth: 280 }}>
-                  🩺 {t('food.consult_cta')}
+                <button onClick={onConsult} style={{ ...primaryBtn, maxWidth: 280, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <IconStethoscope size={16} color="#fff" /> {t('food.consult_cta')}
                 </button>
               </div>
             ) : (
@@ -387,7 +388,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                         padding: '4px 10px', borderRadius: 'var(--r-pill)',
                         background: 'var(--surface-2)', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
                       }}>
-                        💰 {p.price}
+                        <IconMoney size={12} color="var(--text-muted)" style={{ verticalAlign: 'middle' }} /> {p.price}
                       </div>
                     </div>
                   </div>
@@ -402,8 +403,8 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                   <div style={{
                     width: 44, height: 44, borderRadius: 'var(--r-md)', flexShrink: 0,
                     background: 'linear-gradient(135deg,#F8915A,#F26B47)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-                  }}>🩺</div>
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}><IconStethoscope size={22} color="#fff" /></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{t('food.consult_cta')}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>{t('food.consult_sub')}</div>
@@ -420,7 +421,7 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                   onClick={() => { setStep(1); setSelectedPet(null); setConcerns(new Set()) }}
                   style={outlineBtn}
                 >
-                  🔄 {t('food.restart')}
+                  <IconRefresh size={14} style={{ verticalAlign: 'middle', marginRight: 4 }} /> {t('food.restart')}
                 </button>
               </>
             )}
@@ -446,10 +447,10 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
 
-function WizStep({ icon, title, sub }: { icon: string; title: string; sub: string }) {
+function WizStep({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) {
   return (
     <div style={{ marginBottom: 4 }}>
-      <div style={{ fontSize: 36, marginBottom: 10 }}>{icon}</div>
+      <div style={{ marginBottom: 10 }}>{icon}</div>
       <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginBottom: sub ? 4 : 0 }}>{title}</div>
       {sub && <div style={{ fontSize: 14, color: 'var(--text-muted)' }}>{sub}</div>}
     </div>
