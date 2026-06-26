@@ -254,6 +254,94 @@ router.patch('/promos/:id', requireAdmin('admin'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── МОДЕРАЦИЯ ОТЗЫВОВ ────────────────────────────────────────────────────────
+
+// GET /api/admin/reviews?status=
+router.get('/reviews', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { status } = req.query;
+  try {
+    const cond = status ? 'WHERE r.status=$1' : '';
+    const args = status ? [status] : [];
+    const { rows } = await pool.query(
+      `SELECT r.id, r.rating, r.text, r.reply, r.status, r.owner_id, r.created_at,
+              v.name AS vet_name, v.avatar_emoji AS vet_emoji
+       FROM reviews r LEFT JOIN vets v ON v.id = r.vet_id
+       ${cond} ORDER BY r.created_at DESC LIMIT 200`,
+      args
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/reviews/:id/moderate  { action: 'publish' | 'hide' }
+router.post('/reviews/:id/moderate', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { action } = req.body;
+  if (!['publish', 'hide'].includes(action)) return res.status(400).json({ error: 'invalid action' });
+  const status = action === 'publish' ? 'published' : 'hidden';
+  try {
+    const { rows: [row] } = await pool.query(
+      'UPDATE reviews SET status=$1 WHERE id=$2 RETURNING *',
+      [status, req.params.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, `review.${action}`, 'review', req.params.id, {});
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── CRUD ДОБРЫХ ДЕЛ ──────────────────────────────────────────────────────────
+
+// GET /api/admin/deeds
+router.get('/deeds', requireAdmin('admin', 'moderator'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM good_deeds ORDER BY sort_order, created_at DESC');
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/deeds
+router.post('/deeds', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { title, subtitle, description, category, goal_amount, emoji, deadline, status, sort_order } = req.body;
+  if (!title || !category) return res.status(400).json({ error: 'title and category required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `INSERT INTO good_deeds (title, subtitle, description, category, goal_amount, emoji, deadline, status, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [title.trim(), subtitle || '', description || '', category,
+       goal_amount || null, emoji || '🤝', deadline || null, status || 'active', Number(sort_order) || 0]
+    );
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'deed.create', 'good_deed', String(row.id), { title });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/admin/deeds/:id
+router.patch('/deeds/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { title, subtitle, description, category, goal_amount, emoji, deadline, status, sort_order } = req.body;
+  if (!title || !category) return res.status(400).json({ error: 'title and category required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE good_deeds SET title=$1, subtitle=$2, description=$3, category=$4, goal_amount=$5,
+         emoji=$6, deadline=$7, status=$8, sort_order=$9 WHERE id=$10 RETURNING *`,
+      [title.trim(), subtitle || '', description || '', category,
+       goal_amount || null, emoji || '🤝', deadline || null, status || 'active', Number(sort_order) || 0, req.params.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'deed.update', 'good_deed', req.params.id, { title });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/admin/deeds/:id
+router.delete('/deeds/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM good_deeds WHERE id=$1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'deed.delete', 'good_deed', req.params.id, {});
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Content (learn_items) CRUD ────────────────────────────────────────────────
 
 // GET /api/admin/content?type=

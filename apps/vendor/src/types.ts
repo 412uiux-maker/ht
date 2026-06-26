@@ -26,6 +26,14 @@ export type VendorService = {
   created_at: string
 }
 
+export type VendorSlot = {
+  id: number
+  vet_id: number
+  slot_at: string
+  is_booked: boolean
+  order_id: string | null
+}
+
 export type ConsultStatus = 'pending' | 'active' | 'completed'
 
 export type Medication = {

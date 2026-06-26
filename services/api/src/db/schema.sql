@@ -254,6 +254,32 @@ ALTER TABLE orders ADD CONSTRAINT orders_status_check
   CHECK (status IN ('created','paid','accepted','rejected','in_progress','completed','cancelled','refunded','reviewed'));
 
 -- M2: Payments table (replaces ad-hoc simulate flow as single source of truth)
+-- Vendor schedule slots
+CREATE TABLE IF NOT EXISTS vendor_slots (
+  id        SERIAL PRIMARY KEY,
+  vet_id    INTEGER REFERENCES vets(id) ON DELETE CASCADE,
+  slot_at   TIMESTAMPTZ NOT NULL,
+  is_booked BOOLEAN DEFAULT false,
+  order_id  UUID,
+  UNIQUE(vet_id, slot_at)
+);
+CREATE INDEX IF NOT EXISTS vendor_slots_vet_idx ON vendor_slots(vet_id);
+
+-- Client reviews for completed consultations
+CREATE TABLE IF NOT EXISTS reviews (
+  id         SERIAL PRIMARY KEY,
+  order_id   UUID REFERENCES orders(id) ON DELETE SET NULL,
+  owner_id   TEXT NOT NULL,
+  vet_id     INTEGER REFERENCES vets(id) ON DELETE CASCADE,
+  rating     INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  text       TEXT,
+  reply      TEXT,
+  status     TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','published','hidden')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS reviews_vet_idx    ON reviews(vet_id);
+CREATE INDEX IF NOT EXISTS reviews_status_idx ON reviews(status);
+
 CREATE TABLE IF NOT EXISTS payments (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id     UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,

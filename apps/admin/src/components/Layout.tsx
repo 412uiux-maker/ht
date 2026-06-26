@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   IconDashboard, IconVerify, IconConsultation, IconOrders, IconMoney,
   IconUsers, IconContent, IconLearning, IconPromo, IconSettings, IconAudit,
-  IconMoon, IconSun, IconLogOut,
+  IconMoon, IconSun, IconLogOut, IconStar, IconHeart,
 } from '@ht/shared'
 import type { AdminSession } from '../types'
 
@@ -25,6 +25,8 @@ const NAV: NavItem[] = [
   { id: 'users',         label: 'Пользователи',    Icon: IconUsers,        roles: ['admin', 'moderator'] },
   { id: 'content',       label: 'Контент',         Icon: IconContent,      roles: ['admin', 'moderator'] },
   { id: 'learning',      label: 'Обучение',        Icon: IconLearning,     roles: ['admin', 'moderator'] },
+  { id: 'reviews',       label: 'Отзывы',          Icon: IconStar,         roles: ['admin', 'moderator'] },
+  { id: 'deeds',         label: 'Добрые дела',     Icon: IconHeart,        roles: ['admin', 'moderator'] },
   { id: 'promos',        label: 'Промокоды',       Icon: IconPromo,        roles: ['admin', 'moderator'] },
   { id: 'settings',      label: 'Настройки',       Icon: IconSettings,     roles: ['admin']              },
   { id: 'audit',         label: 'Аудит',           Icon: IconAudit,        roles: ['admin']              },

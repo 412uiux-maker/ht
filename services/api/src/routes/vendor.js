@@ -277,4 +277,44 @@ router.get('/me', requireVendor, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/vendor/slots?week=YYYY-MM-DD  (week = Monday date)
+router.get('/slots', requireVendor, async (req, res) => {
+  try {
+    const { week } = req.query;
+    const monday = week ? new Date(week) : (() => {
+      const d = new Date(); const day = d.getDay();
+      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      d.setHours(0, 0, 0, 0); return d;
+    })();
+    const weekEnd = new Date(monday); weekEnd.setDate(weekEnd.getDate() + 7);
+    const { rows } = await pool.query(
+      'SELECT * FROM vendor_slots WHERE vet_id=$1 AND slot_at >= $2 AND slot_at < $3 ORDER BY slot_at',
+      [req.vendor.vet_id, monday.toISOString(), weekEnd.toISOString()]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/vendor/slots/toggle  { slot_at: ISO string }
+router.post('/slots/toggle', requireVendor, async (req, res) => {
+  const { slot_at } = req.body;
+  if (!slot_at) return res.status(400).json({ error: 'slot_at required' });
+  try {
+    const { rows: [existing] } = await pool.query(
+      'SELECT * FROM vendor_slots WHERE vet_id=$1 AND slot_at=$2',
+      [req.vendor.vet_id, slot_at]
+    );
+    if (existing) {
+      if (existing.is_booked) return res.status(409).json({ error: 'Слот забронирован' });
+      await pool.query('DELETE FROM vendor_slots WHERE id=$1', [existing.id]);
+      return res.json({ action: 'removed', slot_at });
+    }
+    const { rows: [slot] } = await pool.query(
+      'INSERT INTO vendor_slots (vet_id, slot_at) VALUES ($1,$2) RETURNING *',
+      [req.vendor.vet_id, slot_at]
+    );
+    res.json({ action: 'added', ...slot });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

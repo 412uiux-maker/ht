@@ -14,8 +14,10 @@ import Content from './screens/Content'
 import Users from './screens/Users'
 import Settings from './screens/Settings'
 import Learning from './screens/Learning'
+import Reviews from './screens/Reviews'
+import Deeds from './screens/Deeds'
 
-type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings'
+type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings' | 'reviews' | 'deeds'
 
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(() => {
@@ -50,6 +52,8 @@ export default function App() {
       {screen === 'users'          && <Users sessionRole={session.role} />}
       {screen === 'content'        && <Content />}
       {screen === 'learning'       && <Learning />}
+      {screen === 'reviews'        && <Reviews />}
+      {screen === 'deeds'          && <Deeds />}
       {screen === 'promos'         && <Promos session={session} />}
       {screen === 'settings'       && <Settings />}
       {screen === 'audit'          && <Audit />}

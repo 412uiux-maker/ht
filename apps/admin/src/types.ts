@@ -88,6 +88,34 @@ export interface LearnItem {
   views: number
 }
 
+export interface Review {
+  id: number
+  owner_id: string
+  vet_name: string | null
+  vet_emoji: string | null
+  rating: number
+  text: string | null
+  reply: string | null
+  status: 'pending' | 'published' | 'hidden'
+  created_at: string
+}
+
+export interface GoodDeed {
+  id: number
+  title: string
+  subtitle: string
+  description: string
+  category: string
+  goal_amount: number | null
+  raised_amount: number
+  participants_count: number
+  emoji: string
+  deadline: string | null
+  status: 'active' | 'completed' | 'paused'
+  sort_order: number
+  created_at: string
+}
+
 export interface PromoCode {
   id: number
   code: string

@@ -1,4 +1,4 @@
-import type { VendorSession, VendorService, Consultation, Message, Stats, MedicalReport } from './types'
+import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport } from './types'
 import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -107,5 +107,13 @@ export const api = {
   deleteService: (id: number) =>
     req<{ ok: boolean }>(`/api/vendor/services/${id}`, {
       method: 'DELETE', headers: authHeaders(),
+    }),
+
+  slots: (week?: string) =>
+    req<VendorSlot[]>(`/api/vendor/slots${week ? `?week=${week}` : ''}`, { headers: authHeaders() }),
+
+  toggleSlot: (slot_at: string) =>
+    req<{ action: 'added' | 'removed'; slot_at: string }>('/api/vendor/slots/toggle', {
+      method: 'POST', headers: authHeaders(), body: JSON.stringify({ slot_at }),
     }),
 }
