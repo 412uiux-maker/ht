@@ -85,6 +85,21 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// POST /api/vendor/link-telegram  (protected) — stores vet's Telegram chat ID for push notifications
+router.post('/link-telegram', requireVendor, async (req, res) => {
+  const { telegram_id } = req.body;
+  if (!telegram_id) return res.status(400).json({ error: 'telegram_id required' });
+  try {
+    await pool.query(
+      'UPDATE vendor_credentials SET telegram_id=$1 WHERE vet_id=$2',
+      [String(telegram_id), req.vendor.vet_id]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // GET /api/vendor/profile  (protected)
 router.get('/profile', requireVendor, async (req, res) => {
   try {

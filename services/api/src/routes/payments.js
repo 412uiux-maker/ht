@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const crypto = require('crypto');
 const pool = require('../db');
+const notify = require('../notifications');
 
 const router = Router();
 const DEV = process.env.NODE_ENV !== 'production';
@@ -141,6 +142,7 @@ router.post('/webhook/payme', async (req, res) => {
 
         await pool.query(`UPDATE payments SET status='paid', paid_at=NOW() WHERE id=$1`, [payment.id]);
         await pool.query(`UPDATE orders SET status='paid' WHERE id=$1 AND status='created'`, [payment.order_id]);
+        notify.notifyVetNewOrder(payment.order_id);
         return res.json({ result: { transaction: payment.id, perform_time: Date.now(), state: 2 }, id: rpcId });
       }
 
@@ -253,6 +255,7 @@ router.post('/webhook/click', express.urlencoded({ extended: false }), async (re
 
       await pool.query(`UPDATE payments SET status='paid', paid_at=NOW() WHERE id=$1`, [payment.id]);
       await pool.query(`UPDATE orders SET status='paid' WHERE id=$1 AND status='created'`, [payment.order_id]);
+      notify.notifyVetNewOrder(payment.order_id);
       return res.json({
         click_trans_id,
         merchant_trans_id: orderId,

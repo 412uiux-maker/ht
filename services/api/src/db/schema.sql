@@ -205,6 +205,9 @@ CREATE TABLE IF NOT EXISTS foods (
   is_active     BOOLEAN DEFAULT true
 );
 
+-- M3: telegram_id for vendor push notifications
+ALTER TABLE vendor_credentials ADD COLUMN IF NOT EXISTS telegram_id BIGINT UNIQUE;
+
 -- Telegram Mini App users (M3)
 CREATE TABLE IF NOT EXISTS users (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),

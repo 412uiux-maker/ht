@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { requireVendor } = require('../middleware/auth');
+const notify = require('../notifications');
 const router = express.Router();
 
 // Valid status transitions per service-spec §8.1
@@ -43,6 +44,28 @@ async function triggerRefund(orderId) {
     [orderId]
   );
 }
+
+// POST /api/orders  — create a new order for a consultation
+router.post('/', async (req, res) => {
+  const { consultation_id, owner_id } = req.body;
+  if (!consultation_id || !owner_id)
+    return res.status(400).json({ error: 'consultation_id and owner_id required' });
+  try {
+    const { rows: [c] } = await pool.query(
+      'SELECT vet_id FROM consultations WHERE id=$1', [consultation_id]
+    );
+    if (!c) return res.status(404).json({ error: 'Consultation not found' });
+    const { rows: [vet] } = await pool.query('SELECT price_uzs FROM vets WHERE id=$1', [c.vet_id]);
+    const { rows: [order] } = await pool.query(
+      `INSERT INTO orders (owner_id, vet_id, service_type, consultation_id, status, price_uzs)
+       VALUES ($1, $2, 'vet_online', $3, 'created', $4) RETURNING *`,
+      [owner_id, c.vet_id, consultation_id, vet?.price_uzs || 0]
+    );
+    res.json(order);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // GET /api/orders?owner_id=...
 router.get('/', async (req, res) => {
@@ -101,6 +124,10 @@ router.post('/:id/accept', requireVendor, async (req, res) => {
       `UPDATE orders SET status='accepted' WHERE id=$1 RETURNING *`, [req.params.id]
     );
     await syncConsultation(req.params.id, 'accepted');
+    const vetName = updated.vet_name ?? 'Ветеринар';
+    notify.notifyClientOrderStatus(req.params.id,
+      `✅ Ветеринар принял вашу заявку. Ожидайте начала консультации.`
+    );
     res.json(updated);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -122,6 +149,10 @@ router.post('/:id/reject', requireVendor, async (req, res) => {
     await syncConsultation(req.params.id, 'rejected');
     await triggerRefund(req.params.id);
     const { rows: [final] } = await pool.query('SELECT * FROM orders WHERE id=$1', [req.params.id]);
+    const reasonText = reason ? `. Причина: ${reason}` : '';
+    notify.notifyClientOrderStatus(req.params.id,
+      `❌ Ветеринар отклонил вашу заявку${reasonText}. Возврат будет обработан автоматически.`
+    );
     res.json(final);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -159,6 +190,9 @@ router.post('/:id/complete', requireVendor, async (req, res) => {
       [req.params.id, payoutAmount]
     );
     await syncConsultation(req.params.id, 'completed');
+    notify.notifyClientOrderStatus(req.params.id,
+      `🎉 Консультация завершена! Оставьте отзыв в приложении.`
+    );
     res.json(updated);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
