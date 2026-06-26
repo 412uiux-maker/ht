@@ -92,6 +92,42 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+// POST /api/consultations/:id/reject  — vendor rejects from web cabinet
+// Marks consultation completed, finds associated order, rejects+refunds it.
+router.post('/:id/reject', async (req, res) => {
+  const { reason } = req.body;
+  try {
+    const { rows: [consult] } = await pool.query(
+      `UPDATE consultations SET status='completed' WHERE id=$1 RETURNING *`,
+      [req.params.id]
+    );
+    if (!consult) return res.status(404).json({ error: 'Not found' });
+
+    // Reject associated order and trigger refund if it exists and is in paid state
+    const { rows: [order] } = await pool.query(
+      `SELECT id, status FROM orders WHERE consultation_id=$1 ORDER BY created_at DESC LIMIT 1`,
+      [req.params.id]
+    );
+    if (order && order.status === 'paid') {
+      await pool.query(
+        `UPDATE orders SET status='rejected', rejected_reason=$2 WHERE id=$1`,
+        [order.id, reason || null]
+      );
+      await pool.query(
+        `UPDATE payments SET status='refunded', refunded_at=NOW() WHERE order_id=$1 AND status='paid'`,
+        [order.id]
+      );
+      await pool.query(
+        `UPDATE orders SET status='refunded' WHERE id=$1 AND status='rejected'`,
+        [order.id]
+      );
+    }
+    res.json(consult);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Start (or fetch) the authoritative call clock. Idempotent: the first caller
 // stamps call_started_at; later callers get the same value so both peers share
 // one countdown. Returns server `now` so clients can correct for clock skew.

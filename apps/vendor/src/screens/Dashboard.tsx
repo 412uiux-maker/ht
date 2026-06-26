@@ -28,6 +28,7 @@ export default function Dashboard({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [acceptingId, setAcceptingId] = useState<string | null>(null)
+  const [rejectingId, setRejectingId] = useState<string | null>(null)
 
   const loadStats = useCallback(() => {
     api.stats(session.vet_id).then(setStats).catch(() => {})
@@ -59,6 +60,16 @@ export default function Dashboard({
       await Promise.all([loadConsultations(), loadStats()])
     } catch {}
     finally { setAcceptingId(null) }
+  }
+
+  const rejectConsult = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setRejectingId(id)
+    try {
+      await api.reject(id)
+      await Promise.all([loadConsultations(), loadStats()])
+    } catch {}
+    finally { setRejectingId(null) }
   }
 
   const STATUS_TABS = [
@@ -191,7 +202,9 @@ export default function Dashboard({
                 key={c.id}
                 c={c}
                 accepting={acceptingId === c.id}
+                rejecting={rejectingId === c.id}
                 onAccept={(e) => acceptConsult(c.id, e)}
+                onReject={(e) => rejectConsult(c.id, e)}
                 onClick={() => onOpenChat(c.id)}
               />
             ))}
@@ -224,12 +237,14 @@ function StatCard({ label, value, color, Icon }: { label: string; value: string 
 }
 
 function ConsultCard({
-  c, onClick, onAccept, accepting
+  c, onClick, onAccept, onReject, accepting, rejecting
 }: {
   c: Consultation
   onClick: () => void
   onAccept: (e: React.MouseEvent) => void
+  onReject: (e: React.MouseEvent) => void
   accepting: boolean
+  rejecting: boolean
 }) {
   return (
     <div
@@ -267,19 +282,33 @@ function ConsultCard({
           {timeAgo(c.created_at)}
         </span>
         {c.status === 'pending' && (
-          <button
-            onClick={onAccept}
-            disabled={accepting}
-            style={{
-              background: 'var(--amber)', color: '#000', border: 'none',
-              borderRadius: 'var(--r-sm)', padding: '5px 12px',
-              fontSize: '12px', fontWeight: 700, minHeight: '32px',
-              cursor: 'pointer', opacity: accepting ? 0.7 : 1, whiteSpace: 'nowrap',
-              display: 'flex', alignItems: 'center', gap: 5,
-            }}
-          >
-            {accepting ? '…' : <><IconCheckCircle size={13} color="#000" /> Принять</>}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <button
+              onClick={onAccept}
+              disabled={accepting || rejecting}
+              style={{
+                background: 'var(--amber)', color: '#000', border: 'none',
+                borderRadius: 'var(--r-sm)', padding: '5px 12px',
+                fontSize: '12px', fontWeight: 700, minHeight: '32px',
+                cursor: 'pointer', opacity: accepting ? 0.7 : 1, whiteSpace: 'nowrap',
+                display: 'flex', alignItems: 'center', gap: 5,
+              }}
+            >
+              {accepting ? '…' : <><IconCheckCircle size={13} color="#000" /> Принять</>}
+            </button>
+            <button
+              onClick={onReject}
+              disabled={accepting || rejecting}
+              style={{
+                background: 'transparent', color: 'var(--danger)', border: '1px solid var(--danger)',
+                borderRadius: 'var(--r-sm)', padding: '5px 12px',
+                fontSize: '12px', fontWeight: 600, minHeight: '32px',
+                cursor: 'pointer', opacity: rejecting ? 0.7 : 1, whiteSpace: 'nowrap',
+              }}
+            >
+              {rejecting ? '…' : 'Отклонить'}
+            </button>
+          </div>
         )}
         {c.status === 'active' && (
           <span style={{

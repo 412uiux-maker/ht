@@ -26,7 +26,7 @@ async function syncConsultation(orderId, orderStatus) {
   if (!cs) return;
   await pool.query(
     `UPDATE consultations SET status=$1
-     WHERE id = (SELECT consultation_id FROM orders WHERE id=$2) AND consultation_id IS NOT NULL`,
+     WHERE id = (SELECT consultation_id FROM orders WHERE id=$2 AND consultation_id IS NOT NULL)`,
     [cs, orderId]
   );
 }

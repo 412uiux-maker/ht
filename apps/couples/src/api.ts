@@ -1,5 +1,8 @@
 const BASE = '/api'
 
+export const getJwt = () => localStorage.getItem('ht_jwt')
+export const setJwt = (token: string) => localStorage.setItem('ht_jwt', token)
+
 export type Vet = {
   id: number
   name: string
@@ -79,8 +82,12 @@ export type PetConsultation = {
 }
 
 const req = async <T>(path: string, opts?: RequestInit): Promise<T> => {
+  const jwt = getJwt()
   const r = await fetch(BASE + path, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {}),
+    },
     ...opts,
   })
   if (!r.ok) throw new Error(r.statusText)
@@ -162,6 +169,12 @@ export const getOwnerId = () => {
 }
 
 export const api = {
+  authTelegram: (initData: string) =>
+    req<{ token: string; user: { id: string; name: string; locale: string } }>('/auth/telegram', {
+      method: 'POST',
+      body: JSON.stringify({ initData }),
+    }),
+
   vets: () => req<Vet[]>('/vets'),
   pets: (ownerId: string) => req<Pet[]>(`/pets?owner_id=${encodeURIComponent(ownerId)}`),
   createConsultation: (body: {

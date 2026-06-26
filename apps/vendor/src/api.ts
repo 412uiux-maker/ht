@@ -58,8 +58,15 @@ export const api = {
   accept: (id: string) =>
     req<Consultation>(`/api/consultations/${id}/status`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
       body: JSON.stringify({ status: 'active' })
+    }),
+
+  reject: (id: string, reason?: string) =>
+    req<Consultation>(`/api/consultations/${id}/reject`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ reason })
     }),
 
   complete: (id: string, report: MedicalReport) =>

@@ -1,4 +1,5 @@
-const { Router } = require('express');
+const express = require('express');
+const { Router } = express;
 const crypto = require('crypto');
 const pool = require('../db');
 const notify = require('../notifications');

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Vet, Consultation } from './api'
+import { api, setJwt, getJwt } from './api'
 import { setLang } from './i18n'
 import BottomNav, { type Tab } from './components/BottomNav'
 import Onboarding from './screens/Onboarding'
@@ -58,6 +59,31 @@ function devInitialTab(): Tab {
 }
 
 export default function App() {
+  // Telegram initData auth — runs once on mount when inside Telegram
+  const [tgAuthDone, setTgAuthDone] = useState(() => {
+    if (getJwt()) return true
+    const tg = (window as any).Telegram?.WebApp
+    return !tg?.initData
+  })
+
+  useEffect(() => {
+    if (tgAuthDone) return
+    const tg = (window as any).Telegram?.WebApp
+    if (!tg?.initData) { setTgAuthDone(true); return }
+    api.authTelegram(tg.initData)
+      .then(({ token, user }) => {
+        setJwt(token)
+        // Use DB user.id as stable owner_id so pets/consultations are linked to the account
+        localStorage.setItem('ht_owner_id', user.id)
+        if (user.locale && (user.locale === 'uz' || user.locale === 'ru')) {
+          setLang(user.locale)
+          setLangState(user.locale)
+        }
+      })
+      .catch(() => { /* dev mode without bot token — continue unauthenticated */ })
+      .finally(() => setTgAuthDone(true))
+  }, [tgAuthDone])
+
   const [onboarded, setOnboarded] = useState(() => !!localStorage.getItem('ht_onboarded'))
   const [tab, setTab] = useState<Tab>(devInitialTab)
   const [flow, setFlow] = useState<Flow | null>(devInitialFlow)
@@ -71,6 +97,15 @@ export default function App() {
 
   const startFlow = (f: Flow) => setFlow(f)
   const endFlow = (returnTab?: Tab) => { setFlow(null); if (returnTab) setTab(returnTab) }
+
+  // ─── Wait for Telegram auth ──────────────────────────────────────────────────
+  if (!tgAuthDone) return (
+    <Wrap>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <span style={{ fontSize: 32 }}>🐾</span>
+      </div>
+    </Wrap>
+  )
 
   // ─── Onboarding ─────────────────────────────────────────────────────────────
   if (!onboarded) return (
