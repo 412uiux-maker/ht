@@ -1,4 +1,4 @@
-import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem } from './types'
+import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed } from './types'
 
 let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
@@ -90,4 +90,21 @@ export const adminApi = {
 
   deleteContent: (id: number) =>
     req<{ ok: boolean }>(`/content/${id}`, { method: 'DELETE' }),
+
+  getReviews: (status?: string) =>
+    req<Review[]>(`/reviews${status ? `?status=${status}` : ''}`),
+
+  moderateReview: (id: number, action: 'publish' | 'hide') =>
+    req<Review>(`/reviews/${id}/moderate`, { method: 'POST', body: JSON.stringify({ action }) }),
+
+  getDeeds: () => req<GoodDeed[]>('/deeds'),
+
+  createDeed: (data: Omit<GoodDeed, 'id' | 'raised_amount' | 'participants_count' | 'created_at'>) =>
+    req<GoodDeed>('/deeds', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateDeed: (id: number, data: Omit<GoodDeed, 'id' | 'raised_amount' | 'participants_count' | 'created_at'>) =>
+    req<GoodDeed>(`/deeds/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  deleteDeed: (id: number) =>
+    req<{ ok: boolean }>(`/deeds/${id}`, { method: 'DELETE' }),
 }

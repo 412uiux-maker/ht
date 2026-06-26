@@ -10,6 +10,7 @@ import Services from './screens/Services'
 import Finances from './screens/Finances'
 import Reviews from './screens/Reviews'
 import VendorProfile from './screens/VendorProfile'
+import Schedule from './screens/Schedule'
 import Layout from './components/Layout'
 import IncomingCall from './components/IncomingCall'
 
@@ -19,6 +20,7 @@ type Screen =
   | 'verification_pending'
   | 'dashboard'
   | 'services'
+  | 'schedule'
   | 'finances'
   | 'reviews'
   | 'profile'
@@ -115,8 +117,9 @@ export default function App() {
           onOpenChat={(id) => setScreen({ name: 'chat', consultId: id })}
         />
       )}
-      {activeScreen === 'services' && <Services />}
-      {activeScreen === 'finances' && <Finances />}
+      {activeScreen === 'services'  && <Services />}
+      {activeScreen === 'schedule'  && <Schedule />}
+      {activeScreen === 'finances'  && <Finances />}
       {activeScreen === 'reviews'  && <Reviews />}
       {activeScreen === 'profile'  && (
         <VendorProfile session={session} onSessionUpdate={handleSessionUpdate} />

@@ -531,6 +531,29 @@ async function initDb() {
     console.log('DB seeded:', SEED_SERVICES.length, 'vendor services');
   }
 
+  const { rows: rr } = await pool.query('SELECT COUNT(*) FROM reviews');
+  if (rr[0].count === '0') {
+    const { rows: vetRows } = await pool.query('SELECT id FROM vets ORDER BY id LIMIT 4');
+    const SEED_REVIEWS = [
+      { vet_i: 0, rating: 5, text: 'Азиз — отличный врач, объяснил всё подробно. Кошка уже здорова!', owner: 'owner-rev-001', status: 'published' },
+      { vet_i: 0, rating: 4, text: 'Быстро ответил, назначил лечение. Всё чётко.', owner: 'owner-rev-002', status: 'published' },
+      { vet_i: 1, rating: 5, text: 'Малика спасла нашего питомца. Профессионал высшего уровня!', owner: 'owner-rev-003', status: 'published' },
+      { vet_i: 1, rating: 2, text: 'Долго ждал ответа, не понравился подход к лечению.', owner: 'owner-rev-004', status: 'pending' },
+      { vet_i: 2, rating: 5, text: 'Санжар разобрался с аллергией кота за 2 консультации.', owner: 'owner-rev-005', status: 'published' },
+      { vet_i: 2, rating: 3, text: 'Консультация нормальная, но хотелось бы более детальных рекомендаций.', owner: 'owner-rev-006', status: 'pending' },
+      { vet_i: 3, rating: 5, text: 'Дилноза очень внимательно отнеслась к нашему щенку. Спасибо!', owner: 'owner-rev-007', status: 'published' },
+    ];
+    for (const rv of SEED_REVIEWS) {
+      const vet = vetRows[rv.vet_i];
+      if (!vet) continue;
+      await pool.query(
+        `INSERT INTO reviews (vet_id, owner_id, rating, text, status) VALUES ($1,$2,$3,$4,$5)`,
+        [vet.id, rv.owner, rv.rating, rv.text, rv.status]
+      );
+    }
+    console.log('DB seeded:', SEED_REVIEWS.length, 'reviews');
+  }
+
   const { rows: or } = await pool.query('SELECT COUNT(*) FROM orders');
   if (or[0].count === '0') {
     const { rows: vetRows } = await pool.query('SELECT id, price_uzs FROM vets LIMIT 4');
