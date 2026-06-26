@@ -1,4 +1,4 @@
-import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode } from './types'
+import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem } from './types'
 
 let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
@@ -78,4 +78,16 @@ export const adminApi = {
 
   togglePromo: (id: number, is_active: boolean) =>
     req<PromoCode>(`/promos/${id}`, { method: 'PATCH', body: JSON.stringify({ is_active }) }),
+
+  getContent: (type?: string) =>
+    req<LearnItem[]>(`/content${type ? `?type=${type}` : ''}`),
+
+  createContent: (data: Omit<LearnItem, 'id' | 'created_at' | 'views'>) =>
+    req<LearnItem>('/content', { method: 'POST', body: JSON.stringify(data) }),
+
+  updateContent: (id: number, data: Omit<LearnItem, 'id' | 'created_at' | 'views'>) =>
+    req<LearnItem>(`/content/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  deleteContent: (id: number) =>
+    req<{ ok: boolean }>(`/content/${id}`, { method: 'DELETE' }),
 }

@@ -254,4 +254,68 @@ router.patch('/promos/:id', requireAdmin('admin'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ── Content (learn_items) CRUD ────────────────────────────────────────────────
+
+// GET /api/admin/content?type=
+router.get('/content', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { type } = req.query;
+  try {
+    let q = `SELECT li.*,
+               COALESCE((SELECT COUNT(*)::int FROM learn_progress lp WHERE lp.item_id = li.id), 0) AS views
+             FROM learn_items li WHERE 1=1`;
+    const params = [];
+    if (type) { params.push(type); q += ` AND li.type = $${params.length}`; }
+    q += ' ORDER BY li.sort_order, li.id DESC';
+    const { rows } = await pool.query(q, params);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/content
+router.post('/content', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { type, category, title, subtitle, emoji, author, body, duration_min, is_published, sort_order } = req.body;
+  if (!type || !title) return res.status(400).json({ error: 'type and title required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `INSERT INTO learn_items (type, category, title, subtitle, emoji, author, body, duration_min, is_published, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [type, category || 'other', title.trim(), subtitle || '', emoji || '📄',
+       author || 'Редакция', body || '', Number(duration_min) || 5,
+       Boolean(is_published), Number(sort_order) || 0]
+    );
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'content.create', 'learn_item', String(row.id), { title });
+    res.json({ ...row, views: 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/admin/content/:id
+router.patch('/content/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { type, category, title, subtitle, emoji, author, body, duration_min, is_published, sort_order } = req.body;
+  if (!title) return res.status(400).json({ error: 'title required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE learn_items SET type=$1, category=$2, title=$3, subtitle=$4, emoji=$5,
+         author=$6, body=$7, duration_min=$8, is_published=$9, sort_order=$10
+       WHERE id=$11 RETURNING *`,
+      [type, category || 'other', title.trim(), subtitle || '', emoji || '📄',
+       author || 'Редакция', body || '', Number(duration_min) || 5,
+       Boolean(is_published), Number(sort_order) || 0, req.params.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'content.update', 'learn_item', req.params.id, { title });
+    const views = await pool.query('SELECT COUNT(*)::int AS v FROM learn_progress WHERE item_id=$1', [row.id]);
+    res.json({ ...row, views: views.rows[0]?.v ?? 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/admin/content/:id
+router.delete('/content/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
+  try {
+    const { rowCount } = await pool.query('DELETE FROM learn_items WHERE id=$1', [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'content.delete', 'learn_item', req.params.id, {});
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
