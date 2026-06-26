@@ -8,6 +8,7 @@ export type VendorSession = {
   avatar_emoji: string
   experience_yr: number
   token: string
+  verification_status?: 'pending' | 'verified' | 'rejected'
 }
 
 export type ConsultStatus = 'pending' | 'active' | 'completed'

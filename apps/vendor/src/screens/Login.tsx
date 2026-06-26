@@ -11,7 +11,13 @@ const DEMOS = [
 
 type Step = 'phone' | 'code'
 
-export default function Login({ onLogin }: { onLogin: (s: VendorSession) => void }) {
+export default function Login({
+  onLogin,
+  onRegister,
+}: {
+  onLogin: (s: VendorSession) => void
+  onRegister: () => void
+}) {
   const [step, setStep] = useState<Step>('phone')
   const [digits, setDigits] = useState('')
   const [codeDigits, setCodeDigits] = useState(['', '', '', ''])
@@ -211,10 +217,24 @@ export default function Login({ onLogin }: { onLogin: (s: VendorSession) => void
                 padding: '14px', fontSize: '15px', fontWeight: 600,
                 minHeight: '48px', transition: 'background .15s',
                 cursor: loading || digits.length < 9 ? 'not-allowed' : 'pointer',
+                marginBottom: '20px',
               }}
             >
               {loading ? 'Отправляем…' : 'Получить код'}
             </button>
+
+            <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text3)' }}>
+              Ещё нет аккаунта?{' '}
+              <button
+                onClick={onRegister}
+                style={{
+                  background: 'none', border: 'none', color: 'var(--coral)',
+                  fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font)', padding: 0,
+                }}
+              >
+                Зарегистрироваться
+              </button>
+            </p>
           </>
         ) : (
           <>

@@ -74,5 +74,18 @@ export const api = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'completed', report })
-    })
+    }),
+
+  register: (data: {
+    name: string; specialty: string; phone: string; password: string;
+    bio?: string; email?: string; price_uzs?: number; experience_yr?: number; avatar_emoji?: string
+  }) =>
+    req<VendorSession>('/api/vendor/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }),
+
+  getMe: () =>
+    req<VendorSession>('/api/vendor/me', { headers: authHeaders() }),
 }
