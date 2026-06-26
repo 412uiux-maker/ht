@@ -17,6 +17,9 @@ build/
 *.log
 npm-debug.log*
 
+# Vite temp files
+vite.config.ts.timestamp-*
+
 # OS / IDE
 .DS_Store
 Thumbs.db
