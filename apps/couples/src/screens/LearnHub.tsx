@@ -33,6 +33,18 @@ function tv(type: string) {
   return TV[type as keyof typeof TV] ?? TV.article
 }
 
+// Category emoji
+const CAT_EMOJI: Record<string, string> = {
+  vet:         '🩺',
+  first_aid:   '🚑',
+  onboarding:  '🐾',
+  health:      '💊',
+  nutrition:   '🥗',
+  grooming:    '✂️',
+  vaccination: '💉',
+  behavior:    '🧠',
+}
+
 // Category labels (ru/uz)
 const CAT: Record<string, [string, string]> = {
   vet:         ['Ветеринария',     'Veterinariya'],
@@ -68,24 +80,29 @@ export default function LearnHub({ lang }: { lang: string }) {
         borderBottom: '1px solid var(--border)',
         position: 'sticky', top: 0, zIndex: 20,
       }}>
-        {(['learn', 'deeds'] as const).map(key => (
-          <button
-            key={key}
-            onClick={() => setTab(key)}
-            style={{
-              flex: 1, padding: '14px 8px', border: 'none', background: 'transparent',
-              fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              color: tab === key ? 'var(--primary)' : 'var(--text-muted)',
-              borderBottom: `2px solid ${tab === key ? 'var(--primary)' : 'transparent'}`,
-              marginBottom: -1, transition: 'color .15s',
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
-              {key === 'learn' ? <IconLearning size={14} /> : <IconHeart size={14} />}
-              {key === 'learn' ? t('learn.title') : t('deeds.title')}
-            </span>
-          </button>
-        ))}
+        {(['learn', 'deeds'] as const).map(key => {
+          const active = tab === key
+          return (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              style={{
+                flex: 1, padding: '13px 8px', border: 'none',
+                background: active ? 'rgba(242,120,75,0.06)' : 'transparent',
+                fontFamily: 'inherit', fontSize: 14, fontWeight: active ? 700 : 500,
+                cursor: 'pointer',
+                color: active ? 'var(--primary)' : 'var(--text-muted)',
+                borderBottom: `2px solid ${active ? 'var(--primary)' : 'transparent'}`,
+                marginBottom: -1, transition: 'color .15s, background .15s',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                {key === 'learn' ? <IconLearning size={16} /> : <IconHeart size={16} />}
+                {key === 'learn' ? t('learn.title') : t('deeds.title')}
+              </span>
+            </button>
+          )
+        })}
       </div>
 
       {tab === 'learn' && <LearnContent lang={lang} />}
@@ -118,6 +135,9 @@ function LearnContent({ lang }: { lang: string }) {
 
   const filtered = filter === 'all' ? items : items.filter(i => i.type === filter)
   const completedCount = items.filter(i => i.progress?.status === 'completed').length
+  const startedCount = items.filter(i => i.progress?.status === 'started').length
+  const isFirstTimer = !loading && items.length > 0 && completedCount === 0 && startedCount === 0
+  const firstChecklist = items.find(i => i.type === 'checklist') ?? items[0]
 
   return (
     <div style={{ flex: 1 }}>
@@ -148,6 +168,41 @@ function LearnContent({ lang }: { lang: string }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* "Start here" nudge — first-timers only */}
+      {isFirstTimer && firstChecklist && (
+        <button
+          onClick={() => setOpen(firstChecklist)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 14,
+            margin: '12px 16px 0', padding: '14px 16px',
+            borderRadius: 'var(--r-lg)', border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #FFEAD7, #FCDCC4)',
+            fontFamily: 'inherit', textAlign: 'left', width: 'calc(100% - 32px)',
+            transition: 'opacity .15s',
+          }}
+        >
+          <div style={{
+            width: 46, height: 46, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,0.65)', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24,
+          }}>
+            {firstChecklist.emoji ?? '🐾'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary-strong)', marginBottom: 3 }}>
+              {getLang() === 'uz' ? 'Qayerdan boshlash?' : 'С чего начать?'}
+            </div>
+            <div style={{
+              fontSize: 12, color: 'var(--primary-strong)', opacity: 0.75,
+              lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>
+              {firstChecklist.title}
+            </div>
+          </div>
+          <IconChevronRight size={16} color="var(--primary-strong)" />
+        </button>
       )}
 
       {/* Filter strip */}
@@ -248,9 +303,11 @@ function CategorySections({ items, onOpen }: {
       {groups.map(([cat, catItems]) => (
         <section key={cat}>
           <div style={{
-            fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
+            fontSize: 13, fontWeight: 700, color: 'var(--text)',
             marginBottom: 8, paddingLeft: 2,
+            display: 'flex', alignItems: 'center', gap: 7,
           }}>
+            <span style={{ fontSize: 16, lineHeight: 1 }}>{CAT_EMOJI[cat] ?? '📚'}</span>
             {catLabel(cat)}
           </div>
           <div style={{
@@ -501,14 +558,22 @@ function ItemDetail({
       </div>
 
       {/* Hero zone */}
-      <div style={{ background: colors.bg, padding: '22px 20px 0' }}>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 14 }}>
+      <div style={{ background: colors.bg, padding: '22px 20px 0', position: 'relative', overflow: 'hidden' }}>
+        {/* Soft radial glow — warmth behind emoji */}
+        <div style={{
+          position: 'absolute', top: '30%', left: 52,
+          transform: 'translate(-50%, -50%)',
+          width: 110, height: 110, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.4)', filter: 'blur(28px)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginBottom: 14, position: 'relative' }}>
           <div style={{
             width: 62, height: 62, borderRadius: 'var(--r-lg)',
-            background: 'rgba(255,255,255,0.55)',
+            background: 'rgba(255,255,255,0.6)',
             flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 32,
+            fontSize: 32, boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
           }}>
             {initialItem.emoji || '📄'}
           </div>

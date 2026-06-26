@@ -16,16 +16,16 @@
   --r-pill: 999px;
   --font: 'Onest', system-ui, sans-serif;
 
-  /* ── Learn content-type colors (light mode defaults) ── */
-  --type-checklist-bg:     #DCFCE7;
-  --type-checklist-text:   #15803D;
-  --type-checklist-accent: #16A34A;
-  --type-guide-bg:         #DBEAFE;
-  --type-guide-text:       #1D4ED8;
-  --type-guide-accent:     #2563EB;
-  --type-article-bg:       #FEF3C7;
-  --type-article-text:     #92400E;
-  --type-article-accent:   #B45309;
+  /* ── Learn content-type colors — brand-aligned ── */
+  --type-checklist-bg:     rgba(121, 190, 87,  0.13);
+  --type-checklist-text:   #3a6b1a;
+  --type-checklist-accent: #5fa832;
+  --type-guide-bg:         rgba(124, 130, 232, 0.12);
+  --type-guide-text:       #3a40b2;
+  --type-guide-accent:     #7C82E8;
+  --type-article-bg:       rgba(242, 120, 75,  0.10);
+  --type-article-text:     #C0511F;
+  --type-article-accent:   #F2784B;
 }
 
 /* ── Light mode ───────────────────────────────────────────────── */
@@ -51,12 +51,15 @@
   --primary-strong: #FF9A74;
   --shadow: 0 8px 28px rgba(0,0,0,.4);
 
-  --type-checklist-bg:   rgba(34, 197, 94,  0.12);
-  --type-checklist-text: #4ade80;
-  --type-guide-bg:       rgba(59, 130, 246, 0.12);
-  --type-guide-text:     #60a5fa;
-  --type-article-bg:     rgba(245, 158, 11, 0.12);
-  --type-article-text:   #fbbf24;
+  --type-checklist-bg:     rgba(121, 190, 87,  0.15);
+  --type-checklist-text:   #9dd468;
+  --type-checklist-accent: #79BE57;
+  --type-guide-bg:         rgba(124, 130, 232, 0.15);
+  --type-guide-text:       #a8adf0;
+  --type-guide-accent:     #7C82E8;
+  --type-article-bg:       rgba(242, 120, 75,  0.12);
+  --type-article-text:     #f4a07e;
+  --type-article-accent:   #F2864B;
 }
 
 /* ── System preference fallback (no manual override) ─────────── */
@@ -83,12 +86,15 @@
     --primary-strong: #FF9A74;
     --shadow: 0 8px 28px rgba(0,0,0,.4);
 
-    --type-checklist-bg:   rgba(34, 197, 94,  0.12);
-    --type-checklist-text: #4ade80;
-    --type-guide-bg:       rgba(59, 130, 246, 0.12);
-    --type-guide-text:     #60a5fa;
-    --type-article-bg:     rgba(245, 158, 11, 0.12);
-    --type-article-text:   #fbbf24;
+    --type-checklist-bg:     rgba(121, 190, 87,  0.15);
+    --type-checklist-text:   #9dd468;
+    --type-checklist-accent: #79BE57;
+    --type-guide-bg:         rgba(124, 130, 232, 0.15);
+    --type-guide-text:       #a8adf0;
+    --type-guide-accent:     #7C82E8;
+    --type-article-bg:       rgba(242, 120, 75,  0.12);
+    --type-article-text:     #f4a07e;
+    --type-article-accent:   #F2864B;
   }
 }
 
