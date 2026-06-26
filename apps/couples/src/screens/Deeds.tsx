@@ -4,7 +4,7 @@ import type { Deed } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
 
-export default function Deeds({ lang }: { lang: string }) {
+export default function Deeds({ lang, onBack }: { lang: string; onBack?: () => void }) {
   void lang
   const [deeds, setDeeds] = useState<Deed[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,10 +34,22 @@ export default function Deeds({ lang }: { lang: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72 }}>
       <header style={{
-        display: 'flex', alignItems: 'center', padding: '14px 20px',
+        display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px',
         background: 'var(--surface)', borderBottom: '1px solid var(--border)',
         position: 'sticky', top: 0, zIndex: 20,
       }}>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              background: 'none', border: 'none', padding: '4px 6px',
+              color: 'var(--text-muted)', fontSize: 20, cursor: 'pointer',
+              lineHeight: 1, minHeight: 44, minWidth: 44,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            aria-label="Назад"
+          >←</button>
+        )}
         <span style={{ fontWeight: 700, fontSize: 17 }}>{t('deeds.title')}</span>
       </header>
 

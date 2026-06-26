@@ -25,6 +25,7 @@ interface Props {
   onFood:       () => void
   onClinics:    () => void
   onPlaces:     () => void
+  onDeeds:      () => void
 }
 
 // ── Horizontal scroll cards data
@@ -79,7 +80,7 @@ function petAge(birthDate: string | null, uz: boolean): string {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces }: Props) {
+export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces, onDeeds }: Props) {
   const [pets, setPets] = useState<Pet[] | null>(null)
   const [topicFilter, setTopicFilter] = useState<'cats' | 'dogs'>('cats')
   const uz = getLang() === 'uz'
@@ -533,7 +534,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
 
       {/* ─────────────────────────────── DEEDS (conditional) */}
       <div style={{ padding: '24px 16px 0' }}>
-        <DeedsSection />
+        <DeedsSection onViewAll={onDeeds} />
       </div>
 
       {/* ─────────────────────────────── FIXED CTA */}
@@ -562,7 +563,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
 }
 
 // ── DeedsSection ──────────────────────────────────────────────────────────────
-function DeedsSection() {
+function DeedsSection({ onViewAll }: { onViewAll?: () => void }) {
   const [deeds, setDeeds] = useState<Deed[]>([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState<number | null>(null)
@@ -601,13 +602,23 @@ function DeedsSection() {
           </div>
           <span style={{ fontWeight: 700, fontSize: 17 }}>{t('deeds.title')}</span>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          {deeds.length} {uz ? 'tashabbus' : 'инициатив'}
-        </span>
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            style={{
+              background: 'none', border: 'none', padding: 0,
+              color: 'var(--primary)', fontSize: 13, fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', gap: 2,
+            }}
+          >
+            {uz ? 'Hammasi' : 'Все'} <IconChevronRight size={14} />
+          </button>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {deeds.map(deed => {
+        {deeds.slice(0, 2).map(deed => {
           const pct = Math.min(100, Math.round((deed.raised_amount / deed.goal_amount) * 100))
           const isDone = done.has(deed.id)
           const isOpen = active === deed.id
