@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS learn_progress (
 );
 
 CREATE INDEX IF NOT EXISTS learn_progress_owner_idx ON learn_progress(owner_id);
+ALTER TABLE learn_items ADD COLUMN IF NOT EXISTS author TEXT DEFAULT 'Редакция';
 
 CREATE TABLE IF NOT EXISTS vendor_credentials (
   id         SERIAL PRIMARY KEY,

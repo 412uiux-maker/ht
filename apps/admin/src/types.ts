@@ -72,6 +72,22 @@ export interface ConsultationRow {
   vet_emoji: string | null
 }
 
+export interface LearnItem {
+  id: number
+  type: 'article' | 'guide' | 'checklist'
+  category: string
+  title: string
+  subtitle: string
+  emoji: string
+  author: string
+  body: string
+  duration_min: number
+  is_published: boolean
+  sort_order: number
+  created_at: string
+  views: number
+}
+
 export interface PromoCode {
   id: number
   code: string
