@@ -5,6 +5,7 @@ import { setLang } from './i18n'
 import BottomNav, { type Tab } from './components/BottomNav'
 import Onboarding from './screens/Onboarding'
 import Dashboard from './screens/Dashboard'
+import Deeds from './screens/Deeds'
 import Home from './screens/Home'          // vet list — used as Consult tab
 import Booking from './screens/Booking'
 import Payment from './screens/Payment'
@@ -36,6 +37,7 @@ type Flow =
   | { name: 'clinic-list'; service: ClinicService }
   | { name: 'clinic-detail'; clinic: Clinic; service: ClinicService }
   | { name: 'places' }
+  | { name: 'deeds' }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -228,6 +230,12 @@ export default function App() {
         <Places onBack={() => endFlow('home')} />
       </Wrap>
     )
+
+    if (flow.name === 'deeds') return (
+      <Wrap>
+        <Deeds lang={lang} onBack={() => endFlow('home')} />
+      </Wrap>
+    )
   }
 
   // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
@@ -242,6 +250,7 @@ export default function App() {
           onFood={() => startFlow({ name: 'food' })}
           onClinics={() => startFlow({ name: 'clinic-services' })}
           onPlaces={() => startFlow({ name: 'places' })}
+          onDeeds={() => startFlow({ name: 'deeds' })}
         />
       )}
       {tab === 'consult' && (
