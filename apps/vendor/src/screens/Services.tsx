@@ -1,17 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { IconTrash } from '@ht/shared'
-
-interface Service {
-  id: number
-  title_ru: string
-  title_uz: string
-  category: string
-  price: number
-  duration: number
-  format: 'online' | 'offline'
-  description: string
-  active: boolean
-}
+import type { VendorService } from '../types'
+import { api } from '../api'
 
 const CATEGORIES: Record<string, string> = {
   vet_online:  'Онлайн-консультация',
@@ -19,50 +9,85 @@ const CATEGORIES: Record<string, string> = {
   vaccination: 'Вакцинация',
   surgery:     'Хирургия',
   grooming:    'Груминг',
+  training:    'Дрессировка',
+  nutrition:   'Диетология',
   other:       'Другое',
 }
 
-const INITIAL: Service[] = [
-  { id: 1, title_ru: 'Онлайн-консультация', title_uz: 'Online maslahat',   category: 'vet_online',  price: 120000, duration: 30, format: 'online',  description: '', active: true  },
-  { id: 2, title_ru: 'Диагностика на дому',  title_uz: 'Uyda diagnostika', category: 'vet_offline', price: 200000, duration: 60, format: 'offline', description: '', active: true  },
-  { id: 3, title_ru: 'Вакцинация',           title_uz: 'Emlash',           category: 'vaccination', price: 80000,  duration: 20, format: 'offline', description: '', active: false },
-  { id: 4, title_ru: 'Стерилизация',         title_uz: 'Sterilizatsiya',   category: 'surgery',     price: 350000, duration: 90, format: 'offline', description: '', active: true  },
-  { id: 5, title_ru: 'Чипирование',          title_uz: 'Chiprovka',        category: 'other',       price: 50000,  duration: 15, format: 'offline', description: '', active: true  },
-]
-
-const EMPTY: Omit<Service, 'id'> = {
-  title_ru: '', title_uz: '', category: 'vet_online', price: 120000,
-  duration: 30, format: 'online', description: '', active: true,
+const EMPTY: Omit<VendorService, 'id' | 'vet_id' | 'sort_order' | 'created_at'> = {
+  title_ru: '', title_uz: '', category: 'vet_online', description: '',
+  price_uzs: 120000, duration_min: 30, format: 'online', is_active: true,
 }
 
 export default function Services() {
-  const [services, setServices] = useState<Service[]>(INITIAL)
-  const [editing, setEditing] = useState<Service | null>(null)
+  const [services, setServices] = useState<VendorService[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadErr, setLoadErr] = useState('')
+  const [editing, setEditing] = useState<Partial<VendorService> | null>(null)
   const [isNew, setIsNew] = useState(false)
-  const [deleting, setDeleting] = useState<Service | null>(null)
+  const [deleting, setDeleting] = useState<VendorService | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveErr, setSaveErr] = useState('')
+  const [deleteErr, setDeleteErr] = useState('')
+
+  useEffect(() => {
+    api.services()
+      .then(rows => { setServices(rows); setLoading(false) })
+      .catch(e => { setLoadErr(e.message); setLoading(false) })
+  }, [])
 
   const openCreate = () => {
-    setEditing({ id: Date.now(), ...EMPTY })
+    setEditing({ ...EMPTY })
+    setSaveErr('')
     setIsNew(true)
   }
-  const openEdit = (s: Service) => { setEditing({ ...s }); setIsNew(false) }
 
-  const save = () => {
-    if (!editing) return
-    if (isNew) setServices(prev => [...prev, editing])
-    else setServices(prev => prev.map(s => s.id === editing.id ? editing : s))
-    setEditing(null)
+  const openEdit = (s: VendorService) => {
+    setEditing({ ...s })
+    setSaveErr('')
+    setIsNew(false)
   }
 
-  const confirmDelete = () => {
+  const save = async () => {
+    if (!editing || !editing.title_ru?.trim()) return
+    setSaving(true)
+    setSaveErr('')
+    try {
+      if (isNew) {
+        const created = await api.createService(editing as Omit<VendorService, 'id' | 'vet_id' | 'sort_order' | 'created_at'>)
+        setServices(prev => [...prev, created])
+      } else {
+        const updated = await api.updateService(editing.id!, editing)
+        setServices(prev => prev.map(s => s.id === updated.id ? updated : s))
+      }
+      setEditing(null)
+    } catch (e) {
+      setSaveErr(e instanceof Error ? e.message : 'Ошибка сохранения')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const confirmDelete = async () => {
     if (!deleting) return
-    setServices(prev => prev.filter(s => s.id !== deleting.id))
-    setDeleting(null)
+    setDeleteErr('')
+    try {
+      await api.deleteService(deleting.id)
+      setServices(prev => prev.filter(s => s.id !== deleting.id))
+      setDeleting(null)
+    } catch (e) {
+      setDeleteErr(e instanceof Error ? e.message : 'Ошибка удаления')
+    }
   }
 
-  const toggleActive = (id: number) => {
-    setServices(prev => prev.map(s => s.id === id ? { ...s, active: !s.active } : s))
+  const toggleActive = async (svc: VendorService) => {
+    try {
+      const updated = await api.updateService(svc.id, { ...svc, is_active: !svc.is_active })
+      setServices(prev => prev.map(s => s.id === updated.id ? updated : s))
+    } catch { /* silent — UI stays consistent */ }
   }
+
+  const set = (k: string, v: unknown) => setEditing(prev => prev ? { ...prev, [k]: v } : prev)
 
   return (
     <div>
@@ -72,69 +97,104 @@ export default function Services() {
         <button onClick={openCreate} style={btnCoral}>+ Добавить услугу</button>
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text2)' }}>
+          Загрузка…
+        </div>
+      )}
+
+      {/* Load error */}
+      {loadErr && (
+        <div style={errBox}>{loadErr}</div>
+      )}
+
+      {/* Empty state */}
+      {!loading && !loadErr && services.length === 0 && (
+        <div style={{
+          background: 'var(--surface)', borderRadius: 'var(--r-md)',
+          border: '1px solid var(--surface3)',
+          textAlign: 'center', padding: '48px 24px',
+        }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
+          <p style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>Услуг пока нет</p>
+          <p style={{ color: 'var(--text2)', fontSize: 14, marginBottom: 20 }}>
+            Добавьте первую услугу — она появится в каталоге после прохождения верификации
+          </p>
+          <button onClick={openCreate} style={btnCoral}>+ Добавить услугу</button>
+        </div>
+      )}
+
       {/* Table */}
-      <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-md)', border: '1px solid var(--surface3)', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: 'var(--surface2)' }}>
-              {['Услуга', 'Категория', 'Цена', 'Формат', 'Длит.', 'Активна', ''].map(h => (
-                <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {services.map((s, i) => (
-              <tr key={s.id} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--surface3)' }}>
-                <td style={{ padding: '12px 14px', fontSize: 14, fontWeight: 600 }}>{s.title_ru}</td>
-                <td style={{ padding: '12px 14px' }}>
-                  <span style={{ fontSize: 12, padding: '3px 8px', borderRadius: 999, background: 'rgba(242,120,75,.12)', color: 'var(--coral)', fontWeight: 600 }}>
-                    {CATEGORIES[s.category]}
-                  </span>
-                </td>
-                <td style={{ padding: '12px 14px', fontSize: 14, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
-                  {s.price.toLocaleString('ru-RU')} сум
-                </td>
-                <td style={{ padding: '12px 14px' }}>
-                  <span style={{
-                    fontSize: 12, padding: '3px 8px', borderRadius: 999, fontWeight: 600,
-                    background: s.format === 'online' ? 'rgba(76,175,125,.12)' : 'rgba(124,92,191,.12)',
-                    color: s.format === 'online' ? 'var(--green)' : 'var(--violet)',
-                  }}>
-                    {s.format === 'online' ? 'Онлайн' : 'Оффлайн'}
-                  </span>
-                </td>
-                <td style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text2)' }}>{s.duration} мин</td>
-                <td style={{ padding: '12px 14px' }}>
-                  <button
-                    onClick={() => toggleActive(s.id)}
-                    aria-label={s.active ? 'Деактивировать' : 'Активировать'}
-                    style={{
-                      width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
-                      background: s.active ? 'var(--green)' : 'var(--surface3)',
-                      position: 'relative', transition: 'background .2s',
-                    }}
-                  >
-                    <span style={{
-                      position: 'absolute', top: 3, width: 18, height: 18,
-                      borderRadius: '50%', background: '#fff',
-                      transition: 'left .2s', left: s.active ? 23 : 3,
-                      boxShadow: '0 1px 3px rgba(0,0,0,.2)',
-                    }} />
-                  </button>
-                </td>
-                <td style={{ padding: '12px 14px' }}>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => openEdit(s)} style={btnGhost}>Изменить</button>
-                    <button onClick={() => setDeleting(s)} style={{ ...btnGhost, color: 'var(--danger)' }}>Удалить</button>
-                  </div>
-                </td>
+      {!loading && services.length > 0 && (
+        <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-md)', border: '1px solid var(--surface3)', overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: 'var(--surface2)' }}>
+                {['Услуга', 'Категория', 'Цена', 'Формат', 'Длит.', 'Активна', ''].map(h => (
+                  <th key={h} style={{ textAlign: 'left', padding: '10px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text2)', whiteSpace: 'nowrap' }}>
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {services.map((s, i) => (
+                <tr key={s.id} style={{ borderTop: i === 0 ? 'none' : '1px solid var(--surface3)' }}>
+                  <td style={{ padding: '12px 14px' }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{s.title_ru}</div>
+                    {s.title_uz && <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{s.title_uz}</div>}
+                  </td>
+                  <td style={{ padding: '12px 14px' }}>
+                    <span style={{ fontSize: 12, padding: '3px 8px', borderRadius: 999, background: 'rgba(242,120,75,.12)', color: 'var(--coral)', fontWeight: 600 }}>
+                      {CATEGORIES[s.category] ?? s.category}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 14px', fontSize: 14, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>
+                    {s.price_uzs.toLocaleString('ru-RU')} сум
+                  </td>
+                  <td style={{ padding: '12px 14px' }}>
+                    <span style={{
+                      fontSize: 12, padding: '3px 8px', borderRadius: 999, fontWeight: 600,
+                      background: s.format === 'online' ? 'rgba(76,175,125,.12)' : 'rgba(124,92,191,.12)',
+                      color: s.format === 'online' ? 'var(--green)' : 'var(--violet)',
+                    }}>
+                      {s.format === 'online' ? 'Онлайн' : 'Оффлайн'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 14px', fontSize: 13, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{s.duration_min} мин</td>
+                  <td style={{ padding: '12px 14px' }}>
+                    <button
+                      onClick={() => toggleActive(s)}
+                      aria-label={s.is_active ? 'Деактивировать' : 'Активировать'}
+                      style={{
+                        width: 44, height: 24, borderRadius: 999, border: 'none', cursor: 'pointer',
+                        background: s.is_active ? 'var(--green)' : 'var(--surface3)',
+                        position: 'relative', transition: 'background .2s', flexShrink: 0,
+                      }}
+                    >
+                      <span style={{
+                        position: 'absolute', top: 3, width: 18, height: 18,
+                        borderRadius: '50%', background: '#fff',
+                        transition: 'left .2s', left: s.is_active ? 23 : 3,
+                        boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+                      }} />
+                    </button>
+                  </td>
+                  <td style={{ padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => openEdit(s)} style={btnGhost}>Изменить</button>
+                      <button onClick={() => { setDeleting(s); setDeleteErr('') }} style={{ ...btnGhost, color: 'var(--danger)' }}>
+                        <IconTrash size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Create / Edit modal */}
       {editing && (
@@ -149,30 +209,48 @@ export default function Services() {
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <Field label="Название (RU)">
-                <input style={inp} value={editing.title_ru} onChange={e => setEditing({ ...editing, title_ru: e.target.value })} />
+              <Field label="Название (RU) *">
+                <input
+                  style={inp}
+                  placeholder="Онлайн-консультация"
+                  value={editing.title_ru ?? ''}
+                  onChange={e => set('title_ru', e.target.value)}
+                />
               </Field>
               <Field label="Название (UZ)">
-                <input style={inp} value={editing.title_uz} onChange={e => setEditing({ ...editing, title_uz: e.target.value })} />
+                <input
+                  style={inp}
+                  placeholder="Online maslahat"
+                  value={editing.title_uz ?? ''}
+                  onChange={e => set('title_uz', e.target.value)}
+                />
               </Field>
               <Field label="Категория">
-                <select style={inp} value={editing.category} onChange={e => setEditing({ ...editing, category: e.target.value })}>
+                <select style={inp} value={editing.category ?? 'vet_online'} onChange={e => set('category', e.target.value)}>
                   {Object.entries(CATEGORIES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </Field>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label="Цена (сум)">
-                  <input style={inp} type="number" value={editing.price} onChange={e => setEditing({ ...editing, price: +e.target.value })} />
+                  <input
+                    style={inp} type="number" min={0}
+                    value={editing.price_uzs ?? 0}
+                    onChange={e => set('price_uzs', parseInt(e.target.value) || 0)}
+                  />
                 </Field>
                 <Field label="Длительность (мин)">
-                  <input style={inp} type="number" value={editing.duration} onChange={e => setEditing({ ...editing, duration: +e.target.value })} />
+                  <input
+                    style={inp} type="number" min={5} max={480}
+                    value={editing.duration_min ?? 30}
+                    onChange={e => set('duration_min', parseInt(e.target.value) || 30)}
+                  />
                 </Field>
               </div>
               <Field label="Формат">
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center', paddingTop: 4 }}>
                   {(['online', 'offline'] as const).map(f => (
                     <label key={f} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14, cursor: 'pointer' }}>
-                      <input type="radio" checked={editing.format === f} onChange={() => setEditing({ ...editing, format: f })} />
+                      <input type="radio" checked={editing.format === f} onChange={() => set('format', f)} />
                       {f === 'online' ? 'Онлайн' : 'Оффлайн'}
                     </label>
                   ))}
@@ -181,19 +259,32 @@ export default function Services() {
               <Field label="Описание (необязательно)">
                 <textarea
                   style={{ ...inp, height: 72, resize: 'vertical' }}
-                  value={editing.description}
-                  onChange={e => setEditing({ ...editing, description: e.target.value })}
+                  placeholder="Краткое описание услуги…"
+                  value={editing.description ?? ''}
+                  onChange={e => set('description', e.target.value)}
                 />
               </Field>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, cursor: 'pointer' }}>
-                <input type="checkbox" checked={editing.active} onChange={e => setEditing({ ...editing, active: e.target.checked })} />
-                Активна
+                <input
+                  type="checkbox"
+                  checked={editing.is_active !== false}
+                  onChange={e => set('is_active', e.target.checked)}
+                />
+                Активна (видна клиентам)
               </label>
             </div>
 
+            {saveErr && <div style={{ ...errBox, marginTop: 12 }}>{saveErr}</div>}
+
             <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
-              <button onClick={() => setEditing(null)} style={btnGhost}>Отмена</button>
-              <button onClick={save} style={btnCoral} disabled={!editing.title_ru}>Сохранить</button>
+              <button onClick={() => setEditing(null)} style={btnGhost} disabled={saving}>Отмена</button>
+              <button
+                onClick={save}
+                style={{ ...btnCoral, opacity: saving || !editing.title_ru?.trim() ? 0.6 : 1 }}
+                disabled={saving || !editing.title_ru?.trim()}
+              >
+                {saving ? 'Сохраняем…' : 'Сохранить'}
+              </button>
             </div>
           </div>
         </div>
@@ -209,9 +300,10 @@ export default function Services() {
           }}>
             <div style={{ marginBottom: 12 }}><IconTrash size={32} color="var(--danger)" /></div>
             <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8 }}>Удалить услугу?</h2>
-            <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 24 }}>
-              «{deleting.title_ru}» будет удалена. Это действие нельзя отменить.
+            <p style={{ fontSize: 14, color: 'var(--text2)', marginBottom: 20 }}>
+              «{deleting.title_ru}» будет удалена навсегда.
             </p>
+            {deleteErr && <div style={{ ...errBox, marginBottom: 12 }}>{deleteErr}</div>}
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button onClick={() => setDeleting(null)} style={btnGhost}>Отмена</button>
               <button onClick={confirmDelete} style={{ ...btnCoral, background: 'var(--danger)' }}>Удалить</button>
@@ -250,4 +342,9 @@ const btnGhost: React.CSSProperties = {
   border: '1px solid var(--surface3)', background: 'var(--surface2)',
   color: 'var(--text2)', fontWeight: 500, fontSize: 14,
   cursor: 'pointer', minHeight: 44, fontFamily: 'inherit',
+}
+const errBox: React.CSSProperties = {
+  background: 'rgba(217,83,74,.08)', border: '1px solid rgba(217,83,74,.25)',
+  borderRadius: 'var(--r-sm)', padding: '10px 12px',
+  color: 'var(--danger)', fontSize: 13,
 }

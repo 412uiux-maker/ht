@@ -1,4 +1,4 @@
-import type { VendorSession, Consultation, Message, Stats, MedicalReport } from './types'
+import type { VendorSession, VendorService, Consultation, Message, Stats, MedicalReport } from './types'
 import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -88,4 +88,24 @@ export const api = {
 
   getMe: () =>
     req<VendorSession>('/api/vendor/me', { headers: authHeaders() }),
+
+  services: () =>
+    req<VendorService[]>('/api/vendor/services', { headers: authHeaders() }),
+
+  createService: (data: Omit<VendorService, 'id' | 'vet_id' | 'sort_order' | 'created_at'>) =>
+    req<VendorService>('/api/vendor/services', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify(data),
+    }),
+
+  updateService: (id: number, data: Partial<Omit<VendorService, 'id' | 'vet_id' | 'created_at'>>) =>
+    req<VendorService>(`/api/vendor/services/${id}`, {
+      method: 'PATCH', headers: authHeaders(),
+      body: JSON.stringify(data),
+    }),
+
+  deleteService: (id: number) =>
+    req<{ ok: boolean }>(`/api/vendor/services/${id}`, {
+      method: 'DELETE', headers: authHeaders(),
+    }),
 }

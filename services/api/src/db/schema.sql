@@ -161,6 +161,24 @@ CREATE TABLE IF NOT EXISTS vendor_verification (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS vendor_services (
+  id           SERIAL PRIMARY KEY,
+  vet_id       INTEGER REFERENCES vets(id) ON DELETE CASCADE,
+  title_ru     TEXT NOT NULL,
+  title_uz     TEXT NOT NULL DEFAULT '',
+  category     TEXT NOT NULL DEFAULT 'vet_online'
+               CHECK (category IN ('vet_online','vet_offline','vaccination','surgery','grooming','training','nutrition','other')),
+  description  TEXT NOT NULL DEFAULT '',
+  price_uzs    INTEGER NOT NULL DEFAULT 0,
+  duration_min INTEGER NOT NULL DEFAULT 30,
+  format       TEXT NOT NULL DEFAULT 'online'
+               CHECK (format IN ('online','offline')),
+  is_active    BOOLEAN DEFAULT true,
+  sort_order   INTEGER DEFAULT 0,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS vendor_services_vet_idx ON vendor_services(vet_id);
+
 CREATE TABLE IF NOT EXISTS orders (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id     TEXT NOT NULL,

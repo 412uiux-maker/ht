@@ -498,6 +498,39 @@ async function initDb() {
     console.log('DB seeded: vendor_verification entries');
   }
 
+  const { rows: svr } = await pool.query('SELECT COUNT(*) FROM vendor_services');
+  if (svr[0].count === '0') {
+    // Seed services for the first 4 demo vets (by position)
+    const { rows: demoVets } = await pool.query('SELECT id FROM vets ORDER BY id LIMIT 4');
+    const SEED_SERVICES = [
+      // vet[0] — Азиз Каримов (терапевт)
+      { title_ru: 'Онлайн-консультация', title_uz: 'Online maslahat', category: 'vet_online', price_uzs: 120000, duration_min: 30, format: 'online',  is_active: true,  description: 'Видеоконсультация по любому вопросу здоровья вашего питомца' },
+      { title_ru: 'Повторная консультация', title_uz: 'Takroriy maslahat', category: 'vet_online', price_uzs: 70000, duration_min: 15, format: 'online', is_active: true,  description: 'Для пациентов на контроле — уточнение лечения' },
+      // vet[1] — Малика Юсупова (хирург)
+      { title_ru: 'Онлайн-консультация хирурга', title_uz: "Jarroh maslahat'i", category: 'vet_online', price_uzs: 150000, duration_min: 30, format: 'online',  is_active: true,  description: 'Оценка необходимости операции, разбор снимков' },
+      { title_ru: 'Стерилизация (кошка)', title_uz: "Mushuk sterilizatsiyasi", category: 'surgery', price_uzs: 350000, duration_min: 60, format: 'offline', is_active: true,  description: 'Плановая стерилизация в клинике, включая анестезию' },
+      { title_ru: 'Кастрация (кот)', title_uz: "Mushuk kastratsiyasi", category: 'surgery', price_uzs: 220000, duration_min: 45, format: 'offline', is_active: true,  description: '' },
+      // vet[2] — Санжар Назаров (дерматолог)
+      { title_ru: 'Онлайн-консультация дерматолога', title_uz: "Dermatolog maslahat'i", category: 'vet_online', price_uzs: 100000, duration_min: 30, format: 'online',  is_active: true,  description: 'Диагностика кожных заболеваний и аллергий по фото' },
+      { title_ru: 'Разработка диеты при аллергии', title_uz: "Allergiya uchun parhez", category: 'nutrition', price_uzs: 80000, duration_min: 20, format: 'online',  is_active: true,  description: 'Подбор гипоаллергенного рациона для чувствительных животных' },
+      // vet[3] — Дилноза Рашидова (педиатрия)
+      { title_ru: 'Вакцинация (комплексная)', title_uz: "Kompleks emlash", category: 'vaccination', price_uzs: 90000, duration_min: 20, format: 'offline', is_active: true,  description: 'Комплекс прививок для щенков и котят, включая бешенство' },
+      { title_ru: 'Онлайн-консультация педиатра', title_uz: "Pediatr maslahat'i", category: 'vet_online', price_uzs: 90000, duration_min: 30, format: 'online',  is_active: true,  description: 'Вопросы роста, питания и здоровья молодых животных' },
+    ];
+    const vetAssign = [0,0, 1,1,1, 2,2, 3,3]; // index into demoVets per service
+    for (let i = 0; i < SEED_SERVICES.length; i++) {
+      const vet = demoVets[vetAssign[i]];
+      if (!vet) continue;
+      const s = SEED_SERVICES[i];
+      await pool.query(
+        `INSERT INTO vendor_services (vet_id, title_ru, title_uz, category, price_uzs, duration_min, format, is_active, description, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+        [vet.id, s.title_ru, s.title_uz, s.category, s.price_uzs, s.duration_min, s.format, s.is_active, s.description, i]
+      );
+    }
+    console.log('DB seeded:', SEED_SERVICES.length, 'vendor services');
+  }
+
   const { rows: or } = await pool.query('SELECT COUNT(*) FROM orders');
   if (or[0].count === '0') {
     const { rows: vetRows } = await pool.query('SELECT id, price_uzs FROM vets LIMIT 4');
