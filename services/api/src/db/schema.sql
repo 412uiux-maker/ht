@@ -207,6 +207,8 @@ CREATE TABLE IF NOT EXISTS foods (
 
 -- M3: telegram_id for vendor push notifications
 ALTER TABLE vendor_credentials ADD COLUMN IF NOT EXISTS telegram_id BIGINT UNIQUE;
+-- Vendor onboarding: email is optional (phone-first registration)
+ALTER TABLE vendor_credentials ALTER COLUMN email DROP NOT NULL;
 
 -- Telegram Mini App users (M3)
 CREATE TABLE IF NOT EXISTS users (
