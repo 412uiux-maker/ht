@@ -3,8 +3,19 @@ const https = require('https')
 const http = require('http')
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const MINI_APP_URL = process.env.MINI_APP_URL || 'https://t.me/HappyTailsUzBot/app'
+// MINI_APP_URL: direct HTTPS URL for web_app buttons (requires domain registered in BotFather)
+// If not set or is a t.me link, we fall back to a plain URL button
+const MINI_APP_URL = process.env.MINI_APP_URL || ''
 const API_BASE = process.env.API_BASE_URL || 'http://localhost:8080'
+
+// web_app buttons need a registered HTTPS domain; t.me links are not valid here
+const isWebAppUrl = (url) => url && url.startsWith('https://') && !url.includes('t.me')
+
+function appButton(label, url) {
+  return isWebAppUrl(url)
+    ? Markup.button.webApp(label, url)
+    : Markup.button.url(label, url || 'https://t.me/HappyTailsTetrisBot')
+}
 
 if (!BOT_TOKEN) {
   console.error('[bot] TELEGRAM_BOT_TOKEN is required')
@@ -74,7 +85,7 @@ bot.action(/^lang:(ru|uz)$/, async (ctx) => {
   await ctx.editMessageText(t.welcome(name), {
     parse_mode: 'HTML',
     ...Markup.inlineKeyboard([
-      [Markup.button.webApp(t.open_app, MINI_APP_URL)],
+      [appButton(t.open_app, MINI_APP_URL)],
       [
         Markup.button.callback(t.my_orders, 'open:orders'),
         Markup.button.callback(t.deeds, 'open:deeds'),
@@ -88,10 +99,10 @@ bot.action(/^lang:(ru|uz)$/, async (ctx) => {
 bot.action(/^open:(.+)$/, async (ctx) => {
   const section = ctx.match[1]
   const t = T[getLang(ctx)]
-  const url = `${MINI_APP_URL}?tab=${section}`
+  const url = MINI_APP_URL ? `${MINI_APP_URL}?tab=${section}` : MINI_APP_URL
   await ctx.answerCbQuery()
   await ctx.reply('👇', Markup.inlineKeyboard([
-    [Markup.button.webApp(t.open_app, url)],
+    [appButton(t.open_app, url)],
   ]))
 })
 
@@ -168,6 +179,11 @@ function botApiCall(method, path, body) {
     req.end()
   })
 }
+
+// ── Global error handler — prevents unhandled errors from crashing the bot ───
+bot.catch((err, ctx) => {
+  console.error('[bot] Error for', ctx?.updateType, err?.message || err)
+})
 
 // ── Launch ───────────────────────────────────────────────────────────────────
 bot.launch()
