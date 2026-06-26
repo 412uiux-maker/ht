@@ -11,6 +11,21 @@ export type VendorSession = {
   verification_status?: 'pending' | 'verified' | 'rejected'
 }
 
+export type VendorService = {
+  id: number
+  vet_id: number
+  title_ru: string
+  title_uz: string
+  category: string
+  description: string
+  price_uzs: number
+  duration_min: number
+  format: 'online' | 'offline'
+  is_active: boolean
+  sort_order: number
+  created_at: string
+}
+
 export type ConsultStatus = 'pending' | 'active' | 'completed'
 
 export type Medication = {

@@ -159,6 +159,66 @@ router.get('/stats', requireVendor, async (req, res) => {
   }
 });
 
+// ── Vendor Services CRUD ─────────────────────────────────────────────────────
+
+// GET /api/vendor/services  (protected)
+router.get('/services', requireVendor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM vendor_services WHERE vet_id=$1 ORDER BY sort_order, id',
+      [req.vendor.vet_id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/vendor/services  (protected)
+router.post('/services', requireVendor, async (req, res) => {
+  const { title_ru, title_uz, category, description, price_uzs, duration_min, format, is_active } = req.body;
+  if (!title_ru) return res.status(400).json({ error: 'title_ru required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `INSERT INTO vendor_services (vet_id, title_ru, title_uz, category, description, price_uzs, duration_min, format, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [req.vendor.vet_id, title_ru, title_uz || '', category || 'vet_online',
+       description || '', Number(price_uzs) || 0, Number(duration_min) || 30,
+       format || 'online', is_active !== false]
+    );
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/vendor/services/:id  (protected)
+router.patch('/services/:id', requireVendor, async (req, res) => {
+  const { title_ru, title_uz, category, description, price_uzs, duration_min, format, is_active } = req.body;
+  if (!title_ru) return res.status(400).json({ error: 'title_ru required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE vendor_services
+       SET title_ru=$1, title_uz=$2, category=$3, description=$4,
+           price_uzs=$5, duration_min=$6, format=$7, is_active=$8
+       WHERE id=$9 AND vet_id=$10 RETURNING *`,
+      [title_ru, title_uz || '', category || 'vet_online', description || '',
+       Number(price_uzs) || 0, Number(duration_min) || 30, format || 'online', is_active !== false,
+       req.params.id, req.vendor.vet_id]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/vendor/services/:id  (protected)
+router.delete('/services/:id', requireVendor, async (req, res) => {
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM vendor_services WHERE id=$1 AND vet_id=$2',
+      [req.params.id, req.vendor.vet_id]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'Not found' });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/vendor/register  { name, specialty, phone, password, bio?, email?, price_uzs?, experience_yr?, avatar_emoji? }
 router.post('/register', async (req, res) => {
   const { name, specialty, phone, password, bio, email, price_uzs, experience_yr, avatar_emoji } = req.body;
