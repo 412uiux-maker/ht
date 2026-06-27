@@ -3,6 +3,13 @@ const BASE = '/api'
 export const getJwt = () => localStorage.getItem('ht_jwt')
 export const setJwt = (token: string) => localStorage.setItem('ht_jwt', token)
 
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 export type Vet = {
   id: number
   name: string
@@ -100,7 +107,10 @@ const req = async <T>(path: string, opts?: RequestInit): Promise<T> => {
     },
     ...opts,
   })
-  if (!r.ok) throw new Error(r.statusText)
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}))
+    throw new ApiError(r.status, body.error || r.statusText)
+  }
   return r.json()
 }
 
@@ -267,6 +277,20 @@ export const api = {
     req<Pet>(`/pets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deletePet: (id: string) => req<{ ok: boolean }>(`/pets/${id}`, { method: 'DELETE' }),
   orders: (ownerId: string) => req<Order[]>(`/orders?owner_id=${encodeURIComponent(ownerId)}`),
+
+  getOrder: (orderId: string) => req<Order>(`/orders/${orderId}`),
+
+  createOrder: (consultation_id: string, owner_id: string) =>
+    req<Order>('/orders', {
+      method: 'POST',
+      body: JSON.stringify({ consultation_id, owner_id }),
+    }),
+
+  checkout: (order_id: string, provider: string) =>
+    req<{ payment_id: string; checkout_url: string; amount_uzs: number; provider: string }>('/payments/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ order_id, provider }),
+    }),
 
   places: () => req<ApiPlace[]>('/places'),
 

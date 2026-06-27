@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { Vet, Consultation } from './api'
 import { api, setJwt, getJwt } from './api'
 import { setLang } from './i18n'
+import { WebApp } from './twa'
 import BottomNav, { type Tab } from './components/BottomNav'
 import Onboarding from './screens/Onboarding'
 import Dashboard from './screens/Dashboard'
@@ -63,6 +64,12 @@ function devInitialTab(): Tab {
 }
 
 export default function App() {
+  // SDK init — ready + expand run once, before auth
+  useEffect(() => {
+    WebApp.ready()
+    WebApp.expand()
+  }, [])
+
   // Telegram initData auth — runs once on mount when inside Telegram
   const [tgAuthDone, setTgAuthDone] = useState(() => {
     if (getJwt()) return true
@@ -101,6 +108,25 @@ export default function App() {
 
   const startFlow = (f: Flow) => setFlow(f)
   const endFlow = (returnTab?: Tab) => { setFlow(null); if (returnTab) setTab(returnTab) }
+
+  // Telegram BackButton — show/hide based on active flow
+  useEffect(() => {
+    if (!flow) {
+      WebApp.BackButton.hide()
+      return
+    }
+    const handleBack = () => {
+      if (flow.name === 'booking')          endFlow('consult')
+      else if (flow.name === 'payment')     startFlow({ name: 'booking', vet: flow.vet })
+      else if (flow.name === 'chat')        endFlow('consult')
+      else if (flow.name === 'insurance-checkout') startFlow({ name: 'insurance' })
+      else if (flow.name === 'insurance-success')  endFlow()
+      else                                  endFlow()
+    }
+    WebApp.BackButton.show()
+    WebApp.BackButton.onClick(handleBack)
+    return () => { WebApp.BackButton.offClick(handleBack) }
+  }, [flow])
 
   // ─── Wait for Telegram auth ──────────────────────────────────────────────────
   if (!tgAuthDone) return (

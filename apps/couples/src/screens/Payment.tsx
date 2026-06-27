@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { IconArrowLeft, IconCheckCircle, IconShield, IconCheck } from '@ht/shared'
 import type { Vet, Consultation, PaymentResult, PromoResult } from '../api'
-import { api } from '../api'
+import { api, ApiError, getOwnerId } from '../api'
 import { t } from '../i18n'
+import { WebApp } from '../twa'
 
 interface Props {
   lang: string
@@ -40,7 +41,7 @@ const SPECIES_EMOJI: Record<string, string> = {
   cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾',
 }
 
-type PayState = 'select' | 'processing' | 'success'
+type PayState = 'select' | 'processing' | 'checkout' | 'success'
 
 function calcFinal(base: number, promo: PromoResult | null): number {
   if (!promo) return base
@@ -54,6 +55,9 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
   const [state, setState] = useState<PayState>('select')
   const [result, setResult] = useState<PaymentResult | null>(null)
   const [err, setErr] = useState('')
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [promoInput, setPromoInput] = useState('')
   const [promo, setPromo] = useState<PromoResult | null>(null)
@@ -63,6 +67,41 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
   const baseAmount = vet.price_uzs
   const finalAmount = calcFinal(baseAmount, promo)
   const selectedProvider = PROVIDERS.find((p) => p.id === provider)!
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current) }, [])
+
+  const openPaymentUrl = (url: string) => WebApp.openLink(url)
+
+  const handlePaid = (oId: string, amountUzs: number) => {
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
+    if (promo) { api.usePromo(promo.code).catch(() => {}) }
+    setResult({
+      success: true,
+      order_id: oId,
+      ref: `ORDER-${oId.slice(0, 8).toUpperCase()}`,
+      amount_uzs: amountUzs,
+      provider,
+    })
+    setState('success')
+  }
+
+  const startPolling = (oId: string) => {
+    if (pollRef.current) clearInterval(pollRef.current)
+    pollRef.current = setInterval(async () => {
+      try {
+        const order = await api.getOrder(oId)
+        if (order.status === 'paid') handlePaid(oId, order.price_uzs || finalAmount)
+      } catch { /* ignore poll errors */ }
+    }, 3000)
+  }
+
+  const checkPayment = async () => {
+    if (!orderId) return
+    try {
+      const order = await api.getOrder(orderId)
+      if (order.status === 'paid') handlePaid(orderId, order.price_uzs || finalAmount)
+    } catch { /* ignore */ }
+  }
 
   const applyPromo = async () => {
     const code = promoInput.trim().toUpperCase()
@@ -81,13 +120,34 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
     setState('processing')
     setErr('')
     try {
-      const [res] = await Promise.all([
-        api.simulatePayment(consultation.id, provider, finalAmount),
-        new Promise((r) => setTimeout(r, 1500)),
-      ])
-      if (promo) { api.usePromo(promo.code).catch(() => {}) }
-      setResult(res)
-      setState('success')
+      const ownerId = getOwnerId()
+      const order = await api.createOrder(consultation.id, ownerId)
+
+      let url: string | null = null
+      try {
+        const co = await api.checkout(order.id, provider)
+        url = co.checkout_url
+      } catch (e) {
+        // 503 means provider not configured (dev environment) → fall through to simulate
+        if (!(e instanceof ApiError && e.status === 503)) throw e
+      }
+
+      if (url) {
+        setOrderId(order.id)
+        setCheckoutUrl(url)
+        openPaymentUrl(url)
+        setState('checkout')
+        startPolling(order.id)
+      } else {
+        // Dev fallback: simulate using the already-created order
+        const [res] = await Promise.all([
+          api.simulatePayment(consultation.id, provider, finalAmount),
+          new Promise((r) => setTimeout(r, 1500)),
+        ])
+        if (promo) { api.usePromo(promo.code).catch(() => {}) }
+        setResult(res)
+        setState('success')
+      }
     } catch {
       setState('select')
       setErr(t('error'))
@@ -117,6 +177,71 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
           <div style={{ color: 'var(--text-muted)', fontSize: 14 }}>
             {t('pay.processing_sub')}
           </div>
+        </div>
+      )}
+
+      {/* Checkout awaiting screen */}
+      {state === 'checkout' && (
+        <div style={{
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          flex: 1, padding: '48px 24px', textAlign: 'center', minHeight: '100vh',
+        }}>
+          <div style={{
+            width: 88, height: 48, borderRadius: 12,
+            background: selectedProvider.color,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800, fontSize: 15, letterSpacing: '0.04em',
+            marginBottom: 32,
+          }}>
+            {selectedProvider.name.toUpperCase()}
+          </div>
+
+          <div style={{
+            width: 52, height: 52, borderRadius: '50%',
+            border: `3px solid ${selectedProvider.color}`,
+            borderTopColor: 'transparent',
+            animation: 'spin 1s linear infinite',
+            marginBottom: 24,
+          }} />
+
+          <div style={{ fontWeight: 700, fontSize: 21, marginBottom: 10, lineHeight: 1.2 }}>
+            {t('pay.awaiting')}
+          </div>
+          <div style={{
+            color: 'var(--text-muted)', fontSize: 14, lineHeight: 1.6,
+            maxWidth: 290, marginBottom: 40,
+          }}>
+            {t('pay.awaiting_sub')}
+          </div>
+
+          <button
+            onClick={checkPayment}
+            style={{
+              width: '100%', maxWidth: 320, padding: '16px',
+              borderRadius: 'var(--r-pill)',
+              background: selectedProvider.color, color: '#fff',
+              border: 'none', fontWeight: 700, fontSize: 16, minHeight: 54,
+              fontFamily: 'inherit', cursor: 'pointer', marginBottom: 12,
+            }}
+          >
+            {t('pay.ive_paid')}
+          </button>
+
+          {checkoutUrl && (
+            <button
+              onClick={() => openPaymentUrl(checkoutUrl)}
+              style={{
+                width: '100%', maxWidth: 320, padding: '13px',
+                borderRadius: 'var(--r-pill)',
+                background: 'transparent', color: 'var(--text-muted)',
+                border: '1.5px solid var(--border)', fontWeight: 500, fontSize: 14, minHeight: 46,
+                fontFamily: 'inherit', cursor: 'pointer',
+              }}
+            >
+              {t('pay.open_again')}
+            </button>
+          )}
         </div>
       )}
 
