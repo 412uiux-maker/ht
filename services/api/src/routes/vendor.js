@@ -317,4 +317,38 @@ router.post('/slots/toggle', requireVendor, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/vendor/finance  (protected)
+router.get('/finance', requireVendor, async (req, res) => {
+  try {
+    const vet_id = req.vendor.vet_id;
+    const { rows: orders } = await pool.query(
+      `SELECT o.id, o.status, o.price_uzs, o.payout_amount, o.commission_rate, o.created_at, o.owner_id
+       FROM orders o
+       WHERE o.vet_id = $1
+       ORDER BY o.created_at DESC
+       LIMIT 100`,
+      [vet_id]
+    );
+    const payout = o => o.payout_amount || Math.round((o.price_uzs || 0) * (1 - (o.commission_rate || 0.15)));
+    const done = orders.filter(o => ['completed', 'reviewed'].includes(o.status));
+    const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+    const thisMonth = done.filter(o => new Date(o.created_at) >= monthStart);
+    const balance = done.reduce((s, o) => s + payout(o), 0);
+    const monthTotal = thisMonth.reduce((s, o) => s + payout(o), 0);
+    res.json({
+      balance,
+      pending: monthTotal,
+      month_total: monthTotal,
+      transactions: orders.map(o => ({
+        id: o.id,
+        date: new Date(o.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        status: o.status,
+        type: ['cancelled', 'refunded'].includes(o.status) ? 'refund' : 'consult',
+        client: o.owner_id,
+        amount: ['cancelled', 'refunded'].includes(o.status) ? -(o.price_uzs || 0) : payout(o),
+      })),
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

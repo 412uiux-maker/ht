@@ -116,6 +116,19 @@ export interface GoodDeed {
   created_at: string
 }
 
+export type AppUserRole = 'owner' | 'vendor' | 'admin' | 'moderator' | 'support'
+
+export interface AppUser {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  role: AppUserRole
+  created_at: string
+  is_blocked: boolean
+  orders_count: number
+}
+
 export interface PromoCode {
   id: number
   code: string

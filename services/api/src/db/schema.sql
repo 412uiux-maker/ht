@@ -238,6 +238,7 @@ CREATE TABLE IF NOT EXISTS users (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS users_telegram_idx ON users(telegram_id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT false;
 
 -- IDOR ownership tracking for consultations
 ALTER TABLE consultations ADD COLUMN IF NOT EXISTS owner_id TEXT;

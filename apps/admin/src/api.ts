@@ -1,4 +1,4 @@
-import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed } from './types'
+import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser } from './types'
 
 let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
@@ -107,4 +107,22 @@ export const adminApi = {
 
   deleteDeed: (id: number) =>
     req<{ ok: boolean }>(`/deeds/${id}`, { method: 'DELETE' }),
+
+  getUsers: (params?: { q?: string; role?: string; page?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.q)    qs.set('q', params.q)
+    if (params?.role) qs.set('role', params.role)
+    if (params?.page) qs.set('page', String(params.page))
+    return req<{ users: AppUser[]; total: number }>(`/users?${qs}`)
+  },
+
+  blockUser: (id: string, blocked: boolean) =>
+    req<{ ok: boolean }>(`/users/${id}/block`, {
+      method: 'POST', body: JSON.stringify({ blocked }),
+    }),
+
+  changeUserRole: (id: string, role: string) =>
+    req<{ ok: boolean }>(`/users/${id}/role`, {
+      method: 'POST', body: JSON.stringify({ role }),
+    }),
 }

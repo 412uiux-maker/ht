@@ -406,4 +406,107 @@ router.delete('/content/:id', requireAdmin('admin', 'moderator'), async (req, re
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── USERS ───────────────────────────────────────────────────────────────────
+
+// GET /api/admin/users?q=&role=&page=
+router.get('/users', requireAdmin('admin', 'moderator', 'support'), async (req, res) => {
+  const { q, role, page = 1 } = req.query;
+  const limit = 50;
+  const offset = (Number(page) - 1) * limit;
+  try {
+    const [{ rows: owners }, { rows: vendors }, { rows: admins }] = await Promise.all([
+      pool.query(
+        `SELECT u.id::text AS id, COALESCE(u.name,'—') AS name, null::text AS email, null::text AS phone,
+                'owner' AS role, u.created_at, u.is_blocked,
+                COUNT(DISTINCT o.id)::int AS orders_count
+         FROM users u
+         LEFT JOIN orders o ON o.owner_id = u.id::text
+         GROUP BY u.id, u.name, u.created_at, u.is_blocked`
+      ),
+      pool.query(
+        `SELECT v.id::text AS id, v.name, vc.email, vc.phone,
+                'vendor' AS role, v.created_at, (NOT v.is_available) AS is_blocked,
+                COUNT(DISTINCT o.id)::int AS orders_count
+         FROM vets v
+         LEFT JOIN vendor_credentials vc ON vc.vet_id = v.id
+         LEFT JOIN orders o ON o.vet_id = v.id
+         GROUP BY v.id, v.name, vc.email, vc.phone, v.created_at, v.is_available`
+      ),
+      pool.query(
+        `SELECT id::text AS id, name, email, null::text AS phone,
+                role, created_at, (NOT is_active) AS is_blocked, 0 AS orders_count
+         FROM admin_users`
+      ),
+    ]);
+
+    let all = [...owners, ...vendors, ...admins]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    if (role && role !== 'all') all = all.filter(u => u.role === role);
+    if (q) {
+      const lq = String(q).toLowerCase();
+      all = all.filter(u =>
+        (u.name || '').toLowerCase().includes(lq) ||
+        (u.email || '').toLowerCase().includes(lq) ||
+        (u.phone || '').includes(q)
+      );
+    }
+
+    const total = all.length;
+    res.json({ users: all.slice(offset, offset + limit), total });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/users/:id/block  { blocked: boolean }
+router.post('/users/:id/block', requireAdmin('admin'), async (req, res) => {
+  const { blocked } = req.body;
+  const id = req.params.id;
+  try {
+    const { rowCount: u } = await pool.query(
+      'UPDATE users SET is_blocked=$1 WHERE id::text=$2',
+      [Boolean(blocked), id]
+    );
+    if (u) {
+      await writeAudit(req.adminUser.id, req.adminUser.role,
+        blocked ? 'user.block' : 'user.unblock', 'user', id, {});
+      return res.json({ ok: true });
+    }
+    const { rowCount: v } = await pool.query(
+      'UPDATE vets SET is_available=$1 WHERE id::text=$2',
+      [!Boolean(blocked), id]
+    );
+    if (v) {
+      await writeAudit(req.adminUser.id, req.adminUser.role,
+        blocked ? 'user.block' : 'user.unblock', 'vendor', id, {});
+      return res.json({ ok: true });
+    }
+    const { rowCount: a } = await pool.query(
+      'UPDATE admin_users SET is_active=$1 WHERE id::text=$2',
+      [!Boolean(blocked), id]
+    );
+    if (a) {
+      await writeAudit(req.adminUser.id, req.adminUser.role,
+        blocked ? 'user.block' : 'user.unblock', 'admin_user', id, {});
+      return res.json({ ok: true });
+    }
+    res.status(404).json({ error: 'User not found' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/users/:id/role  { role }
+router.post('/users/:id/role', requireAdmin('admin'), async (req, res) => {
+  const { role } = req.body;
+  if (!['moderator', 'support', 'admin'].includes(role))
+    return res.status(400).json({ error: 'Invalid role for admin user' });
+  try {
+    const { rowCount } = await pool.query(
+      'UPDATE admin_users SET role=$1 WHERE id::text=$2',
+      [role, req.params.id]
+    );
+    if (!rowCount) return res.status(404).json({ error: 'Admin user not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'user.role_change', 'admin_user', req.params.id, { role });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

@@ -1,4 +1,4 @@
-import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport } from './types'
+import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData } from './types'
 import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -116,4 +116,7 @@ export const api = {
     req<{ action: 'added' | 'removed'; slot_at: string }>('/api/vendor/slots/toggle', {
       method: 'POST', headers: authHeaders(), body: JSON.stringify({ slot_at }),
     }),
+
+  financeHistory: () =>
+    req<FinanceData>('/api/vendor/finance', { headers: authHeaders() }),
 }

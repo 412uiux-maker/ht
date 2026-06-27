@@ -84,6 +84,22 @@ export type Stats = {
   rating: number
 }
 
+export type FinanceTx = {
+  id: string
+  date: string
+  type: 'consult' | 'refund'
+  client: string
+  amount: number
+  status: string
+}
+
+export type FinanceData = {
+  balance: number
+  pending: number
+  month_total: number
+  transactions: FinanceTx[]
+}
+
 const VENDOR_KEY = 'ht_vendor'
 export const getSession = (): VendorSession | null => {
   const s = localStorage.getItem(VENDOR_KEY)
