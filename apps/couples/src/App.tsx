@@ -22,6 +22,7 @@ import ClinicServicePicker, { type ClinicService } from './screens/ClinicService
 import ClinicList, { type Clinic } from './screens/ClinicList'
 import ClinicDetail from './screens/ClinicDetail'
 import Places from './screens/Places'
+import SymptomChecker from './screens/SymptomChecker'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
@@ -38,6 +39,7 @@ type Flow =
   | { name: 'clinic-detail'; clinic: Clinic; service: ClinicService }
   | { name: 'places' }
   | { name: 'deeds' }
+  | { name: 'symptoms' }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -236,6 +238,16 @@ export default function App() {
         <Deeds lang={lang} onBack={() => endFlow('home')} />
       </Wrap>
     )
+
+    if (flow.name === 'symptoms') return (
+      <Wrap>
+        <SymptomChecker
+          lang={lang}
+          onBookVet={() => endFlow('consult')}
+          onBack={() => endFlow('home')}
+        />
+      </Wrap>
+    )
   }
 
   // ─── Tab screens (with bottom nav) ──────────────────────────────────────────
@@ -251,6 +263,7 @@ export default function App() {
           onClinics={() => startFlow({ name: 'clinic-services' })}
           onPlaces={() => startFlow({ name: 'places' })}
           onDeeds={() => startFlow({ name: 'deeds' })}
+          onSymptoms={() => startFlow({ name: 'symptoms' })}
         />
       )}
       {tab === 'consult' && (

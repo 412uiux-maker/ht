@@ -385,6 +385,17 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
               </div>
             )}
 
+            {/* Trust signal */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '8px 12px', borderRadius: 'var(--r-md)',
+              background: '#F0FDF4', border: '1px solid #BBF7D0',
+              fontSize: 12, color: '#166534', fontWeight: 600,
+            }}>
+              <span>🔒</span>
+              <span>{t('pay.trust')}</span>
+            </div>
+
             {/* Pay button */}
             <button
               onClick={pay}
