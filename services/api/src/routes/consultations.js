@@ -63,6 +63,14 @@ router.post('/:id/messages', async (req, res) => {
         [req.params.id]
       );
     }
+    // Vet's first message advances order: accepted → in_progress
+    if (sender === 'vet') {
+      await pool.query(
+        `UPDATE orders SET status = 'in_progress'
+         WHERE consultation_id = $1 AND status = 'accepted'`,
+        [req.params.id]
+      );
+    }
     const { rows: [msg] } = await pool.query(
       `INSERT INTO messages (consultation_id, sender, text) VALUES ($1,$2,$3) RETURNING *`,
       [req.params.id, sender, text]
@@ -86,14 +94,17 @@ router.patch('/:id/status', async (req, res) => {
     );
     if (!consult) return res.status(404).json({ error: 'Not found' });
 
-    // Sync linked order when consultation completes
-    if (status === 'completed') {
+    // Sync linked order on status changes
+    if (status === 'active' || status === 'completed') {
       const { rows: [order] } = await pool.query(
         `SELECT id, status, price_uzs, commission_rate FROM orders
          WHERE consultation_id = $1 ORDER BY created_at DESC LIMIT 1`,
         [req.params.id]
       );
-      if (order && ['paid', 'accepted', 'in_progress'].includes(order.status)) {
+      if (status === 'active' && order && order.status === 'paid') {
+        await pool.query(`UPDATE orders SET status='accepted' WHERE id=$1`, [order.id]);
+      }
+      if (status === 'completed' && order && ['paid', 'accepted', 'in_progress'].includes(order.status)) {
         const rate = parseFloat(order.commission_rate ?? 0.15);
         const payout = Math.floor((order.price_uzs ?? 0) * (1 - rate));
         await pool.query(

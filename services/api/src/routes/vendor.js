@@ -269,6 +269,7 @@ router.get('/me', requireVendor, async (req, res) => {
     const { rows: [row] } = await pool.query(
       `SELECT v.id AS vet_id, v.name, v.specialty, v.bio, v.price_uzs, v.rating,
               v.avatar_emoji, v.experience_yr, vc.email, vc.phone,
+              (vc.telegram_id IS NOT NULL) AS has_telegram,
               COALESCE(vv.status, 'verified') AS verification_status
        FROM vets v
        JOIN vendor_credentials vc ON vc.vet_id = v.id

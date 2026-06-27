@@ -94,6 +94,12 @@ export const api = {
       method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data),
     }),
 
+  linkTelegram: (telegram_id: number) =>
+    req<{ ok: boolean }>('/api/vendor/link-telegram', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ telegram_id }),
+    }),
+
   services: () =>
     req<VendorService[]>('/api/vendor/services', { headers: authHeaders() }),
 

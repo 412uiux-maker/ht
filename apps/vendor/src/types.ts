@@ -9,6 +9,7 @@ export type VendorSession = {
   experience_yr: number
   token: string
   verification_status?: 'pending' | 'verified' | 'rejected'
+  has_telegram?: boolean
 }
 
 export type VendorService = {

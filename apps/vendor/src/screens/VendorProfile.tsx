@@ -27,10 +27,29 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [stats, setStats] = useState<Stats | null>(null)
+  const [tgId, setTgId] = useState('')
+  const [tgLinking, setTgLinking] = useState(false)
+  const [tgLinked, setTgLinked] = useState(session.has_telegram ?? false)
+  const [tgError, setTgError] = useState('')
 
   useEffect(() => {
     api.stats(session.vet_id).then(setStats).catch(() => {})
   }, [session.vet_id])
+
+  const linkTelegram = async () => {
+    const id = parseInt(tgId.replace(/\D/g, ''), 10)
+    if (!id) { setTgError('Введите числовой Telegram ID'); return }
+    setTgLinking(true); setTgError('')
+    try {
+      await api.linkTelegram(id)
+      setTgLinked(true); setTgId('')
+      setTimeout(() => setTgLinked(false), 3000)
+    } catch (e) {
+      setTgError((e as Error).message)
+    } finally {
+      setTgLinking(false)
+    }
+  }
 
   const openEdit = () => { setDraft({ ...session }); setEditing(true); setSaveError('') }
 
@@ -156,6 +175,71 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{s.label}</div>
           </div>
         ))}
+      </div>
+
+      {/* Telegram linking */}
+      <div style={{
+        background: 'var(--surface)', borderRadius: 'var(--r-md)',
+        border: '1px solid var(--surface3)', padding: '18px 20px', marginTop: 16,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+          <span style={{ fontSize: 22 }}>✈️</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Telegram-уведомления</div>
+            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+              Получайте заявки и принимайте их прямо в Telegram
+            </div>
+          </div>
+        </div>
+
+        {tgLinked ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{
+              flex: 1, padding: '10px 14px', borderRadius: 'var(--r-sm)',
+              background: 'rgba(76,175,125,.12)', color: 'var(--green)',
+              fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8,
+            }}>
+              <IconCheckCircle size={15} color="var(--green)" /> Telegram привязан
+            </div>
+            <button onClick={() => setTgLinked(false)} style={{ ...btnGhost, padding: '0 14px', minHeight: 40, fontSize: 12 }}>
+              Изменить
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10, lineHeight: 1.5 }}>
+              Узнайте свой Telegram ID через{' '}
+              <b>@userinfobot</b> и вставьте его ниже.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input
+                style={{ ...inp, flex: 1 }}
+                type="text"
+                inputMode="numeric"
+                placeholder="Например: 123456789"
+                value={tgId}
+                onChange={e => setTgId(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && linkTelegram()}
+              />
+              <button
+                onClick={linkTelegram}
+                disabled={tgLinking || !tgId.trim()}
+                style={{ ...btnCoral, padding: '0 18px', minWidth: 'unset' }}
+              >
+                {tgLinking ? '…' : 'Привязать'}
+              </button>
+            </div>
+            {tgError && (
+              <div style={{
+                marginTop: 8, padding: '8px 12px', borderRadius: 'var(--r-sm)',
+                background: 'rgba(239,68,68,.10)', color: 'var(--danger)', fontSize: 12,
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <IconAlertCircle size={13} color="var(--danger)" /> {tgError}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Edit modal */}
