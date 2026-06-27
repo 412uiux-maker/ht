@@ -74,7 +74,7 @@ export interface ConsultationRow {
 
 export interface LearnItem {
   id: number
-  type: 'article' | 'guide' | 'checklist'
+  type: 'article' | 'guide' | 'checklist' | 'video' | 'course' | 'quiz'
   category: string
   title: string
   subtitle: string
@@ -86,6 +86,8 @@ export interface LearnItem {
   sort_order: number
   created_at: string
   views: number
+  level?: 'beginner' | 'intermediate' | 'advanced'
+  tags?: string[]
 }
 
 export interface Review {

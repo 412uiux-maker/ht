@@ -317,6 +317,38 @@ router.post('/slots/toggle', requireVendor, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/vendor/reviews  (protected)
+router.get('/reviews', requireVendor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT r.id, r.rating, r.text, r.reply, r.status, r.created_at,
+              COALESCE(c.client_name, r.owner_id) AS client_name,
+              COALESCE(c.pet_name, '') AS pet_name
+       FROM reviews r
+       LEFT JOIN orders o ON o.id = r.order_id
+       LEFT JOIN consultations c ON c.id = o.consultation_id::uuid
+       WHERE r.vet_id = $1 AND r.status = 'published'
+       ORDER BY r.created_at DESC`,
+      [req.vendor.vet_id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/vendor/reviews/:id/reply  { text }  (protected)
+router.post('/reviews/:id/reply', requireVendor, async (req, res) => {
+  const { text } = req.body;
+  if (!text?.trim()) return res.status(400).json({ error: 'reply text required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      'UPDATE reviews SET reply=$1 WHERE id=$2 AND vet_id=$3 RETURNING *',
+      [text.trim(), req.params.id, req.vendor.vet_id]
+    );
+    if (!row) return res.status(404).json({ error: 'Review not found' });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/vendor/finance  (protected)
 router.get('/finance', requireVendor, async (req, res) => {
   try {

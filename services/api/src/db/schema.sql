@@ -87,6 +87,12 @@ CREATE TABLE IF NOT EXISTS learn_progress (
 
 CREATE INDEX IF NOT EXISTS learn_progress_owner_idx ON learn_progress(owner_id);
 ALTER TABLE learn_items ADD COLUMN IF NOT EXISTS author TEXT DEFAULT 'Редакция';
+ALTER TABLE learn_items DROP CONSTRAINT IF EXISTS learn_items_type_check;
+ALTER TABLE learn_items ADD CONSTRAINT learn_items_type_check
+  CHECK (type IN ('article','guide','checklist','video','course','quiz'));
+ALTER TABLE learn_items ADD COLUMN IF NOT EXISTS level TEXT DEFAULT 'beginner'
+  CHECK (level IN ('beginner','intermediate','advanced'));
+ALTER TABLE learn_items ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
 
 CREATE TABLE IF NOT EXISTS vendor_credentials (
   id         SERIAL PRIMARY KEY,

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { IconArrowLeft, IconSearch, IconStarFilled, IconHeart, IconHeartFilled } from '@ht/shared'
 import { t, getLang } from '../i18n'
+import { api } from '../api'
+import type { Vet } from '../api'
 import type { ClinicService } from './ClinicServicePicker'
 
 export interface Clinic {
@@ -24,6 +26,37 @@ export interface Clinic {
   addressUz: string
   bio: string
   bioUz: string
+}
+
+const LOGO_PALETTE = ['#E53935', '#1565C0', '#2E7D32', '#6A1B9A', '#E65100', '#00838F', '#AD1457']
+
+export function vetToClinic(v: Vet): Clinic {
+  const words = v.name.trim().split(/\s+/)
+  const initials = words.length >= 2
+    ? (words[0][0] + words[1][0]).toUpperCase()
+    : v.name.slice(0, 2).toUpperCase()
+  return {
+    id: v.id,
+    name: v.name,
+    type: v.specialty,
+    typeUz: v.specialty,
+    logo_color: LOGO_PALETTE[v.id % LOGO_PALETTE.length],
+    logo_initials: initials,
+    rating: v.rating,
+    experience_yr: v.experience_yr,
+    consultations: 0,
+    price_uzs: v.price_uzs,
+    discount_uzs: 0,
+    hours: 'Онлайн-консультации',
+    hoursUz: 'Onlayn maslahatlar',
+    phone_masked: '',
+    phone_full: '',
+    schedule: [],
+    address: 'Онлайн',
+    addressUz: 'Onlayn',
+    bio: v.bio,
+    bioUz: v.bio,
+  }
 }
 
 export const MOCK_CLINICS: Clinic[] = [
@@ -165,10 +198,19 @@ interface Props {
 }
 
 export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
+  const [allClinics, setAllClinics] = useState<Clinic[]>(MOCK_CLINICS)
+  const [loading, setLoading] = useState(true)
   const [favorites, setFavorites] = useState<Set<number>>(new Set())
   const [showFavs, setShowFavs] = useState(false)
   const [sort, setSort] = useState<SortKey | null>(null)
   const lang = getLang()
+
+  useEffect(() => {
+    api.vets()
+      .then((vets: Vet[]) => setAllClinics(vets.map(vetToClinic)))
+      .catch(() => { /* keep MOCK_CLINICS on error */ })
+      .finally(() => setLoading(false))
+  }, [])
 
   const toggleFav = (id: number, e: React.MouseEvent) => {
     e.stopPropagation()
@@ -179,7 +221,7 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
     })
   }
 
-  let clinics = [...MOCK_CLINICS]
+  let clinics = [...allClinics]
   if (showFavs) clinics = clinics.filter(c => favorites.has(c.id))
   if (sort === 'rating') clinics.sort((a, b) => b.rating - a.rating)
   if (sort === 'price')  clinics.sort((a, b) => a.price_uzs - b.price_uzs)
@@ -265,14 +307,19 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
 
       {/* Clinic cards */}
       <div style={{ flex: 1, padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {clinics.length === 0 && (
+        {loading && (
+          <div style={{ textAlign: 'center', padding: '64px 24px', color: 'var(--text-muted)', fontSize: 14 }}>
+            Загрузка…
+          </div>
+        )}
+        {!loading && clinics.length === 0 && (
           <div style={{ textAlign: 'center', padding: '64px 24px', color: 'var(--text-muted)' }}>
             <div style={{ marginBottom: 12 }}><IconHeart size={40} color="var(--text-muted)" /></div>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>Нет избранных клиник</div>
+            <div style={{ fontWeight: 700, fontSize: 16 }}>{showFavs ? 'Нет избранных клиник' : 'Специалисты не найдены'}</div>
           </div>
         )}
 
-        {clinics.map(clinic => {
+        {!loading && clinics.map(clinic => {
           const isFav = favorites.has(clinic.id)
           return (
             <div
@@ -330,18 +377,18 @@ export default function ClinicList({ service, onBack, onSelectClinic }: Props) {
               <div style={{
                 display: 'flex', gap: 8, padding: '0 14px 14px',
               }}>
-                <a
-                  href={`tel:${clinic.phone_full}`}
+                <button
+                  onClick={() => onSelectClinic(clinic)}
                   style={{
                     flex: 1, padding: '11px', borderRadius: 'var(--r-md)',
-                    background: 'var(--surface-2)', border: '1px solid var(--border)',
+                    background: 'var(--primary)', border: 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontWeight: 600, fontSize: 14, color: 'var(--text)', textDecoration: 'none',
-                    minHeight: 44,
+                    fontWeight: 700, fontSize: 14, color: '#fff',
+                    minHeight: 44, cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
-                  {t('clinic.call')}
-                </a>
+                  {lang === 'uz' ? 'Yozilish →' : 'Записаться →'}
+                </button>
                 <button
                   onClick={e => toggleFav(clinic.id, e)}
                   aria-label={isFav ? 'Убрать из избранного' : 'В избранное'}

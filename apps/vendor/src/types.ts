@@ -84,6 +84,17 @@ export type Stats = {
   rating: number
 }
 
+export type VendorReview = {
+  id: number
+  rating: number
+  text: string | null
+  reply: string | null
+  status: string
+  created_at: string
+  client_name: string
+  pet_name: string
+}
+
 export type FinanceTx = {
   id: string
   date: string
