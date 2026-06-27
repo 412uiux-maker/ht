@@ -45,7 +45,7 @@ type Flow =
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
   avatar_emoji: '🐕', rating: 4.9, experience_yr: 8, price_uzs: 120000,
-  is_available: true, bio: '',
+  is_available: true, bio: '', review_count: 0,
 }
 
 function devInitialFlow(): Flow | null {
