@@ -26,11 +26,20 @@ function requireAdmin(...roles) {
 /**
  * Verifies Bearer JWT for vendor requests.
  * On success attaches req.vendor = { vet_id, email }.
+ * In development, falls back to ?vet_id= query param when no token is provided.
  */
 function requireVendor(req, res, next) {
   const header = req.headers['authorization'] ?? '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  if (!token) {
+    if (process.env.NODE_ENV !== 'production' && req.query.vet_id) {
+      req.vendor = { vet_id: parseInt(req.query.vet_id, 10), email: '' };
+      return next();
+    }
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const payload = jwt.verify(token, SECRET);
     if (payload.type !== 'vendor') return res.status(403).json({ error: 'Forbidden' });
