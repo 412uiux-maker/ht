@@ -147,6 +147,41 @@ export type Order = {
   vet_avatar: string | null
 }
 
+export type ApiPlace = {
+  id: string
+  type: 'park' | 'cafe' | 'shop' | 'grooming' | 'hotel'
+  nameRu: string
+  nameUz: string
+  addressRu: string
+  addressUz: string
+  descRu: string
+  descUz: string
+  emoji: string
+  color: string
+  rating: number
+  reviews: number
+  petsAllowed: string[]
+  workingHours: string
+  phone: string
+  tags: string[]
+}
+
+export type FoodResult = {
+  id: number
+  name: string
+  brand: string
+  species: string[]
+  life_stages: string[]
+  health_tags: string[] | null
+  price_uzs: number
+  budget_tier: string
+  avatar_emoji: string
+  description: string | null
+  rating: string
+  score: number
+  match: number
+}
+
 export type Deed = {
   id: number
   title: string
@@ -222,4 +257,12 @@ export const api = {
     req<Pet>(`/pets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deletePet: (id: string) => req<{ ok: boolean }>(`/pets/${id}`, { method: 'DELETE' }),
   orders: (ownerId: string) => req<Order[]>(`/orders?owner_id=${encodeURIComponent(ownerId)}`),
+
+  places: () => req<ApiPlace[]>('/places'),
+
+  foodsQuiz: (species: string, life_stage: string, health_tags: string[]) =>
+    req<FoodResult[]>('/foods/quiz', {
+      method: 'POST',
+      body: JSON.stringify({ species, life_stage, health_tags }),
+    }),
 }

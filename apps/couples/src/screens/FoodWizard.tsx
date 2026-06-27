@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { IconArrowLeft, IconPaw, IconOrders, IconStethoscope, IconFood, IconCheckCircle, IconCheck, IconMoney, IconPlus, IconRefresh } from '@ht/shared'
-import type { Pet } from '../api'
+import type { Pet, FoodResult } from '../api'
 import { api, getOwnerId } from '../api'
 import { t } from '../i18n'
 
@@ -24,71 +24,6 @@ const CONCERN_DATA: { k: Concern; icon: string; ru: string; uz: string }[] = [
   { k: 'joints',     icon: '🦴', ru: 'Проблемы с суставами',              uz: "Bo'g'im muammolari" },
   { k: 'dental',     icon: '🦷', ru: 'Зубной камень',                     uz: 'Tish toshi' },
 ]
-
-interface Product {
-  brand: string
-  name: string
-  desc: string
-  price: string
-  emoji: string
-  tags: string[]
-}
-
-const PRODUCTS: Product[] = [
-  // ── Cats ──────────────────────────────────────────────────────────────────
-  { brand: 'Royal Canin',        name: 'Kitten',                  emoji:'🐱', desc: 'Рост и иммунитет котят до 12 мес, DHA из рыбьего жира',         price: '75–105 тыс. сум / 2 кг',    tags: ['cat','baby'] },
-  { brand: 'Purina Pro Plan',    name: 'Kitten Healthy Start',    emoji:'🐱', desc: 'Высокий белок + DHA для развития мозга',                        price: '70–100 тыс. сум / 1.5 кг',  tags: ['cat','baby'] },
-  { brand: "Hill's Science Diet",name: 'Kitten',                  emoji:'🐱', desc: 'Оптимальный кальций и фосфор для здоровых костей',              price: '85–120 тыс. сум / 1.6 кг',  tags: ['cat','baby'] },
-  { brand: 'Royal Canin',        name: 'Indoor Adult',            emoji:'🐱', desc: 'Контроль веса и комков шерсти для домашних кошек',              price: '85–120 тыс. сум / 2 кг',    tags: ['cat','adult'] },
-  { brand: 'Purina Pro Plan',    name: 'Adult Chicken',           emoji:'🐱', desc: 'Настоящая курица на первом месте, богатый белком состав',        price: '75–110 тыс. сум / 1.5 кг',  tags: ['cat','adult'] },
-  { brand: 'Royal Canin',        name: 'Sterilised 37',           emoji:'🐱', desc: 'Контроль веса и МПС для стерилизованных кошек',                 price: '80–115 тыс. сум / 2 кг',    tags: ['cat','adult','steril','overweight'] },
-  { brand: "Hill's Science Diet",name: 'Perfect Weight',          emoji:'🐱', desc: 'L-карнитин, сниженные калории — помогает достичь нормы',        price: '95–135 тыс. сум / 1.5 кг',  tags: ['cat','adult','overweight','steril'] },
-  { brand: 'Purina Pro Plan',    name: 'Sensitive Skin & Stomach',emoji:'🐱', desc: 'Лосось + рис без пшеницы для чувствительных кошек',             price: '85–120 тыс. сум / 1.5 кг',  tags: ['cat','adult','allergy','digest'] },
-  { brand: 'Royal Canin',        name: 'Hypoallergenic',          emoji:'🐱', desc: 'Гидролизованный белок — минимальный риск аллергии',             price: '95–140 тыс. сум / 1.5 кг',  tags: ['cat','adult','allergy'] },
-  { brand: "Hill's Science Diet",name: 'Sensitive Stomach',       emoji:'🐱', desc: 'Пребиотики и легкоусваиваемые ингредиенты для ЖКТ',             price: '90–130 тыс. сум / 1.6 кг',  tags: ['cat','adult','digest','allergy'] },
-  { brand: 'Royal Canin',        name: 'Senior Consult Stage 1',  emoji:'🐱', desc: 'Глюкозамин + антиоксиданты для пожилых кошек от 7 лет',        price: '90–125 тыс. сум / 1.5 кг',  tags: ['cat','senior','joints'] },
-  { brand: 'Purina Pro Plan',    name: 'Senior 7+ Chicken',       emoji:'🐱', desc: 'Поддержка мышечной массы и иммунитета после 7 лет',             price: '80–115 тыс. сум / 1.5 кг',  tags: ['cat','senior'] },
-  { brand: "Hill's Science Diet",name: 'Senior 11+',              emoji:'🐱', desc: 'Клинически доказанное питание для очень пожилых кошек',         price: '90–130 тыс. сум / 1.5 кг',  tags: ['cat','senior'] },
-  // ── Dogs ──────────────────────────────────────────────────────────────────
-  { brand: 'Royal Canin',        name: 'Medium Puppy',            emoji:'🐶', desc: 'Иммунитет и рост щенков средних пород до 12 мес',              price: '85–125 тыс. сум / 1 кг',    tags: ['dog','baby'] },
-  { brand: 'Purina Pro Plan',    name: 'Puppy Large Breed',       emoji:'🐶', desc: 'DHA для мозга, контроль темпа роста крупных щенков',            price: '90–130 тыс. сум / 3 кг',    tags: ['dog','baby'] },
-  { brand: "Hill's Science Diet",name: 'Puppy Healthy Dev.',      emoji:'🐶', desc: 'Клинически доказанное питание, курица на первом месте',         price: '95–135 тыс. сум / 1.5 кг',  tags: ['dog','baby'] },
-  { brand: 'Royal Canin',        name: 'Medium Adult',            emoji:'🐶', desc: 'Оптимальный баланс нутриентов для средних пород',               price: '90–130 тыс. сум / 1 кг',    tags: ['dog','adult'] },
-  { brand: 'Purina Pro Plan',    name: 'Adult Chicken & Rice',    emoji:'🐶', desc: 'Высокое содержание курицы, легкоусваиваемый рис',               price: '85–125 тыс. сум / 3 кг',    tags: ['dog','adult'] },
-  { brand: 'Royal Canin',        name: 'Neutered Adult',          emoji:'🐶', desc: 'Контроль веса для стерилизованных и кастрированных собак',      price: '90–130 тыс. сум / 1.5 кг',  tags: ['dog','adult','steril','overweight'] },
-  { brand: "Hill's Science Diet",name: 'Perfect Weight Adult',    emoji:'🐶', desc: '96% собак достигли идеального веса за 10 недель',              price: '105–150 тыс. сум / 1.8 кг', tags: ['dog','adult','overweight'] },
-  { brand: 'Purina Pro Plan',    name: 'Sensitive Skin & Stomach',emoji:'🐶', desc: 'Лосось + рис без пшеницы и кукурузы',                          price: '90–130 тыс. сум / 3 кг',    tags: ['dog','adult','allergy'] },
-  { brand: 'Royal Canin',        name: 'Hypoallergenic',          emoji:'🐶', desc: 'Гидролизованный белок для собак с тяжёлой аллергией',           price: '110–160 тыс. сум / 2 кг',   tags: ['dog','adult','allergy'] },
-  { brand: "Hill's Science Diet",name: 'Sensitive Stomach',       emoji:'🐶', desc: 'Легкоусваиваемые ингредиенты и клетчатка для ЖКТ',             price: '100–145 тыс. сум / 1.8 кг', tags: ['dog','adult','digest'] },
-  { brand: 'Royal Canin',        name: 'Joint Care',              emoji:'🐶', desc: 'Глюкозамин и хондроитин для здоровья суставов',                price: '105–150 тыс. сум / 1.5 кг', tags: ['dog','adult','senior','joints'] },
-  { brand: 'Royal Canin',        name: 'Medium Ageing 10+',       emoji:'🐶', desc: 'Суставы, почки и мозговая активность для пожилых пород',        price: '95–140 тыс. сум / 1.5 кг',  tags: ['dog','senior','joints'] },
-  { brand: 'Purina Pro Plan',    name: 'Senior 7+ Chicken',       emoji:'🐶', desc: 'Высокий белок для мышечной массы у пожилых собак',              price: '90–130 тыс. сум / 3 кг',    tags: ['dog','senior'] },
-]
-
-function getRecs(species: string, ageGroup: AgeGroup, sterilized: string, concerns: Set<Concern>): Product[] {
-  const pool = PRODUCTS.filter(p => p.tags.includes(species))
-  if (!pool.length) return []
-
-  const scored = pool.map(p => {
-    if (!p.tags.includes(ageGroup)) return { p, score: -1 }
-    let score = 10
-    if (sterilized === 'yes' && p.tags.includes('steril')) score += 5
-    concerns.forEach(c => { if (p.tags.includes(c)) score += 8 })
-    return { p, score }
-  }).filter(x => x.score >= 0).sort((a, b) => b.score - a.score)
-
-  // one per brand, then fill to 3
-  const seen = new Set<string>()
-  const result: Product[] = []
-  for (const { p } of scored) {
-    if (!seen.has(p.brand) && result.length < 3) { seen.add(p.brand); result.push(p) }
-  }
-  for (const { p } of scored) {
-    if (result.length >= 3) break
-    if (!result.includes(p)) result.push(p)
-  }
-  return result.slice(0, 3)
-}
 
 function buildWhy(species: string, ageGroup: AgeGroup, sterilized: string, concerns: Set<Concern>): string {
   const parts: string[] = []
@@ -125,9 +60,31 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
   const [sterilized, setSterilized] = useState('unknown')
   const [concerns, setConcerns] = useState<Set<Concern>>(new Set())
 
+  const [apiRecs, setApiRecs] = useState<FoodResult[]>([])
+  const [recsLoading, setRecsLoading] = useState(false)
+  const [recsError, setRecsError] = useState('')
+
   useEffect(() => {
     api.pets(getOwnerId()).then(list => { setPets(list); setLoading(false) }).catch(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    const isExotic = !['cat', 'dog'].includes(species)
+    if (step !== 4 || isExotic) return
+    setRecsLoading(true)
+    setRecsError('')
+    const lifeStage = ageGroup === 'baby' ? 'kitten' : ageGroup
+    const healthTags: string[] = []
+    if (concerns.has('allergy'))    healthTags.push('skin')
+    if (concerns.has('digest'))     healthTags.push('digestion')
+    if (concerns.has('overweight')) healthTags.push('weight_control')
+    if (concerns.has('joints'))     healthTags.push('joints')
+    if (concerns.has('dental'))     healthTags.push('dental')
+    if (sterilized === 'yes' && !healthTags.includes('weight_control')) healthTags.push('weight_control')
+    api.foodsQuiz(species, lifeStage, healthTags)
+      .then(r => { setApiRecs(r); setRecsLoading(false) })
+      .catch(e => { setRecsError(e.message); setRecsLoading(false) })
+  }, [step]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const goNext = () => setStep(s => Math.min(4, s + 1) as Step)
   const goPrev = () => setStep(s => Math.max(1, s - 1) as Step)
@@ -148,7 +105,6 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
     return next
   })
 
-  const recs = getRecs(species, ageGroup, sterilized, concerns)
   const isExotic = !['cat', 'dog'].includes(species)
   const whyText = buildWhy(species, ageGroup, sterilized, concerns)
 
@@ -353,8 +309,19 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
 
                 {/* Products */}
                 <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{t('food.result_products')}</div>
-                {recs.map((p, i) => (
-                  <div key={`${p.brand}-${p.name}`} style={{
+                {recsLoading && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 32 }}>{t('loading')}</div>
+                )}
+                {!recsLoading && recsError && (
+                  <div style={{ textAlign: 'center', color: 'var(--danger, #C62828)', padding: 16, fontSize: 13 }}>{recsError}</div>
+                )}
+                {!recsLoading && !recsError && apiRecs.length === 0 && (
+                  <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: 16, fontSize: 13 }}>
+                    {lang === 'uz' ? "Mos mahsulotlar topilmadi" : 'Подходящие продукты не найдены'}
+                  </div>
+                )}
+                {!recsLoading && apiRecs.map((p, i) => (
+                  <div key={p.id} style={{
                     background: 'var(--surface)', border: `1px solid ${i === 0 ? 'rgba(242,120,75,.3)' : 'var(--border)'}`,
                     borderRadius: 'var(--r-lg)', padding: '14px 16px', display: 'flex', gap: 12,
                   }}>
@@ -382,13 +349,15 @@ export default function FoodWizard({ onBack, onConsult }: Props) {
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, margin: '6px 0' }}>{p.desc}</div>
+                      {p.description && (
+                        <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5, margin: '6px 0' }}>{p.description}</div>
+                      )}
                       <div style={{
                         display: 'inline-flex', alignItems: 'center', gap: 4,
                         padding: '4px 10px', borderRadius: 'var(--r-pill)',
                         background: 'var(--surface-2)', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
                       }}>
-                        <IconMoney size={12} color="var(--text-muted)" style={{ verticalAlign: 'middle' }} /> {p.price}
+                        <IconMoney size={12} color="var(--text-muted)" style={{ verticalAlign: 'middle' }} /> {Math.round(p.price_uzs / 1000)} тыс. сум
                       </div>
                     </div>
                   </div>
