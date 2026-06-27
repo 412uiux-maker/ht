@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const pool = require('../db');
+const notify = require('../notifications');
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.post('/orders/:id/accept', requireBotAuth, async (req, res) => {
        WHERE id = (SELECT consultation_id FROM orders WHERE id=$1 AND consultation_id IS NOT NULL)`,
       [req.params.id]
     );
+    notify.notifyClientOrderStatus(req.params.id, '✅ Ваша заявка принята. Врач скоро выйдет на связь.').catch(() => {});
     res.json(updated);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -73,6 +75,7 @@ router.post('/orders/:id/reject', requireBotAuth, async (req, res) => {
     await pool.query(`UPDATE orders SET status='refunded' WHERE id=$1 AND status='rejected'`, [req.params.id]);
 
     const { rows: [final] } = await pool.query('SELECT * FROM orders WHERE id=$1', [req.params.id]);
+    notify.notifyClientOrderStatus(req.params.id, '❌ Заявка отклонена. Средства вернутся в течение 1–2 рабочих дней.').catch(() => {});
     res.json(final);
   } catch (e) {
     res.status(500).json({ error: e.message });
