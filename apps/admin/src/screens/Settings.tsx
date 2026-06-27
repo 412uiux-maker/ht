@@ -1,66 +1,67 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { IconCheck, IconEdit } from '@ht/shared'
+import type { PlatformSettings } from '../types'
+import { adminApi } from '../api'
 
 type SettingsTab = 'commissions' | 'payments' | 'notifications'
 
 interface CommissionRule {
-  id: string
+  key: string
   label: string
   description: string
-  value: number
   unit: 'percent' | 'fixed'
 }
 
-interface PaymentProvider {
-  id: string
-  name: string
-  logo: string
-  enabled: boolean
-  testMode: boolean
-  connected: boolean
-}
+const COMMISSION_RULES: CommissionRule[] = [
+  { key: 'commission_vet_consult', label: 'Консультация ветеринара', description: 'Комиссия платформы с каждой оплаченной консультации', unit: 'percent' },
+  { key: 'commission_insurance',   label: 'Страховой полис',         description: 'Комиссия с продажи страховки',                         unit: 'percent' },
+  { key: 'min_payout_uzs',         label: 'Минимальный вывод',       description: 'Минимальная сумма для запроса выплаты',                unit: 'fixed'   },
+]
+
+const PAYMENT_PROVIDERS = [
+  { key: 'payment_click_enabled', name: 'Click',    logo: '💳' },
+  { key: 'payment_payme_enabled', name: 'Payme',    logo: '💳' },
+  { key: 'payment_uzum_enabled',  name: 'Uzum Pay', logo: '💳' },
+]
 
 interface NotificationTemplate {
   id: string
   event: string
-  channel: 'sms' | 'push' | 'email'
+  channel: 'push' | 'email'
   template: string
   enabled: boolean
 }
 
-const DEFAULT_COMMISSIONS: CommissionRule[] = [
-  { id: 'c1', label: 'Консультация ветеринара', description: 'Комиссия платформы с каждой оплаченной консультации', value: 15, unit: 'percent' },
-  { id: 'c2', label: 'Страховой полис', description: 'Комиссия с продажи страховки', value: 10, unit: 'percent' },
-  { id: 'c3', label: 'Минимальный вывод', description: 'Минимальная сумма для запроса выплаты', value: 50000, unit: 'fixed' },
-]
-
-const DEFAULT_PROVIDERS: PaymentProvider[] = [
-  { id: 'click',   name: 'Click',    logo: '💳', enabled: true,  testMode: false, connected: true  },
-  { id: 'payme',   name: 'Payme',    logo: '💳', enabled: true,  testMode: false, connected: true  },
-  { id: 'uzumpay', name: 'Uzum Pay', logo: '💳', enabled: false, testMode: false, connected: false },
-]
-
 const DEFAULT_NOTIFS: NotificationTemplate[] = [
-  { id: 'n1', event: 'Консультация оплачена', channel: 'push', template: 'Ваша консультация с {vet_name} оплачена. Ожидайте ответа.', enabled: true },
-  { id: 'n2', event: 'Консультация принята', channel: 'push', template: 'Ветеринар {vet_name} принял вашу консультацию.', enabled: true },
-  { id: 'n3', event: 'Консультация завершена', channel: 'push', template: 'Консультация завершена. Оцените врача!', enabled: true },
-  { id: 'n4', event: 'Новое сообщение в чате', channel: 'push', template: '{vet_name}: {message_preview}', enabled: true },
-  { id: 'n5', event: 'Страховой полис выдан', channel: 'email', template: 'Ваш страховой полис #{policy_id} готов. Ссылка: {policy_url}', enabled: true },
-  { id: 'n6', event: 'Выплата одобрена', channel: 'push', template: 'Ваша выплата {amount} сум одобрена. Поступит в течение 24 часов.', enabled: true },
+  { id: 'n1', event: 'Консультация оплачена',   channel: 'push',  template: 'Ваша консультация с {vet_name} оплачена. Ожидайте ответа.', enabled: true },
+  { id: 'n2', event: 'Консультация принята',    channel: 'push',  template: 'Ветеринар {vet_name} принял вашу консультацию.',            enabled: true },
+  { id: 'n3', event: 'Консультация завершена',  channel: 'push',  template: 'Консультация завершена. Оцените врача!',                    enabled: true },
+  { id: 'n4', event: 'Новое сообщение в чате',  channel: 'push',  template: '{vet_name}: {message_preview}',                            enabled: true },
+  { id: 'n5', event: 'Страховой полис выдан',   channel: 'email', template: 'Ваш страховой полис #{policy_id} готов.',                  enabled: true },
+  { id: 'n6', event: 'Выплата одобрена',        channel: 'push',  template: 'Ваша выплата {amount} сум одобрена.',                      enabled: true },
 ]
 
-const CHANNEL_LABEL = { sms: 'SMS', push: 'Push', email: 'Email' }
-const CHANNEL_COLOR = { sms: '#2E7D32', push: '#1565C0', email: '#C62828' }
+const CHANNEL_COLOR = { push: '#1565C0', email: '#C62828' }
+const CHANNEL_LABEL = { push: 'Push', email: 'Email' }
 
 export default function Settings() {
-  const [tab, setTab] = useState<SettingsTab>('commissions')
-  const [commissions, setCommissions] = useState<CommissionRule[]>(DEFAULT_COMMISSIONS)
-  const [providers, setProviders] = useState<PaymentProvider[]>(DEFAULT_PROVIDERS)
-  const [notifs, setNotifs] = useState<NotificationTemplate[]>(DEFAULT_NOTIFS)
-  const [editComm, setEditComm] = useState<CommissionRule | null>(null)
+  const [tab, setTab]         = useState<SettingsTab>('commissions')
+  const [settings, setSettings] = useState<PlatformSettings>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState('')
+  const [editKey, setEditKey] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [saving, setSaving]   = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
+  const [notifs, setNotifs]   = useState<NotificationTemplate[]>(DEFAULT_NOTIFS)
+
+  useEffect(() => {
+    setLoading(true)
+    adminApi.getSettings()
+      .then(s => { setSettings(s); setError('') })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false))
+  }, [])
 
   const showSaved = (msg = 'Сохранено') => {
     setSavedMsg(msg)
@@ -68,26 +69,36 @@ export default function Settings() {
   }
 
   const saveComm = async () => {
-    if (!editComm) return
+    if (!editKey) return
     setSaving(true)
-    await new Promise(r => setTimeout(r, 400))
-    setCommissions(prev => prev.map(c => c.id === editComm.id ? { ...c, value: Number(editValue) } : c))
-    setSaving(false); setEditComm(null); showSaved()
+    try {
+      await adminApi.updateSetting(editKey, editValue)
+      setSettings(s => ({ ...s, [editKey]: editValue }))
+      setEditKey(null); showSaved()
+    } catch (e) { alert(e instanceof Error ? e.message : 'Ошибка') }
+    finally { setSaving(false) }
   }
 
-  const toggleProvider = (id: string) => {
-    setProviders(prev => prev.map(p => p.id === id ? { ...p, enabled: !p.enabled } : p))
-    showSaved('Настройки сохранены')
-  }
-
-  const toggleTestMode = (id: string) => {
-    setProviders(prev => prev.map(p => p.id === id ? { ...p, testMode: !p.testMode } : p))
-    showSaved('Режим изменён')
+  const toggleProvider = async (key: string) => {
+    const next = settings[key] === 'true' ? 'false' : 'true'
+    setSettings(s => ({ ...s, [key]: next }))
+    try {
+      await adminApi.updateSetting(key, next)
+      showSaved('Настройки сохранены')
+    } catch (e) {
+      setSettings(s => ({ ...s, [key]: next === 'true' ? 'false' : 'true' }))
+      alert(e instanceof Error ? e.message : 'Ошибка')
+    }
   }
 
   const toggleNotif = (id: string) => {
-    setNotifs(prev => prev.map(n => n.id === id ? { ...n, enabled: !n.enabled } : n))
+    setNotifs(ns => ns.map(n => n.id === id ? { ...n, enabled: !n.enabled } : n))
     showSaved('Уведомление обновлено')
+  }
+
+  const commValue = (key: string) => {
+    const raw = settings[key]
+    return raw !== undefined ? Number(raw) : null
   }
 
   return (
@@ -95,7 +106,7 @@ export default function Settings() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div className="page-title" style={{ marginBottom: 0 }}>Настройки</div>
         {savedMsg && (
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)', background: 'var(--success)22', padding: '6px 12px', borderRadius: 'var(--r-pill)' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)', background: 'var(--success)22', padding: '6px 12px', borderRadius: 'var(--r-pill)', display: 'flex', alignItems: 'center', gap: 5 }}>
             <IconCheck size={14} /> {savedMsg}
           </span>
         )}
@@ -107,37 +118,43 @@ export default function Settings() {
         <button className={`filter-tab${tab === 'notifications' ? ' active' : ''}`} onClick={() => setTab('notifications')}>Уведомления</button>
       </div>
 
+      {loading && <div className="loading">Загрузка…</div>}
+      {error && <div className="error-banner" style={{ marginBottom: 16 }}>{error}</div>}
+
       {/* Commissions */}
-      {tab === 'commissions' && (
+      {tab === 'commissions' && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {commissions.map(c => (
-            <div key={c.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 3 }}>{c.label}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.description}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  fontWeight: 800, fontSize: 22, color: 'var(--primary)',
-                  minWidth: 80, textAlign: 'right',
-                }}>
-                  {c.unit === 'percent' ? `${c.value}%` : `${c.value.toLocaleString('ru-RU')} сум`}
+          {COMMISSION_RULES.map(c => {
+            const val = commValue(c.key)
+            return (
+              <div key={c.key} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 3 }}>{c.label}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{c.description}</div>
                 </div>
-                <button className="btn btn-sm btn-ghost" onClick={() => { setEditComm(c); setEditValue(String(c.value)) }} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <IconEdit size={14} /> Изменить
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--primary)', minWidth: 90, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                    {val !== null
+                      ? c.unit === 'percent' ? `${val}%` : `${val.toLocaleString('ru-RU')} сум`
+                      : '…'}
+                  </div>
+                  <button className="btn btn-sm btn-ghost" onClick={() => { setEditKey(c.key); setEditValue(val !== null ? String(val) : '') }} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <IconEdit size={14} /> Изменить
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {/* Payments */}
-      {tab === 'payments' && (
+      {tab === 'payments' && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {providers.map(p => (
-            <div key={p.id} className="card" style={{ padding: '16px 20px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: p.connected ? 12 : 0 }}>
+          {PAYMENT_PROVIDERS.map(p => {
+            const enabled = settings[p.key] === 'true'
+            return (
+              <div key={p.key} className="card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: 12,
@@ -146,32 +163,15 @@ export default function Settings() {
                   }}>{p.logo}</div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 15 }}>{p.name}</div>
-                    <span className={p.connected ? 'chip chip-success' : 'chip chip-muted'} style={{ fontSize: 11 }}>
-                      {p.connected ? 'Подключён' : 'Не подключён'}
+                    <span className={enabled ? 'chip chip-success' : 'chip chip-muted'} style={{ fontSize: 11 }}>
+                      {enabled ? 'Включён' : 'Выключен'}
                     </span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.enabled ? 'Включён' : 'Выключен'}</span>
-                  <ToggleSwitch checked={p.enabled} onChange={() => toggleProvider(p.id)} />
-                </div>
+                <ToggleSwitch checked={enabled} onChange={() => toggleProvider(p.key)} />
               </div>
-              {p.connected && (
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Тестовый режим</span>
-                    {p.testMode && <span className="chip chip-warn" style={{ marginLeft: 8, fontSize: 11 }}>Тест</span>}
-                  </div>
-                  <ToggleSwitch checked={p.testMode} onChange={() => toggleTestMode(p.id)} />
-                </div>
-              )}
-              {!p.connected && (
-                <div style={{ marginTop: 10 }}>
-                  <button className="btn btn-primary btn-sm">Подключить {p.name}</button>
-                </div>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -180,7 +180,7 @@ export default function Settings() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {notifs.map(n => (
             <div key={n.id} className="card" style={{ padding: '14px 18px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                     <span style={{ fontWeight: 700, fontSize: 14 }}>{n.event}</span>
@@ -207,27 +207,27 @@ export default function Settings() {
       )}
 
       {/* Commission edit modal */}
-      {editComm && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && !saving && setEditComm(null)}>
+      {editKey && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && !saving && setEditKey(null)}>
           <div className="modal" style={{ maxWidth: 380 }}>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Изменить комиссию</div>
-            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{editComm.label}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Изменить настройку</div>
+            <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
+              {COMMISSION_RULES.find(c => c.key === editKey)?.label}
+            </div>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>
-                Значение {editComm.unit === 'percent' ? '(%)' : '(сум)'}
+                Значение {COMMISSION_RULES.find(c => c.key === editKey)?.unit === 'percent' ? '(%)' : '(сум)'}
               </div>
               <input
-                type="number"
-                min={0}
-                max={editComm.unit === 'percent' ? 100 : undefined}
+                type="number" min={0}
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
-                style={{ ...inputStyle, width: '100%' }}
+                style={{ width: '100%', padding: '9px 12px', borderRadius: 'var(--r-md)', border: '1px solid var(--border)', fontSize: 14, minHeight: 44, fontFamily: 'inherit' }}
                 autoFocus
               />
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button className="btn btn-ghost" disabled={saving} onClick={() => setEditComm(null)}>Отмена</button>
+              <button className="btn btn-ghost" disabled={saving} onClick={() => setEditKey(null)}>Отмена</button>
               <button className="btn btn-primary" disabled={saving || !editValue} onClick={saveComm}>
                 {saving ? '…' : 'Сохранить'}
               </button>
@@ -261,10 +261,4 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
       }} />
     </button>
   )
-}
-
-const inputStyle: React.CSSProperties = {
-  padding: '9px 12px', borderRadius: 'var(--r-md)',
-  border: '1px solid var(--border)', fontSize: 14, minHeight: 44,
-  background: 'var(--surface)', fontFamily: 'inherit',
 }

@@ -511,4 +511,136 @@ router.post('/users/:id/role', requireAdmin('admin'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// ─── FINANCE (admin only) ─────────────────────────────────────────────────────
+
+// GET /api/admin/finance/stats
+router.get('/finance/stats', requireAdmin('admin'), async (req, res) => {
+  try {
+    const { rows: [rev] } = await pool.query(`
+      SELECT
+        COALESCE(SUM(p.amount_uzs),0)                                       AS total_revenue,
+        COALESCE(SUM(ROUND(p.amount_uzs * COALESCE(o.commission_rate,0.15))),0) AS total_commission,
+        COALESCE(SUM(CASE WHEN DATE_TRUNC('month',p.paid_at)=DATE_TRUNC('month',NOW())
+                         THEN p.amount_uzs END),0)                          AS month_revenue
+      FROM payments p
+      JOIN orders o ON o.id = p.order_id
+      WHERE p.status = 'paid'
+    `);
+    const { rows: [pend] } = await pool.query(`
+      SELECT COALESCE(SUM(amount_uzs),0) AS pending_payouts,
+             COUNT(*) AS pending_count
+      FROM vendor_payouts WHERE status='pending'
+    `);
+    res.json({
+      total_revenue:    Number(rev.total_revenue),
+      total_commission: Number(rev.total_commission),
+      month_revenue:    Number(rev.month_revenue),
+      pending_payouts:  Number(pend.pending_payouts),
+      pending_count:    Number(pend.pending_count),
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/admin/finance/transactions?page=1&limit=50
+router.get('/finance/transactions', requireAdmin('admin'), async (req, res) => {
+  const page  = Math.max(1, parseInt(req.query.page || '1', 10));
+  const limit = Math.min(100, parseInt(req.query.limit || '50', 10));
+  const offset = (page - 1) * limit;
+  try {
+    const { rows } = await pool.query(`
+      SELECT
+        p.id,
+        p.amount_uzs,
+        ROUND(p.amount_uzs * COALESCE(o.commission_rate, 0.15))::int AS commission,
+        p.status,
+        p.provider,
+        COALESCE(p.paid_at, p.created_at) AS date,
+        v.name   AS vendor_name,
+        o.service_type
+      FROM payments p
+      JOIN orders o ON o.id = p.order_id
+      LEFT JOIN vets v ON v.id = o.vet_id
+      ORDER BY p.created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    const { rows: [ct] } = await pool.query('SELECT COUNT(*) FROM payments');
+    res.json({ transactions: rows, total: Number(ct.count) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/admin/finance/payouts?status=pending
+router.get('/finance/payouts', requireAdmin('admin'), async (req, res) => {
+  const { status } = req.query;
+  try {
+    const params = status ? [status] : [];
+    const { rows } = await pool.query(`
+      SELECT vp.*, v.name AS vendor_name
+      FROM vendor_payouts vp
+      LEFT JOIN vets v ON v.id = vp.vet_id
+      ${status ? 'WHERE vp.status=$1' : ''}
+      ORDER BY vp.requested_at DESC
+      LIMIT 200
+    `, params);
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/finance/payouts/:id/approve  { admin_note? }
+router.post('/finance/payouts/:id/approve', requireAdmin('admin'), async (req, res) => {
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE vendor_payouts
+       SET status='approved', admin_note=$1, resolved_at=NOW(), resolved_by=$2
+       WHERE id=$3 AND status='pending'
+       RETURNING *`,
+      [req.body.admin_note || null, req.adminUser.id, req.params.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Payout not found or already resolved' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'payout.approve', 'vendor_payout', req.params.id, { amount: row.amount_uzs });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/finance/payouts/:id/reject  { reason }
+router.post('/finance/payouts/:id/reject', requireAdmin('admin'), async (req, res) => {
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE vendor_payouts
+       SET status='rejected', admin_note=$1, resolved_at=NOW(), resolved_by=$2
+       WHERE id=$3 AND status='pending'
+       RETURNING *`,
+      [req.body.reason || null, req.adminUser.id, req.params.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Payout not found or already resolved' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'payout.reject', 'vendor_payout', req.params.id, { reason: req.body.reason });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── SETTINGS (admin only) ────────────────────────────────────────────────────
+
+// GET /api/admin/settings
+router.get('/settings', requireAdmin('admin'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT key, value FROM platform_settings ORDER BY key');
+    // Return as flat object { key: value }
+    res.json(Object.fromEntries(rows.map(r => [r.key, r.value])));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PUT /api/admin/settings  { key, value }
+router.put('/settings', requireAdmin('admin'), async (req, res) => {
+  const { key, value } = req.body;
+  if (!key || value === undefined) return res.status(400).json({ error: 'key and value required' });
+  try {
+    await pool.query(
+      `INSERT INTO platform_settings (key, value, updated_at) VALUES ($1,$2,NOW())
+       ON CONFLICT (key) DO UPDATE SET value=$2, updated_at=NOW()`,
+      [key, String(value)]
+    );
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'settings.update', 'platform_settings', key, { value });
+    res.json({ ok: true, key, value });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

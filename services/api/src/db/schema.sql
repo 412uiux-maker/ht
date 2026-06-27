@@ -302,3 +302,26 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS payments_order_idx  ON payments(order_id);
 CREATE INDEX IF NOT EXISTS payments_status_idx ON payments(status);
+
+-- Vendor payout requests (vendors request withdrawal of their earnings)
+CREATE TABLE IF NOT EXISTS vendor_payouts (
+  id           SERIAL PRIMARY KEY,
+  vet_id       INTEGER REFERENCES vets(id) ON DELETE CASCADE,
+  amount_uzs   INTEGER NOT NULL,
+  method       TEXT NOT NULL DEFAULT 'click' CHECK (method IN ('click','payme','uzum')),
+  requisites   TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
+  admin_note   TEXT,
+  requested_at TIMESTAMPTZ DEFAULT NOW(),
+  resolved_at  TIMESTAMPTZ,
+  resolved_by  UUID REFERENCES admin_users(id)
+);
+CREATE INDEX IF NOT EXISTS vendor_payouts_vet_idx    ON vendor_payouts(vet_id);
+CREATE INDEX IF NOT EXISTS vendor_payouts_status_idx ON vendor_payouts(status);
+
+-- Platform-wide settings (commission rates, enabled payment providers, etc.)
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);

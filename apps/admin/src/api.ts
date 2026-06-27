@@ -1,4 +1,4 @@
-import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser } from './types'
+import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser, FinanceTx, FinancePayout, FinanceStats, PlatformSettings } from './types'
 
 let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
@@ -124,5 +124,36 @@ export const adminApi = {
   changeUserRole: (id: string, role: string) =>
     req<{ ok: boolean }>(`/users/${id}/role`, {
       method: 'POST', body: JSON.stringify({ role }),
+    }),
+
+  getFinanceStats: () =>
+    req<FinanceStats>('/finance/stats'),
+
+  getFinanceTransactions: (params?: { page?: number; limit?: number }) => {
+    const qs = new URLSearchParams()
+    if (params?.page)  qs.set('page', String(params.page))
+    if (params?.limit) qs.set('limit', String(params.limit))
+    return req<{ transactions: FinanceTx[]; total: number }>(`/finance/transactions?${qs}`)
+  },
+
+  getFinancePayouts: (status?: string) =>
+    req<FinancePayout[]>(`/finance/payouts${status ? `?status=${status}` : ''}`),
+
+  approvePayout: (id: number, admin_note?: string) =>
+    req<FinancePayout>(`/finance/payouts/${id}/approve`, {
+      method: 'POST', body: JSON.stringify({ admin_note }),
+    }),
+
+  rejectPayout: (id: number, reason: string) =>
+    req<FinancePayout>(`/finance/payouts/${id}/reject`, {
+      method: 'POST', body: JSON.stringify({ reason }),
+    }),
+
+  getSettings: () =>
+    req<PlatformSettings>('/settings'),
+
+  updateSetting: (key: string, value: string) =>
+    req<{ ok: boolean; key: string; value: string }>('/settings', {
+      method: 'PUT', body: JSON.stringify({ key, value }),
     }),
 }

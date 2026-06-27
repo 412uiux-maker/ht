@@ -131,6 +131,40 @@ export interface AppUser {
   orders_count: number
 }
 
+export interface FinanceTx {
+  id: string
+  amount_uzs: number
+  commission: number
+  status: 'pending' | 'paid' | 'refunded' | 'failed'
+  provider: string
+  date: string
+  vendor_name: string | null
+  service_type: string
+}
+
+export interface FinancePayout {
+  id: number
+  vet_id: number
+  vendor_name: string | null
+  amount_uzs: number
+  method: 'click' | 'payme' | 'uzum'
+  requisites: string
+  status: 'pending' | 'approved' | 'rejected'
+  admin_note: string | null
+  requested_at: string
+  resolved_at: string | null
+}
+
+export interface FinanceStats {
+  total_revenue: number
+  total_commission: number
+  month_revenue: number
+  pending_payouts: number
+  pending_count: number
+}
+
+export type PlatformSettings = Record<string, string>
+
 export interface PromoCode {
   id: number
   code: string

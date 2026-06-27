@@ -554,6 +554,22 @@ async function initDb() {
     console.log('DB seeded:', SEED_REVIEWS.length, 'reviews');
   }
 
+  // Seed platform_settings defaults
+  const DEFAULT_SETTINGS = [
+    ['commission_vet_consult', '15'],
+    ['commission_insurance',   '10'],
+    ['min_payout_uzs',         '50000'],
+    ['payment_click_enabled',  'true'],
+    ['payment_payme_enabled',  'true'],
+    ['payment_uzum_enabled',   'false'],
+  ];
+  for (const [key, value] of DEFAULT_SETTINGS) {
+    await pool.query(
+      `INSERT INTO platform_settings (key, value) VALUES ($1,$2) ON CONFLICT (key) DO NOTHING`,
+      [key, value]
+    );
+  }
+
   const { rows: or } = await pool.query('SELECT COUNT(*) FROM orders');
   if (or[0].count === '0') {
     const { rows: vetRows } = await pool.query('SELECT id, price_uzs FROM vets LIMIT 4');
@@ -575,6 +591,27 @@ async function initDb() {
       );
     }
     console.log('DB seeded: 6 demo orders');
+  }
+
+  const { rows: vpr } = await pool.query('SELECT COUNT(*) FROM vendor_payouts');
+  if (vpr[0].count === '0') {
+    const { rows: vetRows } = await pool.query('SELECT id, name FROM vets ORDER BY id LIMIT 4');
+    const SEED_PAYOUTS = [
+      { vet_i: 0, amount: 204000, method: 'click',  requisites: '+998 93 345 67 89', status: 'approved' },
+      { vet_i: 1, amount: 76500,  method: 'payme',  requisites: '+998 91 234 56 78', status: 'pending'  },
+      { vet_i: 2, amount: 136000, method: 'click',  requisites: '+998 90 111 22 33', status: 'pending'  },
+      { vet_i: 3, amount: 85000,  method: 'uzum',   requisites: '+998 97 999 88 77', status: 'rejected' },
+    ];
+    for (const p of SEED_PAYOUTS) {
+      const vet = vetRows[p.vet_i];
+      if (!vet) continue;
+      await pool.query(
+        `INSERT INTO vendor_payouts (vet_id, amount_uzs, method, requisites, status, requested_at)
+         VALUES ($1,$2,$3,$4,$5, NOW() - INTERVAL '${p.vet_i + 1} days')`,
+        [vet.id, p.amount, p.method, p.requisites, p.status]
+      );
+    }
+    console.log('DB seeded:', SEED_PAYOUTS.length, 'vendor payouts');
   }
 }
 
