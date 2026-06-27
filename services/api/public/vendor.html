@@ -338,6 +338,13 @@ function statusPill(s) {
 }
 function grow(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,120)+'px'; }
 
+// ── Authenticated fetch helper ────────────────────────────
+function vfetch(url, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+  if (vendor?.token) headers['Authorization'] = 'Bearer ' + vendor.token;
+  return fetch(url, { ...opts, headers });
+}
+
 // ── Auth ──────────────────────────────────────────────────
 function quickLogin(email) {
   document.getElementById('f-email').value = email;
@@ -405,8 +412,8 @@ async function renderDashboard() {
   mc.innerHTML = '<div class="spinner"></div>';
   try {
     const [stats, consults] = await Promise.all([
-      fetch(`/api/vendor/stats?vet_id=${vendor.vet_id}`).then(r=>r.json()),
-      fetch(`/api/vendor/consultations?vet_id=${vendor.vet_id}`).then(r=>r.json()),
+      vfetch(`/api/vendor/stats?vet_id=${vendor.vet_id}`).then(r=>r.json()),
+      vfetch(`/api/vendor/consultations?vet_id=${vendor.vet_id}`).then(r=>r.json()),
     ]);
     allConsults = consults;
     updatePendingBadge(stats);
@@ -479,7 +486,7 @@ async function renderConsultsList(status = '') {
   try {
     let url = `/api/vendor/consultations?vet_id=${vendor.vet_id}`;
     if (status) url += `&status=${status}`;
-    allConsults = await fetch(url).then(r=>r.json());
+    allConsults = await vfetch(url).then(r=>r.json());
 
     mc.innerHTML = `
       <div class="page-title">Пациенты</div>
