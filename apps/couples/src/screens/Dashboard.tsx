@@ -26,6 +26,7 @@ interface Props {
   onClinics:    () => void
   onPlaces:     () => void
   onDeeds:      () => void
+  onSymptoms:   () => void
 }
 
 // ── Horizontal scroll cards data
@@ -80,7 +81,7 @@ function petAge(birthDate: string | null, uz: boolean): string {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces, onDeeds }: Props) {
+export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces, onDeeds, onSymptoms }: Props) {
   const [pets, setPets] = useState<Pet[] | null>(null)
   const [topicFilter, setTopicFilter] = useState<'cats' | 'dogs'>('cats')
   const uz = getLang() === 'uz'
@@ -292,6 +293,47 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
             </button>
           </div>
         </div>
+      </div>
+
+      {/* ─────────────────────────────── SYMPTOM CHECKER BANNER */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <button
+          onClick={onSymptoms}
+          style={{
+            width: '100%', border: 'none', borderRadius: 'var(--r-xl)',
+            background: 'linear-gradient(135deg, #FF6650 0%, #FF9A3C 100%)',
+            padding: '16px 18px', cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+            boxShadow: '0 4px 16px rgba(242,120,75,0.35)',
+            position: 'relative', overflow: 'hidden',
+          }}
+        >
+          <div aria-hidden style={{
+            position: 'absolute', top: -20, right: -20,
+            width: 90, height: 90, borderRadius: '50%',
+            background: 'rgba(255,255,255,.12)', pointerEvents: 'none',
+          }} />
+          <div style={{
+            width: 46, height: 46, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,0.22)', fontSize: 24, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>🩺</div>
+          <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#fff', lineHeight: 1.3 }}>
+              {uz ? 'Belgilarni tekshirish' : 'Проверить симптомы'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 3 }}>
+              {uz ? 'Veterinar kerakmi? 1 daqiqada bilib oling' : 'Нужен ли ветеринар? Узнайте за 1 минуту'}
+            </div>
+          </div>
+          <div style={{
+            width: 30, height: 30, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,0.22)', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <IconChevronRight size={15} color="#fff" />
+          </div>
+        </button>
       </div>
 
       {/* ─────────────────────────────── PACKAGES BANNER */}

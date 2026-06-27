@@ -1,0 +1,113 @@
+{
+  "start": "breathing",
+  "nodes": {
+    "breathing": {
+      "question": {
+        "uz": "Hayvon nafas olishda qiynalayaptimi?",
+        "ru": "Есть ли затруднения с дыханием?"
+      },
+      "options": [
+        { "label": { "uz": "Ha", "ru": "Да" }, "next": "result_urgent_breathing" },
+        { "label": { "uz": "Yo'q", "ru": "Нет" }, "next": "injury" }
+      ]
+    },
+    "injury": {
+      "question": {
+        "uz": "Ko'rinadigan jarohat yoki qon bormi?",
+        "ru": "Есть ли видимые травмы или кровотечение?"
+      },
+      "options": [
+        { "label": { "uz": "Ha", "ru": "Да" }, "next": "result_urgent_injury" },
+        { "label": { "uz": "Yo'q", "ru": "Нет" }, "next": "eating" }
+      ]
+    },
+    "eating": {
+      "question": {
+        "uz": "Hayvon so'nggi 24 soatda ovqat yeyaptimi?",
+        "ru": "Ел ли питомец последние 24 часа?"
+      },
+      "options": [
+        { "label": { "uz": "Yo'q, rad etdi", "ru": "Нет, отказывается" }, "next": "lethargy_combined" },
+        { "label": { "uz": "Ha, yeyapti", "ru": "Да, ест" }, "next": "vomiting" }
+      ]
+    },
+    "lethargy_combined": {
+      "question": {
+        "uz": "Hayvon holsiz yoki lethargiyami?",
+        "ru": "Животное вялое или малоподвижное?"
+      },
+      "options": [
+        { "label": { "uz": "Ha", "ru": "Да" }, "next": "result_urgent_lethargy" },
+        { "label": { "uz": "Faol", "ru": "Нет, активный" }, "next": "vomiting" }
+      ]
+    },
+    "vomiting": {
+      "question": {
+        "uz": "Qusish yoki ich ketishi bormi?",
+        "ru": "Есть ли рвота или диарея?"
+      },
+      "options": [
+        { "label": { "uz": "Ha, 2+ marta", "ru": "Да, 2+ раза" }, "next": "result_urgent_gi" },
+        { "label": { "uz": "1 marta yoki yo'q", "ru": "Один раз или нет" }, "next": "behavior" }
+      ]
+    },
+    "behavior": {
+      "question": {
+        "uz": "Xatti-harakat sezilarli o'zgardimi?",
+        "ru": "Заметно изменилось поведение питомца?"
+      },
+      "options": [
+        { "label": { "uz": "Ha, juda", "ru": "Да, сильно" }, "next": "result_monitor" },
+        { "label": { "uz": "Yo'q", "ru": "Нет" }, "next": "result_ok" }
+      ]
+    },
+    "result_urgent_breathing": {
+      "result": "book_vet",
+      "severity": "urgent",
+      "message": {
+        "uz": "Nafas olishda qiyinchilik — zudlik bilan veterinarga murojaat qiling!",
+        "ru": "Затруднение дыхания — срочно обратитесь к ветеринару!"
+      }
+    },
+    "result_urgent_injury": {
+      "result": "book_vet",
+      "severity": "urgent",
+      "message": {
+        "uz": "Jarohat yoki qon — veterinar ko'rigi zarur.",
+        "ru": "Травма или кровотечение — необходим осмотр ветеринара."
+      }
+    },
+    "result_urgent_lethargy": {
+      "result": "book_vet",
+      "severity": "urgent",
+      "message": {
+        "uz": "Ishtahasizlik va holsizlik birgalikda — veterinar ko'rigi zarur.",
+        "ru": "Отказ от еды и вялость вместе — нужен осмотр ветеринара."
+      }
+    },
+    "result_urgent_gi": {
+      "result": "book_vet",
+      "severity": "urgent",
+      "message": {
+        "uz": "Takroriy qusish yoki ich ketishi — veterinarga murojaat qiling.",
+        "ru": "Многократная рвота или диарея — обратитесь к ветеринару."
+      }
+    },
+    "result_monitor": {
+      "result": "monitor",
+      "severity": "watch",
+      "message": {
+        "uz": "Hozircha jiddiy emas, lekin kuzating. Yomonlashsa — veterinarga boring.",
+        "ru": "Пока не критично, но наблюдайте. При ухудшении — к ветеринару."
+      }
+    },
+    "result_ok": {
+      "result": "not_urgent",
+      "severity": "ok",
+      "message": {
+        "uz": "Hozircha jiddiy belgilar yo'q. Hayvonni kuzatishda davom eting.",
+        "ru": "Серьёзных симптомов пока нет. Продолжайте наблюдать за питомцем."
+      }
+    }
+  }
+}
