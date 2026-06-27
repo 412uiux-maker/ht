@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { IconArrowLeft, IconOrders, IconChat } from '@ht/shared'
+import { IconArrowLeft, IconOrders, IconChat, orderStatusColor, orderStatusLabel as sharedLabel } from '@ht/shared'
 import type { Order } from '../api'
 import { api, getOwnerId } from '../api'
-import { t } from '../i18n'
+import { getLang, t } from '../i18n'
 
 type Filter = 'all' | 'active' | 'done'
 
@@ -13,25 +13,9 @@ const SPECIES_EMOJI: Record<string, string> = {
   cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾',
 }
 
-const STATUS_META: Record<string, { label: string; bg: string; color: string }> = {
-  created:     { label: () => t('orders.status_created'),     bg: 'var(--surface-2)', color: 'var(--text-muted)' } as any,
-  paid:        { label: () => t('orders.status_paid'),        bg: '#E8EDFF', color: '#3B5BDB' } as any,
-  accepted:    { label: () => t('orders.status_accepted'),    bg: '#FFF3CD', color: '#856404' } as any,
-  in_progress: { label: () => t('orders.status_in_progress'), bg: '#FFF4F0', color: 'var(--primary)' } as any,
-  completed:   { label: () => t('orders.status_completed'),   bg: '#D1F2E4', color: '#1A7A4A' } as any,
-  cancelled:   { label: () => t('orders.status_cancelled'),   bg: '#FFE0DE', color: '#9E1B12' } as any,
-  refunded:    { label: () => t('orders.status_refunded'),    bg: '#FFE0DE', color: '#9E1B12' } as any,
-}
-
 function statusLabel(s: string): string {
-  if (s === 'created')     return t('orders.status_created')
-  if (s === 'paid')        return t('orders.status_paid')
-  if (s === 'accepted')    return t('orders.status_accepted')
-  if (s === 'in_progress') return t('orders.status_in_progress')
-  if (s === 'completed')   return t('orders.status_completed')
-  if (s === 'cancelled')   return t('orders.status_cancelled')
-  if (s === 'refunded')    return t('orders.status_refunded')
-  return s
+  const lang = getLang() === 'uz' ? 'uz' : 'ru'
+  return sharedLabel(s, lang)
 }
 
 function fmtDate(iso: string) {
@@ -113,7 +97,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
         )}
 
         {!loading && filtered.map(order => {
-          const meta = STATUS_META[order.status] ?? STATUS_META.created
+          const meta = orderStatusColor(order.status)
           const isActive = ACTIVE_STATUSES.has(order.status) && order.consultation_id
           const canChat = isActive && order.consultation_id
 
