@@ -16,8 +16,9 @@ import Settings from './screens/Settings'
 import Learning from './screens/Learning'
 import Reviews from './screens/Reviews'
 import Deeds from './screens/Deeds'
+import Disputes from './screens/Disputes'
 
-type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings' | 'reviews' | 'deeds'
+type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'disputes' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings' | 'reviews' | 'deeds'
 
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(() => {
@@ -48,6 +49,7 @@ export default function App() {
       {screen === 'verification'   && <Verification />}
       {screen === 'consultations'  && <Consultations />}
       {screen === 'orders'         && <Orders session={session} />}
+      {screen === 'disputes'       && <Disputes />}
       {screen === 'finances'       && <Finances />}
       {screen === 'users'          && <Users sessionRole={session.role} />}
       {screen === 'content'        && <Content />}

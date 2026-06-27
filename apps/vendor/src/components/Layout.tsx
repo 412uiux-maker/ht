@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   IconConsultation, IconSettings, IconMoney,
-  IconStar, IconUser, IconMoon, IconSun, IconLogOut, IconCalendar,
+  IconStar, IconUser, IconMoon, IconSun, IconLogOut, IconCalendar, IconUsers,
 } from '@ht/shared'
 import type { VendorSession } from '../types'
 
@@ -13,11 +13,12 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { id: 'dashboard', label: 'Консультации', Icon: IconConsultation },
-  { id: 'services',  label: 'Услуги',       Icon: IconSettings      },
-  { id: 'schedule',  label: 'Расписание',   Icon: IconCalendar      },
-  { id: 'finances',  label: 'Финансы',      Icon: IconMoney         },
-  { id: 'reviews',   label: 'Отзывы',       Icon: IconStar          },
-  { id: 'profile',   label: 'Профиль',      Icon: IconUser          },
+  { id: 'clients',   label: 'Клиенты',      Icon: IconUsers        },
+  { id: 'services',  label: 'Услуги',       Icon: IconSettings     },
+  { id: 'schedule',  label: 'Расписание',   Icon: IconCalendar     },
+  { id: 'finances',  label: 'Финансы',      Icon: IconMoney        },
+  { id: 'reviews',   label: 'Отзывы',       Icon: IconStar         },
+  { id: 'profile',   label: 'Профиль',      Icon: IconUser         },
 ]
 
 function useTheme() {

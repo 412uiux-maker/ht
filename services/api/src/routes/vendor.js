@@ -151,9 +151,13 @@ router.get('/stats', requireVendor, async (req, res) => {
        FROM consultations WHERE vet_id = $1`,
       [vet_id]
     );
-    const { rows: [vet] } = await pool.query('SELECT price_uzs, rating FROM vets WHERE id = $1', [vet_id]);
+    const [vetRow, reviewRow] = await Promise.all([
+      pool.query('SELECT price_uzs, rating FROM vets WHERE id = $1', [vet_id]),
+      pool.query(`SELECT COUNT(*)::int AS review_count FROM reviews WHERE vet_id=$1 AND status='published'`, [vet_id]),
+    ]);
+    const vet = vetRow.rows[0];
     const income = parseInt(counts.completed) * (vet?.price_uzs || 0);
-    res.json({ ...counts, income, rating: vet?.rating || 5.0 });
+    res.json({ ...counts, income, rating: vet?.rating || 5.0, review_count: reviewRow.rows[0].review_count });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -277,6 +281,24 @@ router.get('/me', requireVendor, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// PATCH /api/vendor/me  (protected) — update editable profile fields
+router.patch('/me', requireVendor, async (req, res) => {
+  const { name, specialty, bio, price_uzs, experience_yr, avatar_emoji } = req.body;
+  if (!name?.trim()) return res.status(400).json({ error: 'name required' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE vets
+       SET name=$1, specialty=$2, bio=$3, price_uzs=$4, experience_yr=$5, avatar_emoji=$6
+       WHERE id=$7
+       RETURNING id AS vet_id, name, specialty, bio, price_uzs, experience_yr, avatar_emoji, rating`,
+      [name.trim(), specialty || '', bio || '', Number(price_uzs) || 0,
+       Number(experience_yr) || 1, avatar_emoji || '👨‍⚕️', req.vendor.vet_id]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/vendor/slots?week=YYYY-MM-DD  (week = Monday date)
 router.get('/slots', requireVendor, async (req, res) => {
   try {
@@ -380,6 +402,66 @@ router.get('/finance', requireVendor, async (req, res) => {
         amount: ['cancelled', 'refunded'].includes(o.status) ? -(o.price_uzs || 0) : payout(o),
       })),
     });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/vendor/clients — unique clients with their consultation history summary
+router.get('/clients', requireVendor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT
+         lc.client_name,
+         lc.pet_name,
+         lc.pet_species,
+         lc.created_at  AS last_visit,
+         lc.summary     AS last_summary,
+         cnt.consult_count::int
+       FROM (
+         SELECT DISTINCT ON (client_name, pet_name)
+           client_name, pet_name, pet_species, created_at, summary, vet_id
+         FROM consultations
+         WHERE vet_id = $1
+         ORDER BY client_name, pet_name, created_at DESC
+       ) lc
+       JOIN (
+         SELECT client_name, pet_name, COUNT(*) AS consult_count
+         FROM consultations
+         WHERE vet_id = $1
+         GROUP BY client_name, pet_name
+       ) cnt ON cnt.client_name = lc.client_name AND cnt.pet_name = lc.pet_name
+       ORDER BY lc.created_at DESC`,
+      [req.vendor.vet_id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/vendor/payouts  { amount_uzs, method, requisites }
+router.post('/payouts', requireVendor, async (req, res) => {
+  const { amount_uzs, method, requisites } = req.body;
+  if (!amount_uzs || amount_uzs < 50000)
+    return res.status(400).json({ error: 'Минимум 50 000 сум' });
+  if (!requisites?.trim())
+    return res.status(400).json({ error: 'requisites required' });
+  const validMethod = ['click', 'payme', 'uzum'].includes(method) ? method : 'click';
+  try {
+    const { rows: [row] } = await pool.query(
+      `INSERT INTO vendor_payouts (vet_id, amount_uzs, method, requisites)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [req.vendor.vet_id, amount_uzs, validMethod, requisites.trim()]
+    );
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/vendor/payouts  — history of payout requests
+router.get('/payouts', requireVendor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      'SELECT * FROM vendor_payouts WHERE vet_id=$1 ORDER BY requested_at DESC LIMIT 50',
+      [req.vendor.vet_id]
+    );
+    res.json(rows);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

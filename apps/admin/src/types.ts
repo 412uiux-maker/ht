@@ -56,6 +56,20 @@ export interface DashboardStats {
   vets_available: number
   verif_pending: number
   users_total: number
+  disputes_open: number
+}
+
+export interface AdminDispute {
+  id: number
+  reason: string
+  status: 'open' | 'resolved' | 'closed'
+  created_at: string
+  owner_id: string
+  client_name: string | null
+  pet_name: string | null
+  pet_species: string | null
+  consultation_id: string | null
+  vet_name: string | null
 }
 
 export interface ConsultationRow {

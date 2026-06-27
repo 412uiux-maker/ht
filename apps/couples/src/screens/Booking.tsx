@@ -164,7 +164,12 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
                 {vet.price_uzs.toLocaleString('ru-RU')} {t('currency')}
               </span>
               <span style={{ fontSize: 12, opacity: 0.9, display: 'flex', alignItems: 'center', gap: 4 }}>
-                <IconStarFilled size={12} color="#d97706" /> {Number(vet.rating).toFixed(1)} · {vet.experience_yr} {t('home.exp')}
+                <IconStarFilled size={12} color="#d97706" />
+                {Number(vet.rating).toFixed(1)}
+                {vet.review_count > 0 && (
+                  <span style={{ color: 'var(--text-muted)' }}>({vet.review_count})</span>
+                )}
+                · {vet.experience_yr} {t('home.exp')}
               </span>
             </div>
           </div>

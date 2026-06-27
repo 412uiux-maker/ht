@@ -538,6 +538,31 @@ function MedReportCard({ report }: { report: MedicalReport }) {
 function CompletionCard({ consultation, vet, hover, setHover, rating, setRating, rated, setRated, onBack }: CompletionProps) {
   const report = consultation?.report ?? null
   const summary = consultation?.summary ?? null
+  const [disputeOpen, setDisputeOpen] = useState(false)
+  const [disputeText, setDisputeText] = useState('')
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false)
+  const [disputeSent, setDisputeSent] = useState(false)
+
+  const submitReview = async (stars: number) => {
+    if (rated || !consultation?.id) return
+    setRating(stars)
+    setRated(true)
+    try { await api.reviewConsultation(consultation.id, stars) } catch { /* non-blocking */ }
+  }
+
+  const submitDispute = async () => {
+    if (!consultation?.id || !disputeText.trim()) return
+    setDisputeSubmitting(true)
+    try {
+      await api.disputeConsultation(consultation.id, disputeText.trim())
+      setDisputeSent(true)
+      setDisputeOpen(false)
+    } catch (e) {
+      alert((e as Error).message)
+    } finally {
+      setDisputeSubmitting(false)
+    }
+  }
 
   return (
     <div style={{
@@ -585,7 +610,7 @@ function CompletionCard({ consultation, vet, hover, setHover, rating, setRating,
             {[1, 2, 3, 4, 5].map(i => (
               <button
                 key={i}
-                onClick={() => { if (!rated) { setRating(i); setRated(true) } }}
+                onClick={() => submitReview(i)}
                 onMouseEnter={() => { if (!rated) setHover(i) }}
                 onMouseLeave={() => { if (!rated) setHover(0) }}
                 disabled={rated}
@@ -615,6 +640,68 @@ function CompletionCard({ consultation, vet, hover, setHover, rating, setRating,
         >
           {t('chat.new_consult')}
         </button>
+
+        {/* Dispute */}
+        {disputeSent ? (
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', textAlign: 'center', paddingBottom: 4 }}>
+            {t('chat.dispute_sent')}
+          </div>
+        ) : !disputeOpen ? (
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={() => setDisputeOpen(true)}
+              style={{
+                background: 'none', border: 'none', color: 'var(--text-muted)',
+                fontSize: 12, cursor: 'pointer', padding: '2px 0',
+                fontFamily: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3,
+              }}
+            >
+              {t('chat.report_problem')}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <textarea
+              maxLength={500}
+              rows={3}
+              placeholder={t('chat.dispute_placeholder')}
+              value={disputeText}
+              onChange={e => setDisputeText(e.target.value)}
+              style={{
+                width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)',
+                border: '1px solid var(--border)', background: 'var(--surface2)',
+                color: 'var(--text)', fontSize: 13, fontFamily: 'inherit',
+                resize: 'none', outline: 'none', boxSizing: 'border-box', lineHeight: 1.5,
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setDisputeOpen(false); setDisputeText('') }}
+                style={{
+                  padding: '8px 14px', borderRadius: 'var(--r-sm)',
+                  border: '1px solid var(--border)', background: 'var(--surface2)',
+                  color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
+                  fontFamily: 'inherit', minHeight: 36,
+                }}
+              >
+                {t('chat.dispute_cancel')}
+              </button>
+              <button
+                disabled={!disputeText.trim() || disputeSubmitting}
+                onClick={submitDispute}
+                style={{
+                  padding: '8px 14px', borderRadius: 'var(--r-sm)', border: 'none',
+                  background: disputeText.trim() ? 'var(--danger, #ef4444)' : 'var(--surface3)',
+                  color: disputeText.trim() ? '#fff' : 'var(--text-muted)',
+                  fontSize: 13, fontWeight: 600, cursor: disputeText.trim() ? 'pointer' : 'default',
+                  fontFamily: 'inherit', minHeight: 36,
+                }}
+              >
+                {t('chat.dispute_send')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

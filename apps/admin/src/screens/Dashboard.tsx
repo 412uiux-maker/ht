@@ -102,6 +102,25 @@ export default function Dashboard() {
         <StatusCard label="Завершены" value={stats.consult_completed} variant="success" Icon={IconCheckCircle} />
       </div>
 
+      {/* Open disputes alert */}
+      {stats.disputes_open > 0 && (
+        <div style={{
+          background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.2)',
+          borderRadius: 'var(--r-md)', padding: '14px 18px',
+          display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12,
+        }}>
+          <IconAlertCircle size={22} color="#ef4444" />
+          <div>
+            <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 14 }}>
+              {stats.disputes_open} открытых {stats.disputes_open === 1 ? 'жалоба' : 'жалоб'}
+            </div>
+            <div style={{ fontSize: 12, color: '#ef4444', opacity: 0.8, marginTop: 2 }}>
+              Перейдите в раздел «Жалобы» для обработки
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Verification alert */}
       {stats.verif_pending > 0 && (
         <div style={{

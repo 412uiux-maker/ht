@@ -166,13 +166,14 @@ router.get('/audit', requireAdmin('admin'), async (req, res) => {
 // ─── DASHBOARD STATS ─────────────────────────────────────────────────────────
 router.get('/stats', requireAdmin('admin', 'moderator', 'support'), async (req, res) => {
   try {
-    const [rev, revToday, consultStats, vetStats, verif, users] = await Promise.all([
+    const [rev, revToday, consultStats, vetStats, verif, users, disputes] = await Promise.all([
       pool.query(`SELECT COALESCE(SUM(price_uzs),0) AS total FROM orders WHERE status IN ('paid','completed')`),
       pool.query(`SELECT COALESCE(SUM(price_uzs),0) AS total FROM orders WHERE status IN ('paid','completed') AND created_at >= CURRENT_DATE`),
       pool.query(`SELECT status, COUNT(*) as cnt FROM consultations GROUP BY status`),
       pool.query(`SELECT COUNT(*) as total, COUNT(*) FILTER (WHERE is_available) as available FROM vets`),
       pool.query(`SELECT COUNT(*) as cnt FROM vendor_verification WHERE status='pending'`),
       pool.query(`SELECT COUNT(DISTINCT owner_id) as cnt FROM orders`),
+      pool.query(`SELECT COUNT(*) as cnt FROM disputes WHERE status='open'`),
     ]);
     const cMap = Object.fromEntries(consultStats.rows.map(r => [r.status, parseInt(r.cnt)]));
     res.json({
@@ -185,6 +186,7 @@ router.get('/stats', requireAdmin('admin', 'moderator', 'support'), async (req, 
       vets_available:    parseInt(vetStats.rows[0].available),
       verif_pending:     parseInt(verif.rows[0].cnt),
       users_total:       parseInt(users.rows[0].cnt),
+      disputes_open:     parseInt(disputes.rows[0].cnt),
     });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -613,6 +615,48 @@ router.post('/finance/payouts/:id/reject', requireAdmin('admin'), async (req, re
     );
     if (!row) return res.status(404).json({ error: 'Payout not found or already resolved' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'payout.reject', 'vendor_payout', req.params.id, { reason: req.body.reason });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── DISPUTES ────────────────────────────────────────────────────────────────
+
+// GET /api/admin/disputes?status=open|resolved|closed&page=
+router.get('/disputes', requireAdmin('admin', 'support'), async (req, res) => {
+  const { status = 'open', page = 1, limit = 30 } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
+  try {
+    const { rows } = await pool.query(
+      `SELECT d.id, d.reason, d.status, d.created_at, d.owner_id,
+              c.client_name, c.pet_name, c.pet_species, c.id AS consultation_id,
+              v.name AS vet_name
+       FROM disputes d
+       LEFT JOIN consultations c ON c.id = d.consultation_id
+       LEFT JOIN vets v ON v.id = c.vet_id
+       WHERE ($1 = 'all' OR d.status = $1)
+       ORDER BY d.created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [status, Number(limit), offset]
+    );
+    const { rows: [cnt] } = await pool.query(
+      `SELECT COUNT(*) FROM disputes WHERE ($1 = 'all' OR status = $1)`, [status]
+    );
+    res.json({ disputes: rows, total: parseInt(cnt.count) });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/disputes/:id/resolve  { status: 'resolved'|'closed', note? }
+router.post('/disputes/:id/resolve', requireAdmin('admin', 'support'), async (req, res) => {
+  const { status = 'resolved' } = req.body;
+  if (!['resolved', 'closed'].includes(status))
+    return res.status(400).json({ error: 'status must be resolved or closed' });
+  try {
+    const { rows: [row] } = await pool.query(
+      `UPDATE disputes SET status = $1 WHERE id = $2 RETURNING *`,
+      [status, req.params.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'dispute.resolve', 'disputes', String(req.params.id), { status });
     res.json(row);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

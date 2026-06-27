@@ -7,9 +7,10 @@ services:
     container_name: petplatform-api
     restart: unless-stopped
     environment:
-      NODE_ENV: production
+      NODE_ENV: ${NODE_ENV:-development}
       PORT: 8080
       DATABASE_URL: postgresql://petplatform:petplatform@db:5432/petplatform
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
       PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
@@ -19,6 +20,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   couples:
     build:
@@ -30,7 +37,8 @@ services:
     ports:
       - "5001:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   vendor:
     build:
@@ -42,7 +50,8 @@ services:
     ports:
       - "5002:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   telegram-bot:
     build:
@@ -56,7 +65,8 @@ services:
       API_BASE_URL: http://petplatform-api:8080
       MINI_APP_URL: ${MINI_APP_URL:-https://t.me/HappyTailsUzBot/app}
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   admin:
     build:
@@ -68,7 +78,8 @@ services:
     ports:
       - "3003:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   db:
     image: postgres:16-alpine

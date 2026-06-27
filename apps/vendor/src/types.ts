@@ -82,6 +82,7 @@ export type Stats = {
   completed: number
   income: number
   rating: number
+  review_count: number
 }
 
 export type VendorReview = {
@@ -93,6 +94,15 @@ export type VendorReview = {
   created_at: string
   client_name: string
   pet_name: string
+}
+
+export type VendorClient = {
+  client_name: string
+  pet_name: string
+  pet_species: string
+  last_visit: string
+  last_summary: string | null
+  consult_count: number
 }
 
 export type FinanceTx = {

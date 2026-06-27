@@ -10,9 +10,19 @@ export type Vet = {
   bio: string
   price_uzs: number
   rating: number
+  review_count: number
   avatar_emoji: string
   experience_yr: number
   is_available: boolean
+}
+
+export type VetReview = {
+  id: number
+  rating: number
+  text: string | null
+  reply: string | null
+  created_at: string
+  client_name: string
 }
 
 export type Medication = {
@@ -264,5 +274,20 @@ export const api = {
     req<FoodResult[]>('/foods/quiz', {
       method: 'POST',
       body: JSON.stringify({ species, life_stage, health_tags }),
+    }),
+
+  vetReviews: (vetId: number) =>
+    req<VetReview[]>(`/vets/${vetId}/reviews`),
+
+  reviewConsultation: (id: string, rating: number, comment?: string) =>
+    req<{ ok: boolean }>(`/consultations/${id}/review`, {
+      method: 'POST',
+      body: JSON.stringify({ owner_id: getOwnerId(), rating, comment }),
+    }),
+
+  disputeConsultation: (id: string, reason: string) =>
+    req<{ ok: boolean }>(`/consultations/${id}/dispute`, {
+      method: 'POST',
+      body: JSON.stringify({ owner_id: getOwnerId(), reason }),
     }),
 }

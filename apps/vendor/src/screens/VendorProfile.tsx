@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { IconCheckCircle, IconStar, IconChat, IconMoney, IconConsultation, IconCertificate } from '@ht/shared'
-import type { VendorSession } from '../types'
+import { useState, useEffect } from 'react'
+import { IconCheckCircle, IconAlertCircle, IconStar, IconChat, IconMoney, IconConsultation, IconCertificate } from '@ht/shared'
+import type { VendorSession, Stats } from '../types'
 import { setSession } from '../types'
+import { api } from '../api'
 
 interface Props {
   session: VendorSession
@@ -23,15 +24,39 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<VendorSession>(session)
   const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [stats, setStats] = useState<Stats | null>(null)
 
-  const openEdit = () => { setDraft({ ...session }); setEditing(true) }
+  useEffect(() => {
+    api.stats(session.vet_id).then(setStats).catch(() => {})
+  }, [session.vet_id])
 
-  const save = () => {
-    setSession(draft)
-    onSessionUpdate(draft)
-    setEditing(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2500)
+  const openEdit = () => { setDraft({ ...session }); setEditing(true); setSaveError('') }
+
+  const save = async () => {
+    setSaving(true)
+    setSaveError('')
+    try {
+      const updated = await api.updateProfile({
+        name: draft.name,
+        specialty: draft.specialty,
+        bio: draft.bio,
+        price_uzs: draft.price_uzs,
+        experience_yr: draft.experience_yr,
+        avatar_emoji: draft.avatar_emoji,
+      })
+      const merged = { ...session, ...updated }
+      setSession(merged)
+      onSessionUpdate(merged)
+      setEditing(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch (e) {
+      setSaveError((e as Error).message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const AVATARS = ['🐕', '🐈', '🦜', '🐇', '🦔', '🐠', '🐾', '🩺']
@@ -115,7 +140,7 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
         {([
-          { Icon: IconConsultation, label: 'Консультаций', value: '48' },
+          { Icon: IconConsultation, label: 'Консультаций', value: stats ? String(stats.total) : '…' },
           { Icon: IconStar,         label: 'Рейтинг',       value: session.rating.toFixed(1) },
           { Icon: IconCertificate,  label: 'Опыт',           value: `${session.experience_yr} лет` },
         ] as { Icon: React.FC<{ size?: number; color?: string }>; label: string; value: string }[]).map(s => (
@@ -196,9 +221,20 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
               </div>
             </div>
 
+            {saveError && (
+              <div style={{
+                marginTop: 16, padding: '10px 14px', borderRadius: 'var(--r-sm)',
+                background: 'rgba(239,68,68,.10)', color: 'var(--danger)',
+                fontSize: 13, display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <IconAlertCircle size={14} color="var(--danger)" /> {saveError}
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
-              <button onClick={() => setEditing(false)} style={btnGhost}>Отмена</button>
-              <button onClick={save} disabled={!draft.name.trim()} style={btnCoral}>Сохранить</button>
+              <button onClick={() => setEditing(false)} style={btnGhost} disabled={saving}>Отмена</button>
+              <button onClick={save} disabled={saving || !draft.name.trim()} style={btnCoral}>
+                {saving ? 'Сохраняем…' : 'Сохранить'}
+              </button>
             </div>
           </div>
         </div>

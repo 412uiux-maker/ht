@@ -1,7 +1,7 @@
 FROM node:20-alpine AS builder
 WORKDIR /repo
 
-COPY package.json ./
+COPY package.json package-lock.json ./
 COPY apps/admin/package.json ./apps/admin/
 COPY packages/shared/package.json ./packages/shared/
 

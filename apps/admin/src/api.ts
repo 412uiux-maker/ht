@@ -1,4 +1,4 @@
-import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser, FinanceTx, FinancePayout, FinanceStats, PlatformSettings } from './types'
+import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser, FinanceTx, FinancePayout, FinanceStats, PlatformSettings, AdminDispute } from './types'
 
 let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
@@ -155,5 +155,13 @@ export const adminApi = {
   updateSetting: (key: string, value: string) =>
     req<{ ok: boolean; key: string; value: string }>('/settings', {
       method: 'PUT', body: JSON.stringify({ key, value }),
+    }),
+
+  getDisputes: (status: string = 'open', page: number = 1) =>
+    req<{ disputes: AdminDispute[]; total: number }>(`/disputes?status=${status}&page=${page}`),
+
+  resolveDispute: (id: number, status: 'resolved' | 'closed') =>
+    req<AdminDispute>(`/disputes/${id}/resolve`, {
+      method: 'POST', body: JSON.stringify({ status }),
     }),
 }

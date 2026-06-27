@@ -325,3 +325,16 @@ CREATE TABLE IF NOT EXISTS platform_settings (
   value      TEXT NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Client dispute reports for completed/paid consultations
+CREATE TABLE IF NOT EXISTS disputes (
+  id              SERIAL PRIMARY KEY,
+  consultation_id UUID REFERENCES consultations(id) ON DELETE SET NULL,
+  owner_id        TEXT NOT NULL,
+  reason          TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'open'
+                  CHECK (status IN ('open','resolved','closed')),
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(consultation_id, owner_id)
+);
+CREATE INDEX IF NOT EXISTS disputes_status_idx ON disputes(status);

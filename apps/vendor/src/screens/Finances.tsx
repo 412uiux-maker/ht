@@ -11,6 +11,7 @@ export default function Finances() {
   const [amount, setAmount] = useState('')
   const [card, setCard] = useState('')
   const [success, setSuccess] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -22,12 +23,21 @@ export default function Finances() {
 
   const balance = data?.balance ?? 0
 
-  const submitPayout = () => {
-    setPayoutOpen(false)
-    setSuccess(true)
-    setAmount('')
-    setCard('')
-    setTimeout(() => setSuccess(false), 3500)
+  const submitPayout = async () => {
+    if (!valid) return
+    setSubmitting(true)
+    try {
+      await api.requestPayout(Number(amount), 'click', card.replace(/\s/g, ''))
+      setPayoutOpen(false)
+      setSuccess(true)
+      setAmount('')
+      setCard('')
+      setTimeout(() => setSuccess(false), 4000)
+    } catch (e) {
+      alert((e as Error).message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const valid = Number(amount) >= 50000 && Number(amount) <= balance && card.replace(/\s/g, '').length === 16
@@ -192,7 +202,7 @@ export default function Finances() {
 
             <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
               <button onClick={() => setPayoutOpen(false)} style={btnGhost}>Отмена</button>
-              <button onClick={submitPayout} disabled={!valid} style={{
+              <button onClick={submitPayout} disabled={!valid || submitting} style={{
                 padding: '10px 20px', borderRadius: 'var(--r-sm)', border: 'none',
                 background: valid ? 'var(--coral)' : 'var(--surface3)',
                 color: valid ? '#fff' : 'var(--text2)',

@@ -234,7 +234,13 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
           <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>{vet.specialty}</div>
           <div style={{ display: 'flex', gap: 12, fontSize: 13, flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#d97706', fontWeight: 600 }}>
-              <IconStarFilled size={13} color="#d97706" /> {Number(vet.rating).toFixed(1)}
+              <IconStarFilled size={13} color="#d97706" />
+              {Number(vet.rating).toFixed(1)}
+              {vet.review_count > 0 && (
+                <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>
+                  ({vet.review_count})
+                </span>
+              )}
             </span>
             <span style={{ color: 'var(--text-muted)' }}>
               {vet.experience_yr} {t('home.exp')}

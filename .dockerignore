@@ -8,8 +8,15 @@ npm-debug.log*
 .env.local
 **/.env
 dist
+**/dist
 build
 .idea
 .vscode
 .DS_Store
 Thumbs.db
+.claude
+docs
+coverage
+**/coverage
+*.test.js
+*.spec.js

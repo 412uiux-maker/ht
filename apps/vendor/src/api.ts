@@ -1,4 +1,4 @@
-import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData, VendorReview } from './types'
+import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData, VendorReview, VendorClient } from './types'
 import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -89,6 +89,11 @@ export const api = {
   getMe: () =>
     req<VendorSession>('/api/vendor/me', { headers: authHeaders() }),
 
+  updateProfile: (data: Pick<VendorSession, 'name' | 'specialty' | 'bio' | 'price_uzs' | 'experience_yr' | 'avatar_emoji'>) =>
+    req<VendorSession>('/api/vendor/me', {
+      method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data),
+    }),
+
   services: () =>
     req<VendorService[]>('/api/vendor/services', { headers: authHeaders() }),
 
@@ -127,4 +132,13 @@ export const api = {
     req<VendorReview>(`/api/vendor/reviews/${id}/reply`, {
       method: 'POST', headers: authHeaders(), body: JSON.stringify({ text }),
     }),
+
+  requestPayout: (amount_uzs: number, method: string, requisites: string) =>
+    req<{ id: number; status: string }>('/api/vendor/payouts', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ amount_uzs, method, requisites }),
+    }),
+
+  clients: () =>
+    req<VendorClient[]>('/api/vendor/clients', { headers: authHeaders() }),
 }

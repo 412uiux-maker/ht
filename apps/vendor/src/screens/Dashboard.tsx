@@ -131,6 +131,7 @@ export default function Dashboard({
             <StatCard label="Активных" value={stats.active} color="var(--green)" />
             <StatCard label="Ожидают" value={stats.pending} color="var(--amber)" />
             <StatCard label="Рейтинг" value={stats.rating} color="var(--amber)" Icon={IconStar} />
+            <StatCard label="Отзывов" value={stats.review_count ?? 0} color="var(--violet, #7c5cbf)" Icon={IconStar} />
           </div>
         )}
 
