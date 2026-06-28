@@ -5,11 +5,13 @@ const router = express.Router();
 router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT v.*, COUNT(r.id)::int AS review_count
+      `SELECT v.*, COUNT(r.id)::int AS review_count,
+              (vv.status = 'verified') AS is_verified
        FROM vets v
        LEFT JOIN reviews r ON r.vet_id = v.id AND r.status = 'published'
+       LEFT JOIN vendor_verification vv ON vv.vet_id = v.id
        WHERE v.is_available = true
-       GROUP BY v.id
+       GROUP BY v.id, vv.status
        ORDER BY v.rating DESC`
     );
     res.json(rows);

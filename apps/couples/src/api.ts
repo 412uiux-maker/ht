@@ -21,6 +21,7 @@ export type Vet = {
   avatar_emoji: string
   experience_yr: number
   is_available: boolean
+  is_verified?: boolean
 }
 
 export type VetReview = {
@@ -152,6 +153,7 @@ export type LearnItem = {
 
 export type Order = {
   id: string
+  vet_id: number | null
   service_type: string
   consultation_id: string | null
   status: string

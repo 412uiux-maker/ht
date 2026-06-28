@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { IconShield, IconSearch, IconAlertCircle, IconStarFilled } from '@ht/shared'
-import type { Vet } from '../api'
+import type { Vet, VetReview } from '../api'
 import { api } from '../api'
 import { t } from '../i18n'
 
@@ -203,106 +203,188 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
 }
 
 function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
-  const [expanded, setExpanded] = useState(false)
+  const [bioExpanded, setBioExpanded] = useState(false)
+  const [reviewsOpen, setReviewsOpen] = useState(false)
+  const [reviews, setReviews] = useState<VetReview[] | null>(null)
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+
+  const toggleReviews = async () => {
+    if (reviewsOpen) { setReviewsOpen(false); return }
+    setReviewsOpen(true)
+    if (reviews !== null) return
+    setReviewsLoading(true)
+    try {
+      const data = await api.vetReviews(vet.id)
+      setReviews(data)
+    } catch { setReviews([]) }
+    finally { setReviewsLoading(false) }
+  }
 
   return (
     <div style={{
       background: 'var(--surface)', borderRadius: 'var(--r-lg)',
-      padding: '16px', border: '1px solid var(--border)',
+      border: '1px solid var(--border)',
       boxShadow: '0 2px 8px rgba(35,40,45,.06)',
+      overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-        {/* Avatar */}
-        <div style={{
-          fontSize: 40, width: 64, height: 64, borderRadius: 'var(--r-md)',
-          background: 'var(--surface-2)', display: 'flex', alignItems: 'center',
-          justifyContent: 'center', flexShrink: 0, position: 'relative',
-        }}>
-          {vet.avatar_emoji}
-          <span style={{
-            position: 'absolute', bottom: -4, right: -4,
-            width: 14, height: 14, borderRadius: '50%',
-            background: '#22c55e', border: '2px solid var(--surface)',
-          }} />
-        </div>
-
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-            <div style={{ fontWeight: 700, fontSize: 16 }}>{vet.name}</div>
+      <div style={{ padding: '16px' }}>
+        <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+          {/* Avatar */}
+          <div style={{
+            fontSize: 40, width: 64, height: 64, borderRadius: 'var(--r-md)',
+            background: 'var(--surface-2)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', flexShrink: 0, position: 'relative',
+          }}>
+            {vet.avatar_emoji}
+            <span style={{
+              position: 'absolute', bottom: -4, right: -4,
+              width: 14, height: 14, borderRadius: '50%',
+              background: '#22c55e', border: '2px solid var(--surface)',
+            }} />
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>{vet.specialty}</div>
-          <div style={{ display: 'flex', gap: 12, fontSize: 13, flexWrap: 'wrap' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#d97706', fontWeight: 600 }}>
-              <IconStarFilled size={13} color="#d97706" />
-              {Number(vet.rating).toFixed(1)}
-              {vet.review_count > 0 && (
-                <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>
-                  ({vet.review_count})
+
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>{vet.name}</div>
+              {vet.is_verified && (
+                <span title="Верифицирован" style={{ display: 'flex', alignItems: 'center' }}>
+                  <IconShield size={15} color="var(--primary)" />
                 </span>
               )}
-            </span>
-            <span style={{ color: 'var(--text-muted)' }}>
-              {vet.experience_yr} {t('home.exp')}
-            </span>
-            <span style={{
-              background: '#dcfce7', color: '#15803d',
-              borderRadius: 'var(--r-pill)', padding: '1px 8px', fontSize: 12, fontWeight: 600,
-            }}>
-              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#15803d', marginRight: 4, verticalAlign: 'middle' }} />{t('home.available')}
-            </span>
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 6 }}>{vet.specialty}</div>
+            <div style={{ display: 'flex', gap: 10, fontSize: 13, flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                onClick={toggleReviews}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 3,
+                  color: '#d97706', fontWeight: 600, background: 'none',
+                  border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
+                }}
+              >
+                <IconStarFilled size={13} color="#d97706" />
+                {Number(vet.rating).toFixed(1)}
+                {vet.review_count > 0 && (
+                  <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 12 }}>
+                    ({vet.review_count})
+                  </span>
+                )}
+              </button>
+              <span style={{ color: 'var(--text-muted)' }}>
+                {vet.experience_yr} {t('home.exp')}
+              </span>
+              <span style={{
+                background: '#dcfce7', color: '#15803d',
+                borderRadius: 'var(--r-pill)', padding: '1px 8px', fontSize: 12, fontWeight: 600,
+              }}>
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#15803d', marginRight: 4, verticalAlign: 'middle' }} />
+                {t('home.available')}
+              </span>
+            </div>
           </div>
+        </div>
+
+        {/* Bio */}
+        {vet.bio && (
+          <div style={{ marginTop: 10 }}>
+            <div style={{
+              fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5,
+              overflow: 'hidden',
+              display: '-webkit-box', WebkitLineClamp: bioExpanded ? 99 : 2,
+              WebkitBoxOrient: 'vertical' as const,
+            }}>
+              {vet.bio}
+            </div>
+            {vet.bio.length > 80 && (
+              <button
+                onClick={() => setBioExpanded(x => !x)}
+                style={{
+                  background: 'none', border: 'none', padding: 0,
+                  fontSize: 12, color: 'var(--primary)', fontWeight: 600,
+                  marginTop: 2, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {bioExpanded ? '↑' : t('home.bio')}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)',
+        }}>
+          <div>
+            <span style={{ fontWeight: 700, fontSize: 17, color: 'var(--primary)', fontVariantNumeric: 'tabular-nums' }}>
+              {vet.price_uzs.toLocaleString('ru-RU')}
+            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>{t('home.price')}</span>
+          </div>
+          <button
+            onClick={() => onSelect(vet)}
+            style={{
+              padding: '10px 22px', borderRadius: 'var(--r-pill)',
+              background: 'var(--primary)', color: 'var(--on-primary)',
+              border: 'none', fontWeight: 700, fontSize: 14, minHeight: 44,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {t('home.book')}
+          </button>
         </div>
       </div>
 
-      {/* Bio */}
-      {vet.bio && (
-        <div style={{ marginTop: 10 }}>
-          <div style={{
-            fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5,
-            overflow: 'hidden',
-            display: '-webkit-box', WebkitLineClamp: expanded ? 99 : 2,
-            WebkitBoxOrient: 'vertical' as const,
-          }}>
-            {vet.bio}
-          </div>
-          {vet.bio.length > 80 && (
-            <button
-              onClick={() => setExpanded((x) => !x)}
-              style={{
-                background: 'none', border: 'none', padding: 0,
-                fontSize: 12, color: 'var(--primary)', fontWeight: 600,
-                marginTop: 2, cursor: 'pointer',
-              }}
-            >
-              {expanded ? '↑' : t('home.bio')}
-            </button>
+      {/* Reviews panel */}
+      {reviewsOpen && (
+        <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+          {reviewsLoading && (
+            <div style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
+              {t('loading')}
+            </div>
           )}
+          {!reviewsLoading && reviews !== null && reviews.length === 0 && (
+            <div style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
+              {t('home.no_reviews')}
+            </div>
+          )}
+          {!reviewsLoading && reviews && reviews.map((r, i) => (
+            <div key={r.id} style={{
+              padding: '12px 16px',
+              borderTop: i > 0 ? '1px solid var(--border)' : 'none',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {[1,2,3,4,5].map(s => (
+                    <span key={s} style={{ fontSize: 12, opacity: s <= r.rating ? 1 : 0.25 }}>★</span>
+                  ))}
+                </div>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {r.client_name ?? '—'}
+                </span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                  {new Date(r.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                </span>
+              </div>
+              {r.text && (
+                <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{r.text}</div>
+              )}
+              {r.reply && (
+                <div style={{
+                  marginTop: 6, padding: '8px 12px',
+                  background: 'rgba(242,120,75,.06)', borderRadius: 'var(--r-sm)',
+                  fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5,
+                  borderLeft: '2px solid var(--primary)',
+                }}>
+                  <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{vet.name}: </span>
+                  {r.reply}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
-
-      {/* Footer */}
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)',
-      }}>
-        <div>
-          <span style={{ fontWeight: 700, fontSize: 17, color: 'var(--primary)', fontVariantNumeric: 'tabular-nums' }}>
-            {vet.price_uzs.toLocaleString('ru-RU')}
-          </span>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', marginLeft: 4 }}>{t('home.price')}</span>
-        </div>
-        <button
-          onClick={() => onSelect(vet)}
-          style={{
-            padding: '10px 22px', borderRadius: 'var(--r-pill)',
-            background: 'var(--primary)', color: 'var(--on-primary)',
-            border: 'none', fontWeight: 700, fontSize: 14, minHeight: 44,
-          }}
-        >
-          {t('home.book')}
-        </button>
-      </div>
     </div>
   )
 }

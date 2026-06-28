@@ -32,12 +32,20 @@ interface VetInfo {
   avatar_emoji: string
 }
 
+interface RebookVet {
+  id: number
+  name: string
+  specialty: string
+  avatar_emoji: string
+}
+
 interface Props {
   onBack: () => void
   onOpenChat: (consultationId: string, vet: VetInfo) => void
+  onRebook?: (vet: RebookVet) => void
 }
 
-export default function Orders({ onBack, onOpenChat }: Props) {
+export default function Orders({ onBack, onOpenChat, onRebook }: Props) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
@@ -100,6 +108,7 @@ export default function Orders({ onBack, onOpenChat }: Props) {
           const meta = orderStatusColor(order.status)
           const isActive = ACTIVE_STATUSES.has(order.status) && order.consultation_id
           const canChat = isActive && order.consultation_id
+          const canRebook = onRebook && order.vet_id && DONE_STATUSES.has(order.status)
 
           return (
             <div
@@ -178,22 +187,42 @@ export default function Orders({ onBack, onOpenChat }: Props) {
                     {fmtMoney(order.price_uzs)}
                   </div>
                 </div>
-                {canChat && (
-                  <button
-                    onClick={() => onOpenChat(order.consultation_id!, {
-                      name: order.vet_name ?? 'Ветеринар',
-                      specialty: order.vet_specialty ?? '',
-                      avatar_emoji: order.vet_avatar ?? '🩺',
-                    })}
-                    style={{
-                      padding: '10px 20px', borderRadius: 'var(--r-pill)',
-                      background: 'var(--primary)', color: '#fff', border: 'none',
-                      fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', minHeight: 44,
-                    }}
-                  >
-                    <IconChat size={14} /> {t('orders.open_chat')}
-                  </button>
-                )}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {canChat && (
+                    <button
+                      onClick={() => onOpenChat(order.consultation_id!, {
+                        name: order.vet_name ?? 'Ветеринар',
+                        specialty: order.vet_specialty ?? '',
+                        avatar_emoji: order.vet_avatar ?? '🩺',
+                      })}
+                      style={{
+                        padding: '10px 20px', borderRadius: 'var(--r-pill)',
+                        background: 'var(--primary)', color: '#fff', border: 'none',
+                        fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', minHeight: 44,
+                      }}
+                    >
+                      <IconChat size={14} /> {t('orders.open_chat')}
+                    </button>
+                  )}
+                  {canRebook && (
+                    <button
+                      onClick={() => onRebook!({
+                        id: order.vet_id!,
+                        name: order.vet_name ?? 'Ветеринар',
+                        specialty: order.vet_specialty ?? '',
+                        avatar_emoji: order.vet_avatar ?? '🩺',
+                      })}
+                      style={{
+                        padding: '10px 18px', borderRadius: 'var(--r-pill)',
+                        background: 'var(--surface-2)', color: 'var(--primary)',
+                        border: '1.5px solid var(--primary)', fontWeight: 700,
+                        fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', minHeight: 44,
+                      }}
+                    >
+                      {t('orders.rebook')}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )

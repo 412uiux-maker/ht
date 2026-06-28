@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT
-         o.id, o.service_type, o.consultation_id, o.status, o.price_uzs,
+         o.id, o.vet_id, o.service_type, o.consultation_id, o.status, o.price_uzs,
          o.provider, o.created_at, o.commission_rate, o.payout_amount,
          o.rejected_reason, o.cancel_reason,
          c.problem, c.pet_name, c.pet_species, c.status AS consult_status,

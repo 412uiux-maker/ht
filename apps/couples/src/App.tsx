@@ -210,6 +210,7 @@ export default function App() {
             consultationId,
             vet: { ...STUB_VET, ...vetInfo },
           })}
+          onRebook={(vet) => startFlow({ name: 'booking', vet: { ...STUB_VET, ...vet } })}
         />
       </Wrap>
     )
