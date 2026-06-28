@@ -12,9 +12,9 @@ const ROLE_LABEL: Record<AppUserRole, string> = {
 }
 const ROLE_CHIP: Record<AppUserRole, string> = {
   owner:     'chip-muted',
-  vendor:    'chip-warn',
+  vendor:    'chip-warning',
   admin:     'chip-danger',
-  moderator: 'chip-info',
+  moderator: 'chip-blue',
   support:   'chip-success',
 }
 

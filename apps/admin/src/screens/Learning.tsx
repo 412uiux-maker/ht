@@ -61,7 +61,7 @@ export default function Learning() {
   const filtered = items.filter(i => {
     const matchType = typeFilter === 'all' || i.type === typeFilter
     const q = search.toLowerCase()
-    const matchSearch = !q || i.title.toLowerCase().includes(q) || i.subtitle.toLowerCase().includes(q) || (i.tags || []).some(t => t.toLowerCase().includes(q))
+    const matchSearch = !q || i.title.toLowerCase().includes(q) || (i.subtitle || '').toLowerCase().includes(q) || (i.tags || []).some(t => t.toLowerCase().includes(q))
     return matchType && matchSearch
   })
 
