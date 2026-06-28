@@ -1,3 +1,6 @@
+export type EducationEntry = { institution: string; degree: string; year: string }
+export type ScienceEntry   = { title: string; year: string }
+
 export type VendorSession = {
   vet_id: number
   name: string
@@ -10,6 +13,9 @@ export type VendorSession = {
   token: string
   verification_status?: 'pending' | 'verified' | 'rejected'
   has_telegram?: boolean
+  personal_story?: string
+  education?: EducationEntry[]
+  science?: ScienceEntry[]
 }
 
 export type VendorService = {

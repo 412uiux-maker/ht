@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
-import { IconCheckCircle, IconAlertCircle, IconStar, IconChat, IconMoney, IconConsultation, IconCertificate } from '@ht/shared'
-import type { VendorSession, Stats } from '../types'
+import { IconCheckCircle, IconAlertCircle, IconStar, IconConsultation, IconCertificate } from '@ht/shared'
+import type { VendorSession, Stats, EducationEntry, ScienceEntry } from '../types'
 import { setSession } from '../types'
 import { api } from '../api'
+
+interface DraftEdu extends EducationEntry { id: string }
+interface DraftSci extends ScienceEntry   { id: string }
 
 interface Props {
   session: VendorSession
@@ -10,31 +13,30 @@ interface Props {
 }
 
 const SPECIALTIES = [
-  'Терапевт (кошки, собаки)',
-  'Хирург',
-  'Дерматолог',
-  'Офтальмолог',
-  'Стоматолог',
-  'Кардиолог',
-  'Онколог',
-  'Невролог',
+  'Терапевт (кошки, собаки)', 'Хирург', 'Дерматолог', 'Офтальмолог',
+  'Стоматолог', 'Кардиолог', 'Онколог', 'Невролог',
 ]
 
-export default function VendorProfile({ session, onSessionUpdate }: Props) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState<VendorSession>(session)
-  const [saved, setSaved] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState('')
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [tgId, setTgId] = useState('')
-  const [tgLinking, setTgLinking] = useState(false)
-  const [tgLinked, setTgLinked] = useState(session.has_telegram ?? false)
-  const [tgError, setTgError] = useState('')
+const AVATARS = ['👨‍⚕️', '👩‍⚕️', '🐕', '🐈', '🦜', '🐇', '🦔', '🐠', '🐾', '🩺']
 
-  useEffect(() => {
-    api.stats(session.vet_id).then(setStats).catch(() => {})
-  }, [session.vet_id])
+export default function VendorProfile({ session, onSessionUpdate }: Props) {
+  const [editing, setEditing]   = useState(false)
+  const [draft, setDraft]       = useState<VendorSession>(session)
+  const [saved, setSaved]       = useState(false)
+  const [saving, setSaving]     = useState(false)
+  const [saveError, setSaveError] = useState('')
+  const [stats, setStats]       = useState<Stats | null>(null)
+
+  const [tgId, setTgId]           = useState('')
+  const [tgLinking, setTgLinking] = useState(false)
+  const [tgLinked, setTgLinked]   = useState(session.has_telegram ?? false)
+  const [tgError, setTgError]     = useState('')
+
+  // edit-modal card drafts
+  const [eduDraft, setEduDraft] = useState<Omit<DraftEdu, 'id'> | null>(null)
+  const [sciDraft, setSciDraft] = useState<Omit<DraftSci, 'id'> | null>(null)
+
+  useEffect(() => { api.stats(session.vet_id).then(setStats).catch(() => {}) }, [session.vet_id])
 
   const linkTelegram = async () => {
     const id = parseInt(tgId.replace(/\D/g, ''), 10)
@@ -43,7 +45,6 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
     try {
       await api.linkTelegram(id)
       setTgLinked(true); setTgId('')
-      setTimeout(() => setTgLinked(false), 3000)
     } catch (e) {
       setTgError((e as Error).message)
     } finally {
@@ -51,11 +52,16 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
     }
   }
 
-  const openEdit = () => { setDraft({ ...session }); setEditing(true); setSaveError('') }
+  const openEdit = () => {
+    setDraft({ ...session })
+    setEduDraft(null)
+    setSciDraft(null)
+    setSaveError('')
+    setEditing(true)
+  }
 
   const save = async () => {
-    setSaving(true)
-    setSaveError('')
+    setSaving(true); setSaveError('')
     try {
       const updated = await api.updateProfile({
         name: draft.name,
@@ -64,6 +70,9 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
         price_uzs: draft.price_uzs,
         experience_yr: draft.experience_yr,
         avatar_emoji: draft.avatar_emoji,
+        personal_story: draft.personal_story,
+        education: draft.education,
+        science: draft.science,
       })
       const merged = { ...session, ...updated }
       setSession(merged)
@@ -78,114 +87,163 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
     }
   }
 
-  const AVATARS = ['🐕', '🐈', '🦜', '🐇', '🦔', '🐠', '🐾', '🩺']
+  const eduList: DraftEdu[] = ((draft.education ?? []) as DraftEdu[])
+  const sciList: DraftSci[] = ((draft.science   ?? []) as DraftSci[])
+
+  const viewEdu: EducationEntry[] = session.education ?? []
+  const viewSci: ScienceEntry[]   = session.science   ?? []
 
   return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>Профиль</h1>
+    <div style={{ paddingBottom: 32 }}>
+
+      {/* ── Header ───────────────────────────────────────────── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Профиль</h1>
         <button onClick={openEdit} style={btnGhost}>Редактировать</button>
       </div>
 
       {saved && (
         <div style={{
-          padding: '12px 16px', borderRadius: 'var(--r-sm)',
-          background: 'rgba(76,175,125,.15)', color: 'var(--green)',
-          fontWeight: 600, fontSize: 14, marginBottom: 20,
+          padding: '11px 14px', borderRadius: 'var(--r-sm)',
+          background: 'rgba(76,175,125,.12)', color: 'var(--green)',
+          fontWeight: 600, fontSize: 13, marginBottom: 16,
           display: 'flex', alignItems: 'center', gap: 8,
         }}>
-          <IconCheckCircle size={16} color="var(--green)" /> Профиль обновлён
+          <IconCheckCircle size={15} color="var(--green)" /> Профиль обновлён
         </div>
       )}
 
-      {/* Identity card */}
+      {/* ── Hero card ────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--surface)', borderRadius: 'var(--r-md)',
-        border: '1px solid var(--surface3)', padding: '24px 20px',
-        display: 'flex', alignItems: 'center', gap: 20, marginBottom: 16,
+        background: 'var(--surface)', border: '1px solid var(--surface3)',
+        borderRadius: 'var(--r-md)', padding: '20px',
+        display: 'flex', gap: 16, marginBottom: 12,
       }}>
         <div style={{
-          width: 80, height: 80, borderRadius: '50%', flexShrink: 0,
-          background: 'rgba(242,120,75,.12)',
+          width: 72, height: 72, borderRadius: '50%', flexShrink: 0,
+          background: 'rgba(242,120,75,.1)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 42,
+          fontSize: 38,
         }}>
           {session.avatar_emoji}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginBottom: 4 }}>
-            {session.name}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+            <span style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{session.name}</span>
+            {session.verification_status === 'verified' && (
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 7px',
+                borderRadius: 'var(--r-pill)',
+                background: 'rgba(76,175,125,.12)', color: 'var(--green)',
+              }}>✓ Верифицирован</span>
+            )}
+            {session.verification_status === 'pending' && (
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 7px',
+                borderRadius: 'var(--r-pill)',
+                background: 'rgba(245,158,11,.12)', color: 'var(--amber)',
+              }}>На проверке</span>
+            )}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 6 }}>{session.specialty}</div>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <span style={{
-              fontSize: 12, padding: '3px 10px', borderRadius: 999, fontWeight: 700,
-              background: 'rgba(242,120,75,.12)', color: 'var(--coral)',
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-            }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10 }}>{session.specialty}</div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <Chip color="var(--coral)" bg="rgba(242,120,75,.1)">
               <IconStar size={12} color="var(--coral)" /> {session.rating.toFixed(1)}
-            </span>
-            <span style={{
-              fontSize: 12, padding: '3px 10px', borderRadius: 999, fontWeight: 700,
-              background: 'rgba(76,175,125,.12)', color: 'var(--green)',
-            }}>
+            </Chip>
+            <Chip color="var(--green)" bg="rgba(76,175,125,.1)">
               {session.experience_yr} лет опыта
-            </span>
+            </Chip>
+            {session.price_uzs > 0 && (
+              <Chip color="var(--text2)" bg="var(--surface2)">
+                {session.price_uzs.toLocaleString('ru-RU')} сум
+              </Chip>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Info rows */}
-      <div style={{
-        background: 'var(--surface)', borderRadius: 'var(--r-md)',
-        border: '1px solid var(--surface3)', overflow: 'hidden', marginBottom: 16,
-      }}>
+      {/* ── Stats row ────────────────────────────────────────── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
         {([
-          { Icon: IconChat, label: 'О себе', value: session.bio || '—' },
-          { Icon: IconMoney, label: 'Цена за консультацию', value: `${session.price_uzs.toLocaleString('ru-RU')} сум` },
-        ] as { Icon: React.FC<{ size?: number; color?: string }>; label: string; value: string }[]).map((row, i) => (
-          <div key={row.label} style={{
-            padding: '14px 16px',
-            borderTop: i === 0 ? 'none' : '1px solid var(--surface3)',
-          }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <row.Icon size={13} color="var(--text2)" /> {row.label}
-            </div>
-            <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.5 }}>{row.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-        {([
-          { Icon: IconConsultation, label: 'Консультаций', value: stats ? String(stats.total) : '…' },
-          { Icon: IconStar,         label: 'Рейтинг',       value: session.rating.toFixed(1) },
-          { Icon: IconCertificate,  label: 'Опыт',           value: `${session.experience_yr} лет` },
-        ] as { Icon: React.FC<{ size?: number; color?: string }>; label: string; value: string }[]).map(s => (
+          { icon: <IconConsultation size={20} color="var(--coral)" />, label: 'Консультаций', value: stats ? String(stats.total) : '…' },
+          { icon: <IconStar size={20} color="var(--coral)" />,         label: 'Рейтинг',      value: session.rating.toFixed(1) },
+          { icon: <IconCertificate size={20} color="var(--coral)" />,  label: 'Опыт',          value: `${session.experience_yr} л.` },
+        ]).map(s => (
           <div key={s.label} style={{
-            background: 'var(--surface)', borderRadius: 'var(--r-md)',
-            border: '1px solid var(--surface3)', padding: '14px',
-            textAlign: 'center',
+            background: 'var(--surface)', border: '1px solid var(--surface3)',
+            borderRadius: 'var(--r-md)', padding: '14px', textAlign: 'center',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
-              <s.Icon size={20} color="var(--coral)" />
-            </div>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 5 }}>{s.icon}</div>
             <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', marginBottom: 2 }}>{s.value}</div>
             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Telegram linking */}
+      {/* ── О себе ───────────────────────────────────────────── */}
+      <Section title="О себе" emoji="💬">
+        <p style={{ fontSize: 14, color: session.bio ? 'var(--text)' : 'var(--text3)', lineHeight: 1.65, margin: 0 }}>
+          {session.bio || 'Не заполнено'}
+        </p>
+      </Section>
+
+      {/* ── Личная история ───────────────────────────────────── */}
+      {session.personal_story && (
+        <Section title="Личная история" emoji="📖">
+          <p style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.65, margin: 0 }}>
+            {session.personal_story}
+          </p>
+        </Section>
+      )}
+
+      {/* ── Образование ──────────────────────────────────────── */}
+      {viewEdu.length > 0 && (
+        <Section title="Образование" emoji="🎓">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {viewEdu.map((e, i) => (
+              <div key={i} style={{
+                background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                borderRadius: 'var(--r-sm)', padding: '12px 14px',
+              }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{e.institution}</div>
+                {(e.degree || e.year) && (
+                  <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
+                    {[e.degree, e.year].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* ── Научная деятельность ─────────────────────────────── */}
+      {viewSci.length > 0 && (
+        <Section title="Научная деятельность" emoji="🔬">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {viewSci.map((s, i) => (
+              <div key={i} style={{
+                background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                borderRadius: 'var(--r-sm)', padding: '12px 14px',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8,
+              }}>
+                <div style={{ fontSize: 14, color: 'var(--text)', fontWeight: 500, lineHeight: 1.4 }}>{s.title}</div>
+                {s.year && <span style={{ fontSize: 12, color: 'var(--text3)', flexShrink: 0 }}>{s.year}</span>}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* ── Telegram ─────────────────────────────────────────── */}
       <div style={{
-        background: 'var(--surface)', borderRadius: 'var(--r-md)',
-        border: '1px solid var(--surface3)', padding: '18px 20px', marginTop: 16,
+        background: 'var(--surface)', border: '1px solid var(--surface3)',
+        borderRadius: 'var(--r-md)', padding: '18px 20px', marginTop: 4,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
           <span style={{ fontSize: 22 }}>✈️</span>
           <div>
-            <div style={{ fontWeight: 700, fontSize: 15 }}>Telegram-уведомления</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Telegram-уведомления</div>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
               Получайте заявки и принимайте их прямо в Telegram
             </div>
@@ -193,7 +251,7 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
         </div>
 
         {tgLinked ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               flex: 1, padding: '10px 14px', borderRadius: 'var(--r-sm)',
               background: 'rgba(76,175,125,.12)', color: 'var(--green)',
@@ -208,8 +266,7 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
         ) : (
           <>
             <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10, lineHeight: 1.5 }}>
-              Узнайте свой Telegram ID через{' '}
-              <b>@userinfobot</b> и вставьте его ниже.
+              Узнайте свой Telegram ID через <b>@userinfobot</b> и вставьте его ниже.
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -242,79 +299,224 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
         )}
       </div>
 
-      {/* Edit modal */}
+      {/* ── Edit modal ───────────────────────────────────────── */}
       {editing && (
-        <div className="overlay">
+        <div className="overlay" onClick={e => e.target === e.currentTarget && !saving && setEditing(false)}>
           <div style={{
             background: 'var(--surface)', borderRadius: 'var(--r-md)',
-            padding: 28, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto',
+            padding: '24px 20px', width: '100%', maxWidth: 480,
+            maxHeight: '90vh', overflowY: 'auto',
             boxShadow: '0 16px 40px rgba(0,0,0,.25)',
           }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Редактировать профиль</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: 'var(--text)' }}>
+              Редактировать профиль
+            </h2>
 
-            {/* Avatar picker */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>
-                Аватар
-              </label>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {/* Avatar */}
+            <div style={{ marginBottom: 20 }}>
+              <ModalLabel>Аватар</ModalLabel>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {AVATARS.map(a => (
                   <button
                     key={a}
-                    onClick={() => setDraft({ ...draft, avatar_emoji: a })}
+                    onClick={() => setDraft(d => ({ ...d, avatar_emoji: a }))}
                     style={{
                       width: 44, height: 44, borderRadius: 'var(--r-sm)', fontSize: 22,
-                      border: draft.avatar_emoji === a
-                        ? '2px solid var(--coral)'
-                        : '1.5px solid var(--surface3)',
-                      background: draft.avatar_emoji === a
-                        ? 'rgba(242,120,75,.1)'
-                        : 'var(--surface2)',
+                      border: draft.avatar_emoji === a ? '2px solid var(--coral)' : '1.5px solid var(--surface3)',
+                      background: draft.avatar_emoji === a ? 'rgba(242,120,75,.1)' : 'var(--surface2)',
                       cursor: 'pointer',
                     }}
-                  >
-                    {a}
-                  </button>
+                  >{a}</button>
                 ))}
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Name */}
               <Field label="Имя и фамилия">
-                <input style={inp} value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} />
+                <input style={inp} value={draft.name}
+                  onChange={e => setDraft(d => ({ ...d, name: e.target.value }))} />
               </Field>
+
+              {/* Specialty */}
               <Field label="Специальность">
-                <select style={inp} value={draft.specialty} onChange={e => setDraft({ ...draft, specialty: e.target.value })}>
+                <select style={inp} value={draft.specialty}
+                  onChange={e => setDraft(d => ({ ...d, specialty: e.target.value }))}>
                   {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </Field>
+
+              {/* Bio */}
               <Field label="О себе">
+                <textarea style={{ ...inp, height: 80, resize: 'vertical' }}
+                  value={draft.bio}
+                  onChange={e => setDraft(d => ({ ...d, bio: e.target.value }))} />
+              </Field>
+
+              {/* Personal story */}
+              <Field label="Личная история">
                 <textarea
                   style={{ ...inp, height: 80, resize: 'vertical' }}
-                  value={draft.bio}
-                  onChange={e => setDraft({ ...draft, bio: e.target.value })}
+                  placeholder="Почему вы выбрали эту профессию…"
+                  value={draft.personal_story ?? ''}
+                  onChange={e => setDraft(d => ({ ...d, personal_story: e.target.value }))}
                 />
               </Field>
+
+              {/* Education cards editor */}
+              <div>
+                <ModalLabel>Образование</ModalLabel>
+                {eduList.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                    {eduList.map(e => (
+                      <div key={e.id} style={{
+                        background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                        borderRadius: 'var(--r-sm)', padding: '10px 12px',
+                        display: 'flex', alignItems: 'flex-start', gap: 8,
+                      }}>
+                        <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>🎓</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {e.institution}
+                          </div>
+                          {(e.degree || e.year) && (
+                            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
+                              {[e.degree, e.year].filter(Boolean).join(' · ')}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setDraft(d => ({ ...d, education: (d.education ?? []).filter((x: EducationEntry & { id?: string }) => (x as any).id !== e.id) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 15, padding: '0 0 0 4px', flexShrink: 0 }}
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {eduDraft !== null ? (
+                  <div style={{
+                    background: 'var(--surface2)', border: '1px solid var(--coral)',
+                    borderRadius: 'var(--r-sm)', padding: '12px',
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                  }}>
+                    <input
+                      style={inp} placeholder="Учебное заведение *"
+                      value={eduDraft.institution} autoFocus
+                      onChange={e => setEduDraft(d => d && ({ ...d, institution: e.target.value }))}
+                    />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: 8 }}>
+                      <input style={inp} placeholder="Специальность / степень"
+                        value={eduDraft.degree}
+                        onChange={e => setEduDraft(d => d && ({ ...d, degree: e.target.value }))} />
+                      <input style={inp} placeholder="Год" value={eduDraft.year} maxLength={4} inputMode="numeric"
+                        onChange={e => setEduDraft(d => d && ({ ...d, year: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button onClick={() => setEduDraft(null)} style={btnSmGhost}>Отмена</button>
+                      <button
+                        disabled={!eduDraft.institution.trim()}
+                        onClick={() => {
+                          if (!eduDraft.institution.trim()) return
+                          const entry = { ...eduDraft, id: String(Date.now()) }
+                          setDraft(d => ({ ...d, education: [...(d.education ?? []), entry] }))
+                          setEduDraft(null)
+                        }}
+                        style={btnSmCoral(!eduDraft.institution.trim())}
+                      >Добавить</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setEduDraft({ institution: '', degree: '', year: '' })} style={addCardBtn}>
+                    <span>+</span> Добавить образование
+                  </button>
+                )}
+              </div>
+
+              {/* Science cards editor */}
+              <div>
+                <ModalLabel>Научная деятельность</ModalLabel>
+                {sciList.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+                    {sciList.map(s => (
+                      <div key={s.id} style={{
+                        background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                        borderRadius: 'var(--r-sm)', padding: '10px 12px',
+                        display: 'flex', alignItems: 'flex-start', gap: 8,
+                      }}>
+                        <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>🔬</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {s.title}
+                          </div>
+                          {s.year && <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>{s.year}</div>}
+                        </div>
+                        <button
+                          onClick={() => setDraft(d => ({ ...d, science: (d.science ?? []).filter((x: ScienceEntry & { id?: string }) => (x as any).id !== s.id) }))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 15, padding: '0 0 0 4px', flexShrink: 0 }}
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {sciDraft !== null ? (
+                  <div style={{
+                    background: 'var(--surface2)', border: '1px solid var(--coral)',
+                    borderRadius: 'var(--r-sm)', padding: '12px',
+                    display: 'flex', flexDirection: 'column', gap: 8,
+                  }}>
+                    <input
+                      style={inp} placeholder="Публикация, конференция, учёная степень *"
+                      value={sciDraft.title} autoFocus
+                      onChange={e => setSciDraft(d => d && ({ ...d, title: e.target.value }))}
+                    />
+                    <input style={{ ...inp, maxWidth: 120 }} placeholder="Год" value={sciDraft.year} maxLength={4} inputMode="numeric"
+                      onChange={e => setSciDraft(d => d && ({ ...d, year: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button onClick={() => setSciDraft(null)} style={btnSmGhost}>Отмена</button>
+                      <button
+                        disabled={!sciDraft.title.trim()}
+                        onClick={() => {
+                          if (!sciDraft.title.trim()) return
+                          const entry = { ...sciDraft, id: String(Date.now()) }
+                          setDraft(d => ({ ...d, science: [...(d.science ?? []), entry] }))
+                          setSciDraft(null)
+                        }}
+                        style={btnSmCoral(!sciDraft.title.trim())}
+                      >Добавить</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setSciDraft({ title: '', year: '' })} style={addCardBtn}>
+                    <span>+</span> Добавить работу
+                  </button>
+                )}
+              </div>
+
+              {/* Price + experience */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <Field label="Цена за консультацию (сум)">
-                  <input style={inp} type="number" value={draft.price_uzs} onChange={e => setDraft({ ...draft, price_uzs: +e.target.value })} />
+                  <input style={inp} type="number" value={draft.price_uzs}
+                    onChange={e => setDraft(d => ({ ...d, price_uzs: +e.target.value }))} />
                 </Field>
                 <Field label="Лет опыта">
-                  <input style={inp} type="number" value={draft.experience_yr} onChange={e => setDraft({ ...draft, experience_yr: +e.target.value })} />
+                  <input style={inp} type="number" value={draft.experience_yr}
+                    onChange={e => setDraft(d => ({ ...d, experience_yr: +e.target.value }))} />
                 </Field>
               </div>
             </div>
 
             {saveError && (
               <div style={{
-                marginTop: 16, padding: '10px 14px', borderRadius: 'var(--r-sm)',
+                marginTop: 14, padding: '10px 14px', borderRadius: 'var(--r-sm)',
                 background: 'rgba(239,68,68,.10)', color: 'var(--danger)',
                 fontSize: 13, display: 'flex', alignItems: 'center', gap: 8,
               }}>
                 <IconAlertCircle size={14} color="var(--danger)" /> {saveError}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 22, justifyContent: 'flex-end' }}>
               <button onClick={() => setEditing(false)} style={btnGhost} disabled={saving}>Отмена</button>
               <button onClick={save} disabled={saving || !draft.name.trim()} style={btnCoral}>
                 {saving ? 'Сохраняем…' : 'Сохранить'}
@@ -327,16 +529,55 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function Section({ title, emoji, children }: { title: string; emoji: string; children: React.ReactNode }) {
   return (
-    <div>
-      <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>
-        {label}
-      </label>
+    <div style={{
+      background: 'var(--surface)', border: '1px solid var(--surface3)',
+      borderRadius: 'var(--r-md)', padding: '16px 18px', marginBottom: 10,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+        <span style={{ fontSize: 16 }}>{emoji}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+          {title}
+        </span>
+      </div>
       {children}
     </div>
   )
 }
+
+function Chip({ children, color, bg }: { children: React.ReactNode; color: string; bg: string }) {
+  return (
+    <span style={{
+      fontSize: 12, padding: '3px 10px', borderRadius: 'var(--r-pill)', fontWeight: 600,
+      background: bg, color,
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+    }}>
+      {children}
+    </span>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <ModalLabel>{label}</ModalLabel>
+      {children}
+    </div>
+  )
+}
+
+function ModalLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 6 }}>
+      {children}
+    </label>
+  )
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
 
 const inp: React.CSSProperties = {
   width: '100%', padding: '9px 12px', borderRadius: 'var(--r-sm)',
@@ -344,14 +585,42 @@ const inp: React.CSSProperties = {
   color: 'var(--text)', fontSize: 14, fontFamily: 'inherit', outline: 'none',
   boxSizing: 'border-box',
 }
+
 const btnCoral: React.CSSProperties = {
   padding: '10px 20px', borderRadius: 'var(--r-sm)', border: 'none',
   background: 'var(--coral)', color: '#fff', fontWeight: 600, fontSize: 14,
   cursor: 'pointer', minHeight: 44, fontFamily: 'inherit',
 }
+
 const btnGhost: React.CSSProperties = {
   padding: '10px 16px', borderRadius: 'var(--r-sm)',
   border: '1px solid var(--surface3)', background: 'var(--surface2)',
   color: 'var(--text2)', fontWeight: 500, fontSize: 14,
   cursor: 'pointer', minHeight: 44, fontFamily: 'inherit',
+}
+
+const btnSmGhost: React.CSSProperties = {
+  background: 'none', border: '1px solid var(--surface3)',
+  borderRadius: 'var(--r-sm)', padding: '6px 12px',
+  fontSize: 12, fontWeight: 600, color: 'var(--text2)',
+  cursor: 'pointer', fontFamily: 'inherit', minHeight: 32,
+}
+
+const addCardBtn: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 7,
+  background: 'var(--surface2)', border: '1px dashed var(--surface3)',
+  borderRadius: 'var(--r-sm)', padding: '10px 14px',
+  color: 'var(--coral)', fontSize: 13, fontWeight: 600,
+  cursor: 'pointer', width: '100%', fontFamily: 'inherit',
+}
+
+function btnSmCoral(disabled: boolean): React.CSSProperties {
+  return {
+    background: disabled ? 'var(--surface3)' : 'var(--coral)',
+    color: disabled ? 'var(--text3)' : '#fff',
+    border: 'none', borderRadius: 'var(--r-sm)',
+    padding: '6px 14px', fontSize: 12, fontWeight: 600,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    fontFamily: 'inherit', minHeight: 32,
+  }
 }

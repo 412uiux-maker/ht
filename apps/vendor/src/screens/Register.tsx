@@ -4,10 +4,16 @@ import type { VendorSession } from '../types'
 
 type Step = 1 | 2 | 3
 
+interface EducationEntry { id: string; institution: string; degree: string; year: string }
+interface ScienceEntry   { id: string; title: string; year: string }
+
 interface FormData {
   specialty: string
   name: string
   bio: string
+  personal_story: string
+  education: EducationEntry[]
+  science: ScienceEntry[]
   experience_yr: string
   price_uzs: string
   avatar_emoji: string
@@ -47,13 +53,16 @@ export default function Register({
 }) {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormData>({
-    specialty: '', name: '', bio: '', experience_yr: '', price_uzs: '',
-    avatar_emoji: '👨‍⚕️', phone: '', email: '', password: '', confirmPassword: '',
+    specialty: '', name: '', bio: '', personal_story: '', education: [], science: [],
+    experience_yr: '', price_uzs: '', avatar_emoji: '👨‍⚕️',
+    phone: '', email: '', password: '', confirmPassword: '',
   })
   const [focused, setFocused] = useState<string | null>(null)
   const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({})
   const [loading, setLoading] = useState(false)
   const [apiError, setApiError] = useState('')
+  const [eduDraft, setEduDraft] = useState<Omit<EducationEntry, 'id'> | null>(null)
+  const [sciDraft, setSciDraft] = useState<Omit<ScienceEntry, 'id'> | null>(null)
 
   const set = (k: keyof FormData, v: string) => setForm(f => ({ ...f, [k]: v }))
   const touch = (k: keyof FormData) => setTouched(t => ({ ...t, [k]: true }))
@@ -96,6 +105,9 @@ export default function Register({
         price_uzs: form.price_uzs ? parseInt(form.price_uzs) : undefined,
         experience_yr: form.experience_yr ? parseInt(form.experience_yr) : undefined,
         avatar_emoji: form.avatar_emoji,
+        personal_story: form.personal_story.trim() || undefined,
+        education: form.education.length ? form.education.map(({ id: _id, ...e }) => e) : undefined,
+        science: form.science.length ? form.science.map(({ id: _id, ...s }) => s) : undefined,
       })
       onRegister(session)
     } catch (err) {
@@ -278,6 +290,208 @@ export default function Register({
               <p style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '4px', textAlign: 'right' }}>
                 {form.bio.length} / {BIO_MAX}
               </p>
+            </div>
+
+            {/* Personal story */}
+            <div>
+              <label style={LBL}>
+                Личная история{' '}
+                <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text3)' }}>
+                  (необязательно)
+                </span>
+              </label>
+              <textarea
+                style={{ ...inp('personal_story'), minHeight: '88px', resize: 'vertical', lineHeight: 1.5, paddingTop: '12px' }}
+                placeholder="Почему вы выбрали эту профессию, что вас вдохновляет…"
+                value={form.personal_story}
+                onChange={e => set('personal_story', e.target.value)}
+                onFocus={() => setFocused('personal_story')}
+                onBlur={() => setFocused(null)}
+              />
+            </div>
+
+            {/* Education cards */}
+            <div>
+              <label style={LBL}>
+                Образование{' '}
+                <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text3)' }}>
+                  (необязательно)
+                </span>
+              </label>
+
+              {form.education.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+                  {form.education.map(e => (
+                    <div key={e.id} style={{
+                      background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                      borderRadius: 'var(--r-sm)', padding: '12px 14px',
+                      display: 'flex', alignItems: 'flex-start', gap: '10px',
+                    }}>
+                      <span style={{ fontSize: '18px', lineHeight: 1, flexShrink: 0, marginTop: '1px' }}>🎓</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {e.institution}
+                        </div>
+                        {(e.degree || e.year) && (
+                          <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '2px' }}>
+                            {[e.degree, e.year].filter(Boolean).join(' · ')}
+                          </div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setForm(f => ({ ...f, education: f.education.filter(x => x.id !== e.id) }))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: '16px', padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0 }}
+                        aria-label="Удалить"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {eduDraft !== null ? (
+                <div style={{
+                  background: 'var(--surface2)', border: '1px solid var(--coral)',
+                  borderRadius: 'var(--r-sm)', padding: '14px',
+                  display: 'flex', flexDirection: 'column', gap: '10px',
+                }}>
+                  <input
+                    style={inp('edu_institution')}
+                    placeholder="Учебное заведение *"
+                    value={eduDraft.institution}
+                    autoFocus
+                    onChange={e => setEduDraft(d => d && ({ ...d, institution: e.target.value }))}
+                    onFocus={() => setFocused('edu_institution')}
+                    onBlur={() => setFocused(null)}
+                  />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px', gap: '10px' }}>
+                    <input
+                      style={inp('edu_degree')}
+                      placeholder="Специальность / степень"
+                      value={eduDraft.degree}
+                      onChange={e => setEduDraft(d => d && ({ ...d, degree: e.target.value }))}
+                      onFocus={() => setFocused('edu_degree')}
+                      onBlur={() => setFocused(null)}
+                    />
+                    <input
+                      style={inp('edu_year')}
+                      placeholder="Год"
+                      value={eduDraft.year}
+                      maxLength={4}
+                      inputMode="numeric"
+                      onChange={e => setEduDraft(d => d && ({ ...d, year: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                      onFocus={() => setFocused('edu_year')}
+                      onBlur={() => setFocused(null)}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setEduDraft(null)} style={SMALL_GHOST_BTN}>Отмена</button>
+                    <button
+                      disabled={!eduDraft.institution.trim()}
+                      onClick={() => {
+                        if (!eduDraft.institution.trim()) return
+                        setForm(f => ({ ...f, education: [...f.education, { ...eduDraft, id: String(Date.now()) }] }))
+                        setEduDraft(null)
+                      }}
+                      style={smallPrimaryBtn(!eduDraft.institution.trim())}
+                    >
+                      Добавить
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setEduDraft({ institution: '', degree: '', year: '' })}
+                  style={ADD_BTN}
+                >
+                  <span style={{ fontSize: '18px', lineHeight: 1 }}>+</span> Добавить образование
+                </button>
+              )}
+            </div>
+
+            {/* Science cards */}
+            <div>
+              <label style={LBL}>
+                Научная деятельность{' '}
+                <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text3)' }}>
+                  (необязательно)
+                </span>
+              </label>
+
+              {form.science.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+                  {form.science.map(s => (
+                    <div key={s.id} style={{
+                      background: 'var(--surface2)', border: '1px solid var(--surface3)',
+                      borderRadius: 'var(--r-sm)', padding: '12px 14px',
+                      display: 'flex', alignItems: 'flex-start', gap: '10px',
+                    }}>
+                      <span style={{ fontSize: '18px', lineHeight: 1, flexShrink: 0, marginTop: '1px' }}>🔬</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {s.title}
+                        </div>
+                        {s.year && (
+                          <div style={{ fontSize: '12px', color: 'var(--text2)', marginTop: '2px' }}>{s.year}</div>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => setForm(f => ({ ...f, science: f.science.filter(x => x.id !== s.id) }))}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: '16px', padding: '0 0 0 4px', lineHeight: 1, flexShrink: 0 }}
+                        aria-label="Удалить"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {sciDraft !== null ? (
+                <div style={{
+                  background: 'var(--surface2)', border: '1px solid var(--coral)',
+                  borderRadius: 'var(--r-sm)', padding: '14px',
+                  display: 'flex', flexDirection: 'column', gap: '10px',
+                }}>
+                  <input
+                    style={inp('sci_title')}
+                    placeholder="Публикация, конференция, учёная степень *"
+                    value={sciDraft.title}
+                    autoFocus
+                    onChange={e => setSciDraft(d => d && ({ ...d, title: e.target.value }))}
+                    onFocus={() => setFocused('sci_title')}
+                    onBlur={() => setFocused(null)}
+                  />
+                  <input
+                    style={{ ...inp('sci_year'), maxWidth: '120px' }}
+                    placeholder="Год"
+                    value={sciDraft.year}
+                    maxLength={4}
+                    inputMode="numeric"
+                    onChange={e => setSciDraft(d => d && ({ ...d, year: e.target.value.replace(/\D/g, '').slice(0, 4) }))}
+                    onFocus={() => setFocused('sci_year')}
+                    onBlur={() => setFocused(null)}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <button onClick={() => setSciDraft(null)} style={SMALL_GHOST_BTN}>Отмена</button>
+                    <button
+                      disabled={!sciDraft.title.trim()}
+                      onClick={() => {
+                        if (!sciDraft.title.trim()) return
+                        setForm(f => ({ ...f, science: [...f.science, { ...sciDraft, id: String(Date.now()) }] }))
+                        setSciDraft(null)
+                      }}
+                      style={smallPrimaryBtn(!sciDraft.title.trim())}
+                    >
+                      Добавить
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setSciDraft({ title: '', year: '' })}
+                  style={ADD_BTN}
+                >
+                  <span style={{ fontSize: '18px', lineHeight: 1 }}>+</span> Добавить работу
+                </button>
+              )}
             </div>
 
             {/* Experience + price */}
@@ -551,4 +765,32 @@ const GHOST_BTN: React.CSSProperties = {
   color: 'var(--text2)', cursor: 'pointer',
   minHeight: '52px', whiteSpace: 'nowrap',
   fontFamily: 'var(--font)', transition: 'background .15s',
+}
+
+const SMALL_GHOST_BTN: React.CSSProperties = {
+  background: 'none', border: '1px solid var(--surface3)',
+  borderRadius: 'var(--r-sm)', padding: '7px 14px',
+  fontSize: '13px', fontWeight: 600, color: 'var(--text2)',
+  cursor: 'pointer', fontFamily: 'var(--font)', minHeight: '36px',
+}
+
+const ADD_BTN: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: '8px',
+  background: 'var(--surface2)', border: '1px dashed var(--surface3)',
+  borderRadius: 'var(--r-sm)', padding: '11px 14px',
+  color: 'var(--coral)', fontSize: '14px', fontWeight: 600,
+  cursor: 'pointer', width: '100%', fontFamily: 'var(--font)',
+  transition: 'border-color .15s',
+}
+
+function smallPrimaryBtn(disabled: boolean): React.CSSProperties {
+  return {
+    background: disabled ? 'var(--surface3)' : 'var(--coral)',
+    color: disabled ? 'var(--text3)' : '#fff',
+    border: 'none', borderRadius: 'var(--r-sm)',
+    padding: '7px 16px', fontSize: '13px', fontWeight: 600,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    fontFamily: 'var(--font)', minHeight: '36px',
+    transition: 'background .15s',
+  }
 }

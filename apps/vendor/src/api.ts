@@ -78,7 +78,10 @@ export const api = {
 
   register: (data: {
     name: string; specialty: string; phone: string; password: string;
-    bio?: string; email?: string; price_uzs?: number; experience_yr?: number; avatar_emoji?: string
+    bio?: string; email?: string; price_uzs?: number; experience_yr?: number; avatar_emoji?: string;
+    personal_story?: string;
+    education?: { institution: string; degree: string; year: string }[];
+    science?: { title: string; year: string }[];
   }) =>
     req<VendorSession>('/api/vendor/register', {
       method: 'POST',
@@ -89,7 +92,7 @@ export const api = {
   getMe: () =>
     req<VendorSession>('/api/vendor/me', { headers: authHeaders() }),
 
-  updateProfile: (data: Pick<VendorSession, 'name' | 'specialty' | 'bio' | 'price_uzs' | 'experience_yr' | 'avatar_emoji'>) =>
+  updateProfile: (data: Pick<VendorSession, 'name' | 'specialty' | 'bio' | 'price_uzs' | 'experience_yr' | 'avatar_emoji' | 'personal_story' | 'education' | 'science'>) =>
     req<VendorSession>('/api/vendor/me', {
       method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data),
     }),
