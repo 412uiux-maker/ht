@@ -9,6 +9,7 @@ interface Props {
   consultationId: string
   vet: Vet
   onBack: () => void
+  onVideoCall?: () => void
 }
 
 const SPECIES_EMOJI: Record<string, string> = {
@@ -45,7 +46,7 @@ function bubbleRadius(isMe: boolean, isLast: boolean) {
   return isLast ? '18px 18px 18px 4px' : '18px 18px 18px 14px'
 }
 
-export default function Chat({ lang, consultationId, vet, onBack }: Props) {
+export default function Chat({ lang, consultationId, vet, onBack, onVideoCall }: Props) {
   void lang
   const [messages, setMessages] = useState<Message[]>([])
   const [consultation, setConsultation] = useState<Consultation | null>(null)
@@ -175,22 +176,20 @@ export default function Chat({ lang, consultationId, vet, onBack }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {isActive && (
-            <a
-              href={`http://localhost:8080/video.html?id=${consultationId}&role=client`}
-              target="_blank"
-              rel="noreferrer"
+          {isActive && onVideoCall && (
+            <button
+              onClick={onVideoCall}
               aria-label={t('chat.video')}
               style={{
                 width: 40, height: 40, borderRadius: 'var(--r-md)',
                 background: 'var(--grad-warm)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                textDecoration: 'none',
+                border: 'none', cursor: 'pointer',
                 boxShadow: '0 2px 8px rgba(242,120,75,.25)',
               }}
             >
               <IconPlay size={18} color="#fff" />
-            </a>
+            </button>
           )}
           {!isActive && (
             <span style={{

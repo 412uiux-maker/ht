@@ -24,6 +24,7 @@ import ClinicList, { type Clinic } from './screens/ClinicList'
 import ClinicDetail from './screens/ClinicDetail'
 import Places from './screens/Places'
 import SymptomChecker from './screens/SymptomChecker'
+import VideoCall from './screens/VideoCall'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
@@ -41,6 +42,7 @@ type Flow =
   | { name: 'places' }
   | { name: 'deeds' }
   | { name: 'symptoms' }
+  | { name: 'video'; consultationId: string; vet: Vet }
 
 const STUB_VET: Vet = {
   id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
@@ -119,6 +121,7 @@ export default function App() {
       if (flow.name === 'booking')          endFlow('consult')
       else if (flow.name === 'payment')     startFlow({ name: 'booking', vet: flow.vet })
       else if (flow.name === 'chat')        endFlow('consult')
+      else if (flow.name === 'video')       startFlow({ name: 'chat', consultationId: flow.consultationId, vet: flow.vet })
       else if (flow.name === 'insurance-checkout') startFlow({ name: 'insurance' })
       else if (flow.name === 'insurance-success')  endFlow()
       else                                  endFlow()
@@ -171,6 +174,16 @@ export default function App() {
         <Chat
           lang={lang} consultationId={flow.consultationId} vet={flow.vet}
           onBack={() => endFlow('consult')}
+          onVideoCall={() => startFlow({ name: 'video', consultationId: flow.consultationId, vet: flow.vet })}
+        />
+      </Wrap>
+    )
+
+    if (flow.name === 'video') return (
+      <Wrap>
+        <VideoCall
+          consultationId={flow.consultationId} vet={flow.vet}
+          onBack={() => startFlow({ name: 'chat', consultationId: flow.consultationId, vet: flow.vet })}
         />
       </Wrap>
     )
