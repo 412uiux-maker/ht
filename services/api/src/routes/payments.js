@@ -272,8 +272,55 @@ router.post('/webhook/click', express.urlencoded({ extended: false }), async (re
   }
 });
 
-// Uzum webhook stub — protocol TBD by Uzum Pay SDK
-router.post('/webhook/uzum', (req, res) => res.json({ received: true }));
+// ── UZUM PAY WEBHOOK ─────────────────────────────────────────────────────────
+// Uzum sends a signed JSON POST. Auth via X-Uzum-Signature: HMAC-SHA256 over body.
+// Supported event types: payment.success, payment.cancelled, payment.failed.
+// https://developers.uzum.uz/docs/payment-gateway
+router.post('/webhook/uzum', express.json(), async (req, res) => {
+  const secretKey = process.env.UZUM_SECRET_KEY;
+  if (secretKey) {
+    const sig = req.headers['x-uzum-signature'];
+    const expected = crypto
+      .createHmac('sha256', secretKey)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
+    if (sig !== expected) return res.status(401).json({ error: 'Signature mismatch' });
+  }
+
+  const { event, transaction_id, order_id: orderId, amount, status } = req.body ?? {};
+  if (!event || !orderId) return res.status(400).json({ error: 'Invalid payload' });
+
+  try {
+    if (event === 'payment.success') {
+      const { rows: [payment] } = await pool.query(
+        `INSERT INTO payments (order_id, provider, amount_uzs, status, external_ref, paid_at)
+         VALUES ($1, 'uzum', $2, 'paid', $3, NOW())
+         ON CONFLICT (external_ref) DO UPDATE SET status='paid', paid_at=NOW()
+         RETURNING *`,
+        [orderId, amount || 0, transaction_id]
+      );
+      await pool.query(
+        `UPDATE orders SET status='paid' WHERE id=$1 AND status='created'`,
+        [orderId]
+      );
+      if (payment) notify.notifyVetNewOrder(orderId).catch(() => {});
+      return res.json({ success: true });
+    }
+
+    if (event === 'payment.cancelled' || event === 'payment.failed') {
+      await pool.query(
+        `UPDATE payments SET status='failed' WHERE external_ref=$1 AND provider='uzum'`,
+        [transaction_id]
+      );
+      return res.json({ success: true });
+    }
+
+    // Unknown event — acknowledge silently
+    return res.json({ received: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // ── DEV SIMULATE ──────────────────────────────────────────────────────────────
 // POST /api/payments/simulate — dev/staging only

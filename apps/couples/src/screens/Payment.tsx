@@ -139,9 +139,9 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
         setState('checkout')
         startPolling(order.id)
       } else {
-        // Dev fallback: simulate using the already-created order
+        // Dev fallback: simulate payment on the already-created order (not consultation_id, to avoid duplicate)
         const [res] = await Promise.all([
-          api.simulatePayment(consultation.id, provider, finalAmount),
+          api.simulatePayment(consultation.id, provider, finalAmount, order.id),
           new Promise((r) => setTimeout(r, 1500)),
         ])
         if (promo) { api.usePromo(promo.code).catch(() => {}) }
@@ -535,12 +535,13 @@ export default function Payment({ lang, consultation, vet, onBack, onPaid }: Pro
               {t('pay.btn')} {finalAmount.toLocaleString('ru-RU')} {t('currency')} · {selectedProvider.name}
             </button>
 
-            {/* Demo disclaimer */}
+            {/* Security badge — show demo label only in non-production */}
             <div style={{
               textAlign: 'center', fontSize: 12,
               color: 'var(--text-muted)', padding: '0 8px',
             }}>
-              <IconShield size={12} style={{ verticalAlign: 'middle' }} /> {t('pay.demo')}
+              <IconShield size={12} style={{ verticalAlign: 'middle' }} />{' '}
+              {import.meta.env.PROD ? t('pay.trust') : t('pay.demo')}
             </div>
           </div>
         </>

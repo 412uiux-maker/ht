@@ -55,6 +55,14 @@ router.post('/', async (req, res) => {
       'SELECT vet_id FROM consultations WHERE id=$1', [consultation_id]
     );
     if (!c) return res.status(404).json({ error: 'Consultation not found' });
+
+    // Idempotency: return existing unpaid order for this consultation if one exists
+    const { rows: [existing] } = await pool.query(
+      `SELECT * FROM orders WHERE consultation_id=$1 AND status='created' ORDER BY created_at DESC LIMIT 1`,
+      [consultation_id]
+    );
+    if (existing) return res.json(existing);
+
     const { rows: [vet] } = await pool.query('SELECT price_uzs FROM vets WHERE id=$1', [c.vet_id]);
     const { rows: [order] } = await pool.query(
       `INSERT INTO orders (owner_id, vet_id, service_type, consultation_id, status, price_uzs)

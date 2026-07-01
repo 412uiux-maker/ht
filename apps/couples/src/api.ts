@@ -295,10 +295,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ sender: 'client', text }),
     }),
-  simulatePayment: (consultation_id: string, provider: string, amount_uzs: number) =>
+  simulatePayment: (
+    consultation_id: string, provider: string, amount_uzs: number,
+    order_id?: string,
+  ) =>
     req<PaymentResult>('/payments/simulate', {
       method: 'POST',
-      body: JSON.stringify({ consultation_id, provider, amount_uzs, owner_id: getOwnerId() }),
+      body: JSON.stringify({
+        ...(order_id ? { order_id } : { consultation_id }),
+        provider, amount_uzs, owner_id: getOwnerId(),
+      }),
     }),
   validatePromo: (code: string) =>
     req<PromoResult>('/promos/validate', { method: 'POST', body: JSON.stringify({ code }) }),

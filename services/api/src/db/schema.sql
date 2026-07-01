@@ -302,6 +302,7 @@ CREATE TABLE IF NOT EXISTS payments (
 );
 CREATE INDEX IF NOT EXISTS payments_order_idx  ON payments(order_id);
 CREATE INDEX IF NOT EXISTS payments_status_idx ON payments(status);
+CREATE UNIQUE INDEX IF NOT EXISTS payments_external_ref_idx ON payments(external_ref) WHERE external_ref IS NOT NULL;
 
 -- Vendor payout requests (vendors request withdrawal of their earnings)
 CREATE TABLE IF NOT EXISTS vendor_payouts (
