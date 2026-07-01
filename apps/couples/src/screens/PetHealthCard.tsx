@@ -242,7 +242,7 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
       title={isRu ? 'История здоровья' : "Sog'liq tarixi"}
       action={
         onAskVet ? (
-          <button onClick={onAskVet} style={{
+          <button onClick={() => onAskVet()} style={{
             background: 'none', border: 'none', cursor: 'pointer',
             color: 'var(--primary)', fontSize: 13, fontWeight: 600,
             fontFamily: 'inherit', padding: 0, minHeight: 44,
