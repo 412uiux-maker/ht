@@ -338,3 +338,44 @@ CREATE TABLE IF NOT EXISTS disputes (
   UNIQUE(consultation_id, owner_id)
 );
 CREATE INDEX IF NOT EXISTS disputes_status_idx ON disputes(status);
+
+-- M1: Pet passport, chip, colour, documents
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS color            TEXT;
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS sterilized       BOOLEAN;
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS microchip_number TEXT;
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS passport_number  TEXT;
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS passport_type    TEXT DEFAULT 'none';
+ALTER TABLE pets ADD COLUMN IF NOT EXISTS updated_at       TIMESTAMPTZ DEFAULT NOW();
+
+ALTER TABLE pets DROP CONSTRAINT IF EXISTS pets_passport_type_check;
+ALTER TABLE pets ADD CONSTRAINT pets_passport_type_check
+  CHECK (passport_type IN ('eu','intl','none'));
+
+CREATE UNIQUE INDEX IF NOT EXISTS pets_microchip_uidx
+  ON pets(microchip_number) WHERE microchip_number IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS pet_documents (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pet_id     UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL DEFAULT 'passport_page'
+             CHECK (kind IN ('passport_page','vaccination','other')),
+  file_url   TEXT NOT NULL,
+  caption    TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS pet_documents_pet_idx ON pet_documents(pet_id);
+
+-- M2: Structured vaccinations
+CREATE TABLE IF NOT EXISTS vaccinations (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pet_id           UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+  type             TEXT NOT NULL CHECK (type IN ('rabies','dhppi','other')),
+  name             TEXT,
+  date_administered DATE NOT NULL,
+  valid_until      DATE,
+  vet_name         TEXT,
+  document_id      UUID REFERENCES pet_documents(id),
+  verified_by      TEXT,
+  created_at       TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS vaccinations_pet_idx ON vaccinations(pet_id);

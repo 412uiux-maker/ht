@@ -60,6 +60,33 @@ export type Pet = {
   notes: string | null
   avatar_emoji: string
   created_at: string
+  color?: string | null
+  sterilized?: boolean | null
+  microchip_number?: string | null
+  passport_number?: string | null
+  passport_type?: 'eu' | 'intl' | 'none' | null
+}
+
+export type PetDocument = {
+  id: string
+  pet_id: string
+  kind: 'passport_page' | 'vaccination' | 'other'
+  file_url: string
+  caption: string | null
+  created_at: string
+}
+
+export type Vaccination = {
+  id: string
+  pet_id: string
+  type: 'rabies' | 'dhppi' | 'other'
+  name: string | null
+  date_administered: string
+  valid_until: string | null
+  vet_name: string | null
+  document_id: string | null
+  verified_by: string | null
+  created_at: string
 }
 
 export type Message = {
@@ -273,11 +300,32 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ owner_id: getOwnerId(), type, amount_uzs: amount }),
     }),
-  createPet: (body: { owner_id: string; name: string; species: string; sex: string; avatar_emoji: string }) =>
-    req<Pet>('/pets', { method: 'POST', body: JSON.stringify(body) }),
-  updatePet: (id: string, body: { name: string; species: string; sex: string; avatar_emoji: string; breed?: string | null; birth_date?: string | null; weight_kg?: number | null; notes?: string | null }) =>
-    req<Pet>(`/pets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
-  deletePet: (id: string) => req<{ ok: boolean }>(`/pets/${id}`, { method: 'DELETE' }),
+  createPet: (body: {
+    owner_id: string; name: string; species: string; sex: string; avatar_emoji: string;
+    color?: string | null; sterilized?: boolean | null; microchip_number?: string | null;
+    passport_number?: string | null; passport_type?: string | null;
+  }) => req<Pet>('/pets', { method: 'POST', body: JSON.stringify(body) }),
+  updatePet: (id: string, body: {
+    name: string; species: string; sex: string; avatar_emoji: string;
+    breed?: string | null; birth_date?: string | null; weight_kg?: number | null; notes?: string | null;
+    color?: string | null; sterilized?: boolean | null; microchip_number?: string | null;
+    passport_number?: string | null; passport_type?: string | null;
+  }) => req<Pet>(`/pets/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deletePet: (id: string) => req<void>(`/pets/${id}`, { method: 'DELETE' }),
+  petDocuments: (petId: string, ownerId: string) =>
+    req<PetDocument[]>(`/pets/${petId}/documents?owner_id=${encodeURIComponent(ownerId)}`),
+  createPetDocument: (petId: string, body: { owner_id: string; kind: string; file_url: string; caption?: string }) =>
+    req<PetDocument>(`/pets/${petId}/documents`, { method: 'POST', body: JSON.stringify(body) }),
+  deletePetDocument: (petId: string, docId: string, ownerId: string) =>
+    req<void>(`/pets/${petId}/documents/${docId}?owner_id=${encodeURIComponent(ownerId)}`, { method: 'DELETE' }),
+  petVaccinations: (petId: string, ownerId: string) =>
+    req<Vaccination[]>(`/pets/${petId}/vaccinations?owner_id=${encodeURIComponent(ownerId)}`),
+  createVaccination: (petId: string, body: {
+    owner_id: string; type: string; name?: string; date_administered: string;
+    valid_until?: string; vet_name?: string;
+  }) => req<Vaccination>(`/pets/${petId}/vaccinations`, { method: 'POST', body: JSON.stringify(body) }),
+  deleteVaccination: (petId: string, vaccId: string, ownerId: string) =>
+    req<void>(`/pets/${petId}/vaccinations/${vaccId}?owner_id=${encodeURIComponent(ownerId)}`, { method: 'DELETE' }),
   orders: (ownerId: string) => req<Order[]>(`/orders?owner_id=${encodeURIComponent(ownerId)}`),
 
   getOrder: (orderId: string) => req<Order>(`/orders/${orderId}`),
