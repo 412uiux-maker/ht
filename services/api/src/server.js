@@ -3,6 +3,7 @@ const path = require('path');
 const express = require('express');
 const { WebSocketServer } = require('ws');
 const initDb = require('./db/init');
+const { startVaccineReminders } = require('./jobs/vaccineReminders');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -143,5 +144,6 @@ wss.on('connection', (ws) => {
 initDb()
   .then(() => {
     server.listen(PORT, () => console.log(`petplatform-api running at http://localhost:${PORT}`));
+    startVaccineReminders();
   })
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });
