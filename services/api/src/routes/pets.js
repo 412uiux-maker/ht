@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db');
+const { logHealthEvent } = require('../helpers/healthEvents');
 const router = express.Router();
 
 const VALID_SPECIES  = ['cat','dog','rabbit','parrot','hamster','fish','other'];
@@ -262,6 +263,76 @@ router.delete('/:id/vaccinations/:vId', async (req, res) => {
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ─── Health event timeline ────────────────────────────────────────────────────
+
+const VALID_EVENT_TYPES = ['vaccination','weight','consultation','prescription','reminder','note'];
+const MANUAL_EVENT_TYPES = ['note','weight']; // owner can only POST these manually
+
+router.get('/:id/events', async (req, res) => {
+  const { owner_id, type, limit = 50, before } = req.query;
+  if (!owner_id) return res.status(400).json({ error: 'owner_id required' });
+  try {
+    if (!await assertOwner(req.params.id, owner_id, res)) return;
+    const conditions = ['pet_id = $1'];
+    const params = [req.params.id];
+    let idx = 2;
+    if (type && VALID_EVENT_TYPES.includes(type)) {
+      conditions.push(`type = $${idx++}`); params.push(type);
+    }
+    if (before) {
+      conditions.push(`occurred_at < $${idx++}`); params.push(before);
+    }
+    params.push(Math.min(Number(limit) || 50, 100));
+    const { rows } = await pool.query(
+      `SELECT * FROM health_events WHERE ${conditions.join(' AND ')}
+       ORDER BY occurred_at DESC LIMIT $${idx}`,
+      params
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/:id/events', async (req, res) => {
+  const { owner_id, type, title, note, occurred_at } = req.body;
+  if (!owner_id) return res.status(400).json({ error: 'owner_id required' });
+  if (!type || !MANUAL_EVENT_TYPES.includes(type)) {
+    return res.status(400).json({ error: `type must be one of: ${MANUAL_EVENT_TYPES.join(',')}` });
+  }
+  if (!title?.trim()) return res.status(400).json({ error: 'title required' });
+  try {
+    if (!await assertOwner(req.params.id, owner_id, res)) return;
+    const { rows: [event] } = await pool.query(
+      `INSERT INTO health_events (pet_id, type, source, title, note, occurred_at)
+       VALUES ($1,$2,'owner',$3,$4,$5) RETURNING *`,
+      [req.params.id, type, title.trim(), note?.trim() ?? null, occurred_at ?? new Date()]
+    );
+    res.status(201).json(event);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ─── Weight update (updates pets.weight_kg + logs event) ─────────────────────
+
+router.post('/:id/weight', async (req, res) => {
+  const { owner_id, value, measured_at } = req.body;
+  if (!owner_id) return res.status(400).json({ error: 'owner_id required' });
+  const kg = parseFloat(value);
+  if (!kg || kg <= 0 || kg > 999) return res.status(400).json({ error: 'valid value required' });
+  try {
+    if (!await assertOwner(req.params.id, owner_id, res)) return;
+    const { rows: [pet] } = await pool.query(
+      `UPDATE pets SET weight_kg=$1, updated_at=NOW() WHERE id=$2 RETURNING *`,
+      [kg, req.params.id]
+    );
+    if (!pet) return res.status(404).json({ error: 'Not found' });
+    const { rows: [event] } = await pool.query(
+      `INSERT INTO health_events (pet_id, type, source, title, occurred_at)
+       VALUES ($1,'weight','owner',$2,$3) RETURNING *`,
+      [req.params.id, `⚖️ ${kg} кг`, measured_at ?? new Date()]
+    );
+    res.status(201).json({ pet, event });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 module.exports = router;

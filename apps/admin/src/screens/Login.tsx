@@ -10,9 +10,10 @@ const DEMO_ACCOUNTS = [
 
 interface Props {
   onLogin: (session: AdminSession) => void
+  notice?: string | null
 }
 
-export default function Login({ onLogin }: Props) {
+export default function Login({ onLogin, notice }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -61,6 +62,24 @@ export default function Login({ onLogin }: Props) {
         </div>
 
         <div className="card">
+          {notice && (
+            <div style={{
+              marginBottom: 16,
+              padding: '10px 14px',
+              borderRadius: 'var(--r-md)',
+              background: '#fff8e1',
+              border: '1px solid #f59e0b',
+              color: '#92400e',
+              fontSize: 14,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span>⚠️</span>
+              {notice}
+            </div>
+          )}
+
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>
               Быстрый вход

@@ -80,9 +80,21 @@ function petAge(birthDate: string | null, uz: boolean): string {
   return `${y} ${uz ? 'yil' : 'лет'}`
 }
 
+// ── Person type (mirrors Family.tsx) ─────────────────────────────────────────
+type Person = { id: string; name: string; role: 'adult' | 'child'; birth_date?: string; avatar_emoji: string }
+const loadPersons = (): Person[] => {
+  try { return JSON.parse(localStorage.getItem('ht_persons') ?? '[]') } catch { return [] }
+}
+
+const PERSON_COLORS: Record<'adult' | 'child', { bg: string; text: string }> = {
+  adult: { bg: 'rgba(59,130,246,0.12)',  text: '#1D4ED8' },
+  child: { bg: 'rgba(234,88,12,0.12)',   text: '#9A3412' },
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces, onDeeds, onSymptoms }: Props) {
   const [pets, setPets] = useState<Pet[] | null>(null)
+  const [persons] = useState<Person[]>(loadPersons)
   const [topicFilter, setTopicFilter] = useState<'cats' | 'dogs'>('cats')
   const uz = getLang() === 'uz'
   void lang
@@ -90,6 +102,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
   useEffect(() => { api.pets(getOwnerId()).then(setPets).catch(() => setPets([])) }, [])
 
   const firstPet = pets?.[0] ?? null
+  const familyEmpty = (pets?.length ?? 0) === 0 && persons.length === 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 164, background: 'var(--bg)' }}>
@@ -412,14 +425,14 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
         </div>
       </div>
 
-      {/* ─────────────────────────────── MY PETS SECTION */}
+      {/* ─────────────────────────────── MY FAMILY SECTION */}
       <div style={{ padding: '22px 16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <span style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)' }}>
-            {uz ? 'Mening hayvonlarim' : 'Мои питомцы'}
+            {uz ? 'Mening oilam' : 'Моя семья'}
           </span>
           <button
-            onClick={() => onNavigate('pets')}
+            onClick={() => onNavigate('family')}
             style={{
               border: 'none', background: 'transparent', cursor: 'pointer',
               fontSize: 13, color: P.main, fontWeight: 600,
@@ -446,20 +459,20 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
               </div>
             ))}
           </div>
-        ) : pets.length === 0 ? (
+        ) : familyEmpty ? (
           <div style={{
             background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 'var(--r-xl)', padding: '28px 24px', textAlign: 'center',
           }}>
-            <div style={{ fontSize: 42, marginBottom: 8 }}>🐾</div>
+            <div style={{ fontSize: 42, marginBottom: 8 }}>👨‍👩‍👧‍👦</div>
             <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
-              {uz ? "Hayvon qo'shing" : 'Добавьте питомца'}
+              {uz ? "Oilangizni qo'shing" : 'Добавьте членов семьи'}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16, lineHeight: 1.5 }}>
-              {uz ? "Sog'liq tarixini saqlang va maslahat oling" : 'Отслеживайте здоровье и историю лечения'}
+              {uz ? "Hayvonlar va odamlar sog'lig'ini kuzating" : 'Питомцы и люди — здоровье всей семьи'}
             </div>
             <button
-              onClick={() => onNavigate('pets')}
+              onClick={() => onNavigate('family')}
               style={{
                 padding: '10px 28px', borderRadius: 'var(--r-pill)',
                 background: P.main, color: '#fff', border: 'none',
@@ -472,10 +485,11 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pets.slice(0, 3).map(pet => (
+            {/* Pets */}
+            {pets.slice(0, 2).map(pet => (
               <button
-                key={pet.id}
-                onClick={() => onNavigate('pets')}
+                key={`p-${pet.id}`}
+                onClick={() => onNavigate('family')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 14,
                   padding: '13px 16px', borderRadius: 'var(--r-xl)',
@@ -500,7 +514,7 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
                       borderRadius: 'var(--r-pill)', padding: '2px 8px',
                       fontSize: 11, fontWeight: 600,
                     }}>
-                      {SPEC_LABEL[pet.species]?.[uz ? 1 : 0] ?? pet.species}
+                      🐾 {SPEC_LABEL[pet.species]?.[uz ? 1 : 0] ?? pet.species}
                     </span>
                     <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       {petAge(pet.birth_date, uz)}
@@ -510,6 +524,63 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
                 <IconChevronRight size={16} color="var(--text-muted)" />
               </button>
             ))}
+
+            {/* Persons */}
+            {persons.slice(0, 2).map(person => {
+              const pc = PERSON_COLORS[person.role]
+              const emoji = person.role === 'child' ? '🧒' : '👤'
+              const roleLabel = person.role === 'adult' ? (uz ? 'Katta' : 'Взрослый') : (uz ? 'Bola' : 'Ребёнок')
+              return (
+                <button
+                  key={`m-${person.id}`}
+                  onClick={() => onNavigate('family')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '13px 16px', borderRadius: 'var(--r-xl)',
+                    background: 'var(--surface)', border: '1px solid var(--border)',
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    textAlign: 'left', width: '100%',
+                  }}
+                >
+                  <div style={{
+                    width: 46, height: 46, borderRadius: '50%',
+                    background: pc.bg, border: `2px solid ${pc.text}44`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 24, flexShrink: 0,
+                  }}>
+                    {emoji}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{person.name}</div>
+                    <div style={{ marginTop: 3 }}>
+                      <span style={{
+                        background: pc.bg, color: pc.text,
+                        borderRadius: 'var(--r-pill)', padding: '2px 8px',
+                        fontSize: 11, fontWeight: 600,
+                      }}>
+                        👤 {roleLabel}
+                      </span>
+                    </div>
+                  </div>
+                  <IconChevronRight size={16} color="var(--text-muted)" />
+                </button>
+              )
+            })}
+
+            {/* Show more hint */}
+            {((pets.length + persons.length) > 4) && (
+              <button
+                onClick={() => onNavigate('family')}
+                style={{
+                  padding: '10px 16px', borderRadius: 'var(--r-xl)',
+                  background: 'transparent', border: '1.5px dashed var(--border)',
+                  fontSize: 13, color: 'var(--text-muted)', fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {uz ? `Yana ${pets.length + persons.length - 4} ta →` : `Ещё ${pets.length + persons.length - 4} →`}
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -379,3 +379,21 @@ CREATE TABLE IF NOT EXISTS vaccinations (
   created_at       TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS vaccinations_pet_idx ON vaccinations(pet_id);
+
+-- health-record M1: unified health event timeline
+CREATE TABLE IF NOT EXISTS health_events (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  pet_id      UUID NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL CHECK (type IN
+              ('vaccination','weight','consultation','prescription','reminder','note')),
+  source      TEXT NOT NULL DEFAULT 'owner'
+              CHECK (source IN ('owner','vet','system')),
+  ref_table   TEXT,
+  ref_id      TEXT,
+  title       TEXT NOT NULL,
+  note        TEXT,
+  occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS health_events_pet_time_idx
+  ON health_events(pet_id, occurred_at DESC);

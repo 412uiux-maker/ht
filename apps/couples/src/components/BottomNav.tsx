@@ -1,7 +1,7 @@
-import { IconHome, IconConsultation, IconPaw, IconBook, IconUser } from '@ht/shared'
+import { IconHome, IconConsultation, IconUsers, IconBook, IconUser } from '@ht/shared'
 import { t } from '../i18n'
 
-export type Tab = 'home' | 'consult' | 'pets' | 'learn' | 'profile'
+export type Tab = 'home' | 'consult' | 'family' | 'learn' | 'profile'
 
 interface Props {
   active: Tab
@@ -11,13 +11,13 @@ interface Props {
 type TabDef = {
   id: Tab
   Icon: React.ComponentType<{ size?: number; color?: string }>
-  labelKey: 'nav.home' | 'nav.consult' | 'nav.pets' | 'nav.learn' | 'nav.profile'
+  labelKey: 'nav.home' | 'nav.consult' | 'nav.family' | 'nav.learn' | 'nav.profile'
 }
 
 const TABS: TabDef[] = [
   { id: 'home',    Icon: IconHome,         labelKey: 'nav.home' },
   { id: 'consult', Icon: IconConsultation, labelKey: 'nav.consult' },
-  { id: 'pets',    Icon: IconPaw,          labelKey: 'nav.pets' },
+  { id: 'family',  Icon: IconUsers,        labelKey: 'nav.family' },
   { id: 'learn',   Icon: IconBook,         labelKey: 'nav.learn' },
   { id: 'profile', Icon: IconUser,         labelKey: 'nav.profile' },
 ]

@@ -4,7 +4,10 @@ let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
 })()
 
+let _onUnauthorized: (() => void) | null = null
+
 export const setApiSession = (s: AdminSession | null) => { _session = s }
+export const setUnauthorizedHandler = (fn: () => void) => { _onUnauthorized = fn }
 
 const authHeaders = () => ({
   'Content-Type': 'application/json',
@@ -13,6 +16,12 @@ const authHeaders = () => ({
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch('/api/admin' + path, { headers: authHeaders(), ...opts })
+  if (r.status === 401) {
+    localStorage.removeItem('ht_admin')
+    _session = null
+    _onUnauthorized?.()
+    throw new Error('Сессия истекла. Войдите снова.')
+  }
   if (!r.ok) {
     const e = await r.json().catch(() => ({}))
     throw new Error((e as { error?: string }).error ?? r.statusText)

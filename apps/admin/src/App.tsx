@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { AdminSession } from './types'
-import { setApiSession } from './api'
+import { setApiSession, setUnauthorizedHandler } from './api'
 import Login from './screens/Login'
 import Layout from './components/Layout'
 import Dashboard from './screens/Dashboard'
@@ -26,22 +26,33 @@ export default function App() {
     return s ? JSON.parse(s) : null
   })
   const [screen, setScreen] = useState<Screen>('dashboard')
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
 
   useEffect(() => { setApiSession(session) }, [session])
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      setSession(null)
+      setScreen('dashboard')
+      setAuthNotice('Сессия истекла — войдите снова.')
+    })
+  }, [])
 
   const handleLogin = (s: AdminSession) => {
     localStorage.setItem('ht_admin', JSON.stringify(s))
     setApiSession(s)
     setSession(s)
+    setAuthNotice(null)
   }
 
   const handleLogout = () => {
     localStorage.removeItem('ht_admin')
     setApiSession(null)
     setSession(null)
+    setAuthNotice(null)
   }
 
-  if (!session) return <Login onLogin={handleLogin} />
+  if (!session) return <Login onLogin={handleLogin} notice={authNotice} />
 
   return (
     <Layout session={session} activeScreen={screen} onNavigate={s => setScreen(s as Screen)} onLogout={handleLogout}>

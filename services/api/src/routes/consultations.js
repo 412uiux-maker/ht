@@ -1,5 +1,6 @@
 const express = require('express');
 const pool = require('../db');
+const { logHealthEvent } = require('../helpers/healthEvents');
 const router = express.Router();
 
 router.post('/', async (req, res) => {
@@ -112,6 +113,21 @@ router.patch('/:id/status', async (req, res) => {
           [order.id, payout]
         );
       }
+    }
+
+    // Log consultation event to pet's health timeline
+    if (status === 'completed' && consult.pet_id) {
+      const title = consult.summary
+        ? `🩺 ${consult.summary.slice(0, 120)}`
+        : '🩺 Консультация завершена';
+      await logHealthEvent(consult.pet_id, {
+        type: 'consultation',
+        source: 'vet',
+        refTable: 'consultations',
+        refId: consult.id,
+        title,
+        occurredAt: new Date(),
+      });
     }
 
     res.json(consult);

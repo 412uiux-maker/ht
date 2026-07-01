@@ -1,4 +1,4 @@
-import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData, VendorReview, VendorClient } from './types'
+import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData, VendorReview, VendorClient, PatientType } from './types'
 import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -77,7 +77,7 @@ export const api = {
     }),
 
   register: (data: {
-    name: string; specialty: string; phone: string; password: string;
+    name: string; specialty: string; patient_type: PatientType; phone: string; password: string;
     bio?: string; email?: string; price_uzs?: number; experience_yr?: number; avatar_emoji?: string;
     personal_story?: string;
     education?: { institution: string; degree: string; year: string }[];
@@ -92,7 +92,7 @@ export const api = {
   getMe: () =>
     req<VendorSession>('/api/vendor/me', { headers: authHeaders() }),
 
-  updateProfile: (data: Pick<VendorSession, 'name' | 'specialty' | 'bio' | 'price_uzs' | 'experience_yr' | 'avatar_emoji' | 'personal_story' | 'education' | 'science'>) =>
+  updateProfile: (data: Pick<VendorSession, 'name' | 'specialty' | 'patient_type' | 'bio' | 'price_uzs' | 'experience_yr' | 'avatar_emoji' | 'personal_story' | 'education' | 'science'>) =>
     req<VendorSession>('/api/vendor/me', {
       method: 'PATCH', headers: authHeaders(), body: JSON.stringify(data),
     }),

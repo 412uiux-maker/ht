@@ -11,7 +11,7 @@ import Home from './screens/Home'          // vet list — used as Consult tab
 import Booking from './screens/Booking'
 import Payment from './screens/Payment'
 import Chat from './screens/Chat'
-import Pets from './screens/Pets'
+import Family from './screens/Family'
 import LearnHub from './screens/LearnHub'
 import Profile from './screens/Profile'
 import Insurance from './screens/Insurance'
@@ -61,7 +61,7 @@ function devInitialTab(): Tab {
   const p = new URLSearchParams(location.search)
   if (p.has('booking')) return 'consult'
   const t = p.get('tab')
-  if (t === 'pets' || t === 'learn' || t === 'consult' || t === 'profile') return t as Tab
+  if (t === 'family' || t === 'learn' || t === 'consult' || t === 'profile') return t as Tab
   return 'home'
 }
 
@@ -314,7 +314,7 @@ export default function App() {
           onInsurance={() => startFlow({ name: 'insurance' })}
         />
       )}
-      {tab === 'pets'    && <Pets    lang={lang} />}
+      {tab === 'family'  && <Family  lang={lang} />}
       {tab === 'learn'   && <LearnHub lang={lang} />}
       {tab === 'profile' && (
         <Profile lang={lang} onSwitchLang={switchLang} onNavigate={setTab} onOrders={() => startFlow({ name: 'orders' })} />

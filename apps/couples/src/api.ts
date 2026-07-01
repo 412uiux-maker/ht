@@ -113,6 +113,22 @@ export type Consultation = {
   pet_id: string | null
 }
 
+export type HealthEventType = 'vaccination' | 'weight' | 'consultation' | 'prescription' | 'reminder' | 'note'
+export type HealthEventSource = 'owner' | 'vet' | 'system'
+
+export type HealthEvent = {
+  id: string
+  pet_id: string
+  type: HealthEventType
+  source: HealthEventSource
+  ref_table: string | null
+  ref_id: string | null
+  title: string
+  note: string | null
+  occurred_at: string
+  created_at: string
+}
+
 export type PetConsultation = {
   id: string
   created_at: string
@@ -326,6 +342,17 @@ export const api = {
   }) => req<Vaccination>(`/pets/${petId}/vaccinations`, { method: 'POST', body: JSON.stringify(body) }),
   deleteVaccination: (petId: string, vaccId: string, ownerId: string) =>
     req<void>(`/pets/${petId}/vaccinations/${vaccId}?owner_id=${encodeURIComponent(ownerId)}`, { method: 'DELETE' }),
+  petEvents: (petId: string, ownerId: string, opts?: { type?: string; limit?: number }) => {
+    const qs = new URLSearchParams({ owner_id: ownerId })
+    if (opts?.type) qs.set('type', opts.type)
+    if (opts?.limit) qs.set('limit', String(opts.limit))
+    return req<HealthEvent[]>(`/pets/${petId}/events?${qs}`)
+  },
+  createPetEvent: (petId: string, body: { owner_id: string; type: 'note' | 'weight'; title: string; note?: string; occurred_at?: string }) =>
+    req<HealthEvent>(`/pets/${petId}/events`, { method: 'POST', body: JSON.stringify(body) }),
+  logPetWeight: (petId: string, body: { owner_id: string; value: number; measured_at?: string }) =>
+    req<{ pet: Pet; event: HealthEvent }>(`/pets/${petId}/weight`, { method: 'POST', body: JSON.stringify(body) }),
+
   orders: (ownerId: string) => req<Order[]>(`/orders?owner_id=${encodeURIComponent(ownerId)}`),
 
   getOrder: (orderId: string) => req<Order>(`/orders/${orderId}`),

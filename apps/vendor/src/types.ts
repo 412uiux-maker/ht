@@ -1,10 +1,13 @@
 export type EducationEntry = { institution: string; degree: string; year: string }
 export type ScienceEntry   = { title: string; year: string }
 
+export type PatientType = 'pet' | 'human'
+
 export type VendorSession = {
   vet_id: number
   name: string
   specialty: string
+  patient_type?: PatientType
   bio: string
   price_uzs: number
   rating: number

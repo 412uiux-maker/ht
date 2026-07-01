@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react'
-import { IconPaw, IconMoon, IconSun, IconOrders, IconInfo, IconSettings, IconChevronRight } from '@ht/shared'
+import { IconUsers, IconMoon, IconSun, IconOrders, IconInfo, IconSettings, IconChevronRight } from '@ht/shared'
 import type { Pet } from '../api'
 import { api, getOwnerId } from '../api'
 import { t, getLang } from '../i18n'
 import type { Tab } from '../components/BottomNav'
+
+type Person = { id: string; name: string; role: 'adult' | 'child'; birth_date?: string; avatar_emoji: string }
+const loadPersons = (): Person[] => {
+  try { return JSON.parse(localStorage.getItem('ht_persons') ?? '[]') } catch { return [] }
+}
+const PERSON_COLORS: Record<'adult' | 'child', { bg: string; text: string }> = {
+  adult: { bg: 'rgba(59,130,246,0.12)', text: '#1D4ED8' },
+  child: { bg: 'rgba(234,88,12,0.12)',  text: '#9A3412' },
+}
 
 // ── Species colors (same system as Pets.tsx) ──────────────────
 const SC: Record<string, { bg: string; text: string }> = {
@@ -39,6 +48,7 @@ interface Props {
 
 export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Props) {
   const [pets, setPets] = useState<Pet[]>([])
+  const [persons] = useState<Person[]>(loadPersons)
   const { theme, toggle: toggleTheme } = useTheme()
   const uz = getLang() === 'uz'
 
@@ -49,8 +59,12 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
   const ownerId = getOwnerId()
   const shortId = ownerId.slice(0, 8).toUpperCase()
 
-  // Floating pet emojis for card decoration (up to 4)
-  const petEmojis = pets.slice(0, 4).map(p => p.avatar_emoji)
+  const familyCount = pets.length + persons.length
+  // Floating emojis for card decoration (up to 4): pets first, then people
+  const petEmojis = [
+    ...pets.slice(0, 2).map(p => p.avatar_emoji),
+    ...persons.slice(0, 2).map(p => p.role === 'child' ? '🧒' : '👤'),
+  ].slice(0, 4)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', paddingBottom: 72 }}>
@@ -97,12 +111,14 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
               width: 58, height: 58, borderRadius: '50%',
               background: 'rgba(255,255,255,.22)', flexShrink: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: pets.length > 0 ? 30 : 0,
+              fontSize: familyCount > 0 ? 30 : 0,
               border: '2px solid rgba(255,255,255,.35)',
             }}>
               {pets.length > 0
                 ? pets[0].avatar_emoji
-                : <IconPaw size={26} color="rgba(255,255,255,.9)" />}
+                : persons.length > 0
+                  ? (persons[0].role === 'child' ? '🧒' : '👤')
+                  : <IconUsers size={26} color="rgba(255,255,255,.9)" />}
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -118,45 +134,46 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
             </div>
           </div>
 
-          {/* Pet count hint */}
-          {pets.length > 0 && (
+          {/* Family count hint */}
+          {familyCount > 0 && (
             <div style={{
               marginTop: 14, paddingTop: 12,
               borderTop: '1px solid rgba(255,255,255,.2)',
               display: 'flex', alignItems: 'center', gap: 6,
-              fontSize: 13, opacity: 0.9, position: 'relative',
+              fontSize: 13, opacity: 0.9, position: 'relative', flexWrap: 'wrap',
             }}>
-              <span style={{ fontSize: 16 }}>🐾</span>
+              <span style={{ fontSize: 16 }}>👨‍👩‍👧‍👦</span>
               <span style={{ fontWeight: 600 }}>
-                {pets.length}{' '}
-                {uz
-                  ? `hayvon`
-                  : pets.length === 1 ? 'питомец' : pets.length < 5 ? 'питомца' : 'питомцев'}
+                {familyCount}{' '}
+                {uz ? 'ta' : familyCount === 1 ? 'в семье' : familyCount < 5 ? 'в семье' : 'в семье'}
               </span>
               {pets.map(p => (
-                <span key={p.id} style={{ fontSize: 15 }}>{p.avatar_emoji}</span>
+                <span key={`pe-${p.id}`} style={{ fontSize: 15 }}>{p.avatar_emoji}</span>
+              ))}
+              {persons.map(p => (
+                <span key={`pr-${p.id}`} style={{ fontSize: 15 }}>{p.role === 'child' ? '🧒' : '👤'}</span>
               ))}
             </div>
           )}
         </div>
 
-        {/* ── My pets strip ──────────────────────────────────── */}
+        {/* ── My family strip ────────────────────────────────── */}
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)',
           borderRadius: 'var(--r-lg)', padding: '14px 16px',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>{t('profile.my_pets')}</span>
+            <span style={{ fontWeight: 700, fontSize: 14 }}>{uz ? 'Mening oilam' : 'Моя семья'}</span>
             <button
-              onClick={() => onNavigate('pets')}
+              onClick={() => onNavigate('family')}
               style={{
                 background: 'none', border: 'none', padding: 0,
                 fontSize: 13, color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
               }}
-            >{t('pets.add')}</button>
+            >{uz ? "Barchasi →" : 'Все →'}</button>
           </div>
 
-          {pets.length === 0 ? (
+          {familyCount === 0 ? (
             <div style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center',
               padding: '16px 0 8px', gap: 8,
@@ -165,59 +182,77 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
                 width: 48, height: 48, borderRadius: 'var(--r-md)',
                 border: '1.5px dashed var(--border)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-              }}>🐾</div>
+              }}>👨‍👩‍👧‍👦</div>
               <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
-                {t('pets.empty')}
+                {uz ? "Oila a'zolari yo'q" : 'Семья пока пуста'}
               </div>
               <button
-                onClick={() => onNavigate('pets')}
+                onClick={() => onNavigate('family')}
                 style={{
                   padding: '8px 20px', borderRadius: 'var(--r-pill)',
                   background: 'var(--primary)', color: '#fff', border: 'none',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36,
                 }}
               >
-                {t('pets.add')} →
+                {uz ? "Qo'shish →" : 'Добавить →'}
               </button>
             </div>
           ) : (
-            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+            <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' } as React.CSSProperties}>
+              {/* Pets */}
               {pets.map(pet => {
                 const colors = sc(pet.species)
                 return (
                   <button
-                    key={pet.id}
-                    onClick={() => onNavigate('pets')}
+                    key={`pe-${pet.id}`}
+                    onClick={() => onNavigate('family')}
                     style={{
                       flexShrink: 0, width: 68, border: '1px solid var(--border)',
                       borderRadius: 'var(--r-lg)', background: 'var(--bg)',
                       overflow: 'hidden', cursor: 'pointer', padding: 0,
-                      fontFamily: 'inherit', textAlign: 'left',
-                      transition: 'border-color .15s',
+                      fontFamily: 'inherit', textAlign: 'left', transition: 'border-color .15s',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = colors.text)}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                   >
-                    <div style={{
-                      height: 42, background: colors.bg,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 24,
-                    }}>
+                    <div style={{ height: 42, background: colors.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
                       {pet.avatar_emoji}
                     </div>
-                    <div style={{
-                      padding: '5px 6px 7px',
-                      fontSize: 11, fontWeight: 700, lineHeight: 1.2,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      color: 'var(--text)',
-                    }}>
+                    <div style={{ padding: '5px 6px 7px', fontSize: 11, fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
                       {pet.name}
                     </div>
                   </button>
                 )
               })}
+              {/* Persons */}
+              {persons.map(person => {
+                const pc = PERSON_COLORS[person.role]
+                const emoji = person.role === 'child' ? '🧒' : '👤'
+                return (
+                  <button
+                    key={`pr-${person.id}`}
+                    onClick={() => onNavigate('family')}
+                    style={{
+                      flexShrink: 0, width: 68, border: '1px solid var(--border)',
+                      borderRadius: 'var(--r-lg)', background: 'var(--bg)',
+                      overflow: 'hidden', cursor: 'pointer', padding: 0,
+                      fontFamily: 'inherit', textAlign: 'left', transition: 'border-color .15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = pc.text)}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                  >
+                    <div style={{ height: 42, background: pc.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
+                      {emoji}
+                    </div>
+                    <div style={{ padding: '5px 6px 7px', fontSize: 11, fontWeight: 700, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
+                      {person.name}
+                    </div>
+                  </button>
+                )
+              })}
+              {/* Add button */}
               <button
-                onClick={() => onNavigate('pets')}
+                onClick={() => onNavigate('family')}
                 style={{
                   flexShrink: 0, width: 68, height: 80,
                   border: '1.5px dashed var(--border)', borderRadius: 'var(--r-lg)',
@@ -225,7 +260,7 @@ export default function Profile({ lang, onSwitchLang, onNavigate, onOrders }: Pr
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   alignSelf: 'flex-start',
                 }}
-                aria-label={t('pets.add')}
+                aria-label={uz ? "Qo'shish" : 'Добавить'}
               >+</button>
             </div>
           )}

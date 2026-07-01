@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api'
-import type { VendorSession } from '../types'
+import type { VendorSession, PatientType } from '../types'
 
 type Step = 1 | 2 | 3
 
@@ -8,10 +8,12 @@ interface EducationEntry { id: string; institution: string; degree: string; year
 interface ScienceEntry   { id: string; title: string; year: string }
 
 interface FormData {
+  patient_type: PatientType | ''
   specialty: string
   name: string
   bio: string
   personal_story: string
+  license_number: string
   education: EducationEntry[]
   science: ScienceEntry[]
   experience_yr: string
@@ -23,7 +25,8 @@ interface FormData {
   confirmPassword: string
 }
 
-const SPECIALTIES: { label: string; emoji: string }[] = [
+// ── Specialties by patient type ───────────────────────────────
+const PET_SPECIALTIES: { label: string; emoji: string }[] = [
   { label: 'Терапевт',      emoji: '🩺' },
   { label: 'Хирург',        emoji: '⚕️' },
   { label: 'Дерматолог',    emoji: '🔬' },
@@ -36,9 +39,47 @@ const SPECIALTIES: { label: string; emoji: string }[] = [
   { label: 'Зоопсихолог',   emoji: '🧠' },
   { label: 'Онколог',       emoji: '🎗️' },
   { label: 'Репродуктолог', emoji: '🧬' },
+  { label: 'Стоматолог',    emoji: '🦷' },
+  { label: 'Невролог',      emoji: '🔮' },
 ]
 
-const AVATARS = ['👨‍⚕️', '👩‍⚕️', '🩺', '🐾', '🐕', '🐈', '💊', '🔬']
+const HUMAN_SPECIALTIES: { label: string; emoji: string }[] = [
+  { label: 'Терапевт',      emoji: '🩺' },
+  { label: 'Педиатр',       emoji: '👶' },
+  { label: 'Хирург',        emoji: '⚕️' },
+  { label: 'Кардиолог',     emoji: '❤️' },
+  { label: 'Дерматолог',    emoji: '🔬' },
+  { label: 'Офтальмолог',   emoji: '👁️' },
+  { label: 'Гинеколог',     emoji: '🩻' },
+  { label: 'Невролог',      emoji: '🧠' },
+  { label: 'Психолог',      emoji: '💭' },
+  { label: 'Стоматолог',    emoji: '🦷' },
+  { label: 'Диетолог',      emoji: '🥗' },
+  { label: 'Эндокринолог',  emoji: '⚗️' },
+  { label: 'Ортопед',       emoji: '🦴' },
+  { label: 'Онколог',       emoji: '🎗️' },
+  { label: 'Уролог',        emoji: '🫘' },
+  { label: 'Репродуктолог', emoji: '🧬' },
+]
+
+const PET_AVATARS    = ['👨‍⚕️', '👩‍⚕️', '🐾', '🐕', '🐈', '🩺', '✂️', '🔬']
+const HUMAN_AVATARS  = ['👨‍⚕️', '👩‍⚕️', '🩺', '💊', '🏥', '🩻', '💉', '🔬']
+
+// ── Patient type cards ────────────────────────────────────────
+const PATIENT_TYPES: { value: PatientType; emoji: string; title: string; sub: string }[] = [
+  {
+    value: 'pet',
+    emoji: '🐾',
+    title: 'Питомцы',
+    sub: 'Ветеринары, кинологи, груммеры',
+  },
+  {
+    value: 'human',
+    emoji: '👤',
+    title: 'Люди',
+    sub: 'Врачи, психологи, диетологи',
+  },
+]
 
 const STEP_LABELS = ['Специализация', 'О вас', 'Аккаунт']
 
@@ -53,7 +94,8 @@ export default function Register({
 }) {
   const [step, setStep] = useState<Step>(1)
   const [form, setForm] = useState<FormData>({
-    specialty: '', name: '', bio: '', personal_story: '', education: [], science: [],
+    patient_type: '', specialty: '', name: '', bio: '', personal_story: '', license_number: '',
+    education: [], science: [],
     experience_yr: '', price_uzs: '', avatar_emoji: '👨‍⚕️',
     phone: '', email: '', password: '', confirmPassword: '',
   })
@@ -68,6 +110,13 @@ export default function Register({
   const touch = (k: keyof FormData) => setTouched(t => ({ ...t, [k]: true }))
   const blur = (k: keyof FormData) => { setFocused(null); touch(k) }
 
+  const activeSpecialties = form.patient_type === 'human' ? HUMAN_SPECIALTIES : PET_SPECIALTIES
+  const activeAvatars      = form.patient_type === 'human' ? HUMAN_AVATARS     : PET_AVATARS
+
+  const setPatientType = (pt: PatientType) => {
+    setForm(f => ({ ...f, patient_type: pt, specialty: '', avatar_emoji: '👨‍⚕️' }))
+  }
+
   // Validation errors (only shown after touch)
   const errs = {
     name:            form.name.trim().length < 2 ? 'Минимум 2 символа' : '',
@@ -76,7 +125,7 @@ export default function Register({
     confirmPassword: form.password !== form.confirmPassword ? 'Пароли не совпадают' : '',
   }
 
-  const canStep1 = form.specialty !== ''
+  const canStep1 = form.patient_type !== '' && form.specialty !== ''
   const canStep2 = form.name.trim().length >= 2
   const canStep3 = !errs.phone && !errs.password && !errs.confirmPassword && form.phone.length === 9
 
@@ -95,12 +144,17 @@ export default function Register({
     setLoading(true)
     setApiError('')
     try {
+      const bioText = [
+        form.license_number.trim() ? `Лицензия: ${form.license_number.trim()}` : '',
+        form.bio.trim(),
+      ].filter(Boolean).join('\n')
       const session = await api.register({
         name: form.name.trim(),
         specialty: form.specialty,
+        patient_type: form.patient_type as PatientType,
         phone: `+998${form.phone}`,
         password: form.password,
-        bio: form.bio.trim() || undefined,
+        bio: bioText || undefined,
         email: form.email.trim() || undefined,
         price_uzs: form.price_uzs ? parseInt(form.price_uzs) : undefined,
         experience_yr: form.experience_yr ? parseInt(form.experience_yr) : undefined,
@@ -156,12 +210,20 @@ export default function Register({
           >
             ← {step > 1 ? 'Назад' : 'Войти'}
           </button>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>🐾</div>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>
+            {form.patient_type === 'human' ? '🏥' : '🐾'}
+          </div>
           <h1 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text)', marginBottom: '4px' }}>
-            Регистрация специалиста
+            {form.patient_type === 'human'
+              ? 'Регистрация врача'
+              : form.patient_type === 'pet'
+                ? 'Регистрация ветеринара'
+                : 'Регистрация специалиста'}
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text2)', lineHeight: 1.5 }}>
-            Заполните анкету — мы проверим данные и активируем кабинет
+            {form.patient_type === 'human'
+              ? 'Заполните анкету — мы проверим документы и активируем кабинет'
+              : 'Заполните анкету — мы проверим данные и активируем кабинет'}
           </p>
         </div>
 
@@ -205,44 +267,86 @@ export default function Register({
           })}
         </div>
 
-        {/* ── Step 1: Specialty ─────────────────────────────── */}
+        {/* ── Step 1: Patient type + Specialty ─────────────── */}
         {step === 1 && (
           <div>
-            <p style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6, marginBottom: '18px' }}>
-              Выберите специализацию — клиенты будут видеть её в карточке.
+            {/* Patient type selector */}
+            <p style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6, marginBottom: '12px' }}>
+              Кто ваши пациенты?
             </p>
-
-            <div style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr',
-              gap: '10px', marginBottom: '28px',
-            }}>
-              {SPECIALTIES.map(({ label, emoji }) => {
-                const active = form.specialty === label
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '28px' }}>
+              {PATIENT_TYPES.map(({ value, emoji, title, sub }) => {
+                const active = form.patient_type === value
                 return (
                   <button
-                    key={label}
-                    onClick={() => set('specialty', label)}
+                    key={value}
+                    onClick={() => setPatientType(value)}
                     style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
-                      gap: '6px', padding: '14px 12px',
-                      borderRadius: 'var(--r-sm)', textAlign: 'left',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      gap: '8px', padding: '18px 12px',
+                      borderRadius: 'var(--r-sm)', textAlign: 'center',
                       background: active ? 'rgba(242,120,75,.1)' : 'var(--surface2)',
                       border: `2px solid ${active ? 'var(--coral)' : 'var(--surface3)'}`,
                       cursor: 'pointer', fontFamily: 'var(--font)',
                       transition: 'border-color .15s, background .15s',
                     }}
                   >
-                    <span style={{ fontSize: '22px', lineHeight: 1 }}>{emoji}</span>
-                    <span style={{
-                      fontSize: '13px', fontWeight: 600, lineHeight: 1.3,
-                      color: active ? 'var(--coral)' : 'var(--text)',
-                    }}>
-                      {label}
+                    <span style={{ fontSize: '32px', lineHeight: 1 }}>{emoji}</span>
+                    <span style={{ fontSize: '15px', fontWeight: 700, color: active ? 'var(--coral)' : 'var(--text)' }}>
+                      {title}
                     </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text3)', lineHeight: 1.4 }}>{sub}</span>
+                    {active && (
+                      <span style={{
+                        marginTop: '2px', fontSize: '11px', fontWeight: 700,
+                        color: 'var(--coral)', background: 'rgba(242,120,75,.15)',
+                        borderRadius: 'var(--r-pill)', padding: '2px 10px',
+                      }}>✓ Выбрано</span>
+                    )}
                   </button>
                 )
               })}
             </div>
+
+            {/* Specialty grid — appears after patient type chosen */}
+            {form.patient_type !== '' && (
+              <>
+                <p style={{ fontSize: '13px', color: 'var(--text2)', lineHeight: 1.6, marginBottom: '12px' }}>
+                  Выберите специализацию:
+                </p>
+                <div style={{
+                  display: 'grid', gridTemplateColumns: '1fr 1fr',
+                  gap: '10px', marginBottom: '28px',
+                }}>
+                  {activeSpecialties.map(({ label, emoji }) => {
+                    const active = form.specialty === label
+                    return (
+                      <button
+                        key={label}
+                        onClick={() => set('specialty', label)}
+                        style={{
+                          display: 'flex', flexDirection: 'column', alignItems: 'flex-start',
+                          gap: '6px', padding: '14px 12px',
+                          borderRadius: 'var(--r-sm)', textAlign: 'left',
+                          background: active ? 'rgba(242,120,75,.1)' : 'var(--surface2)',
+                          border: `2px solid ${active ? 'var(--coral)' : 'var(--surface3)'}`,
+                          cursor: 'pointer', fontFamily: 'var(--font)',
+                          transition: 'border-color .15s, background .15s',
+                        }}
+                      >
+                        <span style={{ fontSize: '22px', lineHeight: 1 }}>{emoji}</span>
+                        <span style={{
+                          fontSize: '13px', fontWeight: 600, lineHeight: 1.3,
+                          color: active ? 'var(--coral)' : 'var(--text)',
+                        }}>
+                          {label}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </>
+            )}
 
             <button
               onClick={goNext}
@@ -257,12 +361,30 @@ export default function Register({
         {/* ── Step 2: Profile ───────────────────────────────── */}
         {step === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+
+            {/* Context chip */}
+            {form.specialty && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: 'var(--r-pill)',
+                background: form.patient_type === 'human' ? 'rgba(59,130,246,.08)' : 'rgba(242,120,75,.08)',
+                border: `1px solid ${form.patient_type === 'human' ? 'rgba(59,130,246,.2)' : 'rgba(242,120,75,.2)'}`,
+                width: 'fit-content', fontSize: '13px', fontWeight: 600,
+                color: form.patient_type === 'human' ? '#1D4ED8' : 'var(--coral)',
+              }}>
+                <span>{form.patient_type === 'human' ? '🏥' : '🐾'}</span>
+                <span>{form.specialty}</span>
+                <span style={{ fontWeight: 400, opacity: 0.7 }}>·</span>
+                <span style={{ fontWeight: 400 }}>{form.patient_type === 'human' ? 'Для людей' : 'Для питомцев'}</span>
+              </div>
+            )}
+
             {/* Name */}
             <div>
               <label style={LBL}>Имя и фамилия *</label>
               <input
                 style={inp('name', !!(touched.name && errs.name))}
-                placeholder="Азиз Каримов"
+                placeholder={form.patient_type === 'human' ? 'Азиз Каримов' : 'Азиз Каримов'}
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 onFocus={() => setFocused('name')}
@@ -280,7 +402,10 @@ export default function Register({
                   ...inp('bio'), minHeight: '96px', resize: 'vertical',
                   lineHeight: 1.5, paddingTop: '12px',
                 }}
-                placeholder="Расскажите об опыте, подходе к лечению, достижениях…"
+                placeholder={form.patient_type === 'human'
+                  ? 'Расскажите об опыте работы, методах лечения, достижениях…'
+                  : 'Расскажите об опыте, подходе к лечению, достижениях…'
+                }
                 value={form.bio}
                 maxLength={BIO_MAX}
                 onChange={e => set('bio', e.target.value)}
@@ -292,6 +417,29 @@ export default function Register({
               </p>
             </div>
 
+            {/* License number — human only */}
+            {form.patient_type === 'human' && (
+              <div>
+                <label style={LBL}>
+                  Номер лицензии / удостоверения{' '}
+                  <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text3)' }}>
+                    (необязательно)
+                  </span>
+                </label>
+                <input
+                  style={inp('license_number')}
+                  placeholder="Например: LIC-2024-123456"
+                  value={form.license_number}
+                  onChange={e => set('license_number', e.target.value)}
+                  onFocus={() => setFocused('license_number')}
+                  onBlur={() => setFocused(null)}
+                />
+                <p style={{ fontSize: '12px', color: 'var(--text3)', marginTop: '4px' }}>
+                  Будет отображаться в вашем профиле как подтверждение квалификации
+                </p>
+              </div>
+            )}
+
             {/* Personal story */}
             <div>
               <label style={LBL}>
@@ -302,7 +450,10 @@ export default function Register({
               </label>
               <textarea
                 style={{ ...inp('personal_story'), minHeight: '88px', resize: 'vertical', lineHeight: 1.5, paddingTop: '12px' }}
-                placeholder="Почему вы выбрали эту профессию, что вас вдохновляет…"
+                placeholder={form.patient_type === 'human'
+                  ? 'Почему вы стали врачом, что вдохновляет помогать людям…'
+                  : 'Почему вы выбрали эту профессию, что вас вдохновляет…'
+                }
                 value={form.personal_story}
                 onChange={e => set('personal_story', e.target.value)}
                 onFocus={() => setFocused('personal_story')}
@@ -313,7 +464,7 @@ export default function Register({
             {/* Education cards */}
             <div>
               <label style={LBL}>
-                Образование{' '}
+                {form.patient_type === 'human' ? 'Образование и сертификаты' : 'Образование'}{' '}
                 <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text3)' }}>
                   (необязательно)
                 </span>
@@ -403,7 +554,8 @@ export default function Register({
                   onClick={() => setEduDraft({ institution: '', degree: '', year: '' })}
                   style={ADD_BTN}
                 >
-                  <span style={{ fontSize: '18px', lineHeight: 1 }}>+</span> Добавить образование
+                  <span style={{ fontSize: '18px', lineHeight: 1 }}>+</span>
+                  {form.patient_type === 'human' ? ' Добавить образование или сертификат' : ' Добавить образование'}
                 </button>
               )}
             </div>
@@ -411,7 +563,7 @@ export default function Register({
             {/* Science cards */}
             <div>
               <label style={LBL}>
-                Научная деятельность{' '}
+                {form.patient_type === 'human' ? 'Публикации и научная деятельность' : 'Научная деятельность'}{' '}
                 <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--text3)' }}>
                   (необязательно)
                 </span>
@@ -544,11 +696,28 @@ export default function Register({
         {step === 3 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
 
+            {/* Context chip */}
+            {form.specialty && (
+              <div style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: 'var(--r-pill)',
+                background: form.patient_type === 'human' ? 'rgba(59,130,246,.08)' : 'rgba(242,120,75,.08)',
+                border: `1px solid ${form.patient_type === 'human' ? 'rgba(59,130,246,.2)' : 'rgba(242,120,75,.2)'}`,
+                width: 'fit-content', fontSize: '13px', fontWeight: 600,
+                color: form.patient_type === 'human' ? '#1D4ED8' : 'var(--coral)',
+              }}>
+                <span>{form.patient_type === 'human' ? '🏥' : '🐾'}</span>
+                <span>{form.specialty}</span>
+                <span style={{ fontWeight: 400, opacity: 0.7 }}>·</span>
+                <span style={{ fontWeight: 400 }}>{form.patient_type === 'human' ? 'Для людей' : 'Для питомцев'}</span>
+              </div>
+            )}
+
             {/* Avatar */}
             <div>
               <label style={LBL}>Аватар</label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {AVATARS.map(e => (
+                {activeAvatars.map(e => (
                   <button
                     key={e}
                     onClick={() => set('avatar_emoji', e)}
@@ -671,7 +840,12 @@ export default function Register({
                 disabled={loading || !canStep3}
                 style={{ ...primaryBtnStyle(loading || !canStep3), flex: 1 }}
               >
-                {loading ? 'Отправляем заявку…' : 'Зарегистрироваться'}
+                {loading
+                  ? 'Отправляем заявку…'
+                  : form.patient_type === 'human'
+                    ? 'Подать заявку врача'
+                    : 'Зарегистрироваться'
+                }
               </button>
             </div>
 

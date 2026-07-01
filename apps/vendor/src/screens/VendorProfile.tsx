@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { IconCheckCircle, IconAlertCircle, IconStar, IconConsultation, IconCertificate } from '@ht/shared'
-import type { VendorSession, Stats, EducationEntry, ScienceEntry } from '../types'
+import type { VendorSession, Stats, EducationEntry, ScienceEntry, PatientType } from '../types'
 import { setSession } from '../types'
 import { api } from '../api'
 
@@ -12,12 +12,25 @@ interface Props {
   onSessionUpdate: (s: VendorSession) => void
 }
 
-const SPECIALTIES = [
-  'Терапевт (кошки, собаки)', 'Хирург', 'Дерматолог', 'Офтальмолог',
-  'Стоматолог', 'Кардиолог', 'Онколог', 'Невролог',
+const PET_SPECIALTIES = [
+  'Терапевт', 'Хирург', 'Дерматолог', 'Кардиолог', 'Офтальмолог',
+  'Диетолог', 'Кинолог', 'Фелинолог', 'Груммер', 'Зоопсихолог',
+  'Онколог', 'Репродуктолог', 'Стоматолог', 'Невролог',
 ]
 
-const AVATARS = ['👨‍⚕️', '👩‍⚕️', '🐕', '🐈', '🦜', '🐇', '🦔', '🐠', '🐾', '🩺']
+const HUMAN_SPECIALTIES = [
+  'Терапевт', 'Педиатр', 'Хирург', 'Кардиолог', 'Дерматолог',
+  'Офтальмолог', 'Гинеколог', 'Невролог', 'Психолог', 'Стоматолог',
+  'Диетолог', 'Эндокринолог', 'Ортопед', 'Онколог', 'Уролог', 'Репродуктолог',
+]
+
+const PET_AVATARS   = ['👨‍⚕️', '👩‍⚕️', '🐕', '🐈', '🦜', '🐇', '🦔', '🐠', '🐾', '🩺']
+const HUMAN_AVATARS = ['👨‍⚕️', '👩‍⚕️', '🩺', '💊', '🏥', '🩻', '💉', '🔬', '🧬', '⚕️']
+
+const PATIENT_TYPE_LABELS: Record<PatientType, { emoji: string; label: string }> = {
+  pet:   { emoji: '🐾', label: 'Питомцы' },
+  human: { emoji: '👤', label: 'Люди' },
+}
 
 export default function VendorProfile({ session, onSessionUpdate }: Props) {
   const [editing, setEditing]   = useState(false)
@@ -53,7 +66,12 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
   }
 
   const openEdit = () => {
-    setDraft({ ...session })
+    setDraft({
+      ...session,
+      // Assign stable keys to entries loaded from server (they have no id)
+      education: (session.education ?? []).map((e, i) => ({ ...e, id: `s${i}` }) as any),
+      science:   (session.science   ?? []).map((s, i) => ({ ...s, id: `s${i}` }) as any),
+    })
     setEduDraft(null)
     setSciDraft(null)
     setSaveError('')
@@ -66,13 +84,14 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
       const updated = await api.updateProfile({
         name: draft.name,
         specialty: draft.specialty,
+        patient_type: draft.patient_type,
         bio: draft.bio,
         price_uzs: draft.price_uzs,
         experience_yr: draft.experience_yr,
         avatar_emoji: draft.avatar_emoji,
         personal_story: draft.personal_story,
-        education: draft.education,
-        science: draft.science,
+        education: draft.education?.map(({ id: _id, ...e }: any) => e as EducationEntry),
+        science:   draft.science?.map(({ id: _id, ...s }: any) => s as ScienceEntry),
       })
       const merged = { ...session, ...updated }
       setSession(merged)
@@ -145,7 +164,19 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
               }}>На проверке</span>
             )}
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10 }}>{session.specialty}</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <span style={{ fontSize: 13, color: 'var(--text2)' }}>{session.specialty}</span>
+            {session.patient_type && (
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: '2px 7px',
+                borderRadius: 'var(--r-pill)',
+                background: session.patient_type === 'human' ? 'rgba(59,130,246,.1)' : 'rgba(242,120,75,.12)',
+                color: session.patient_type === 'human' ? '#1D4ED8' : 'var(--coral)',
+              }}>
+                {PATIENT_TYPE_LABELS[session.patient_type].emoji} {PATIENT_TYPE_LABELS[session.patient_type].label}
+              </span>
+            )}
+          </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <Chip color="var(--coral)" bg="rgba(242,120,75,.1)">
               <IconStar size={12} color="var(--coral)" /> {session.rating.toFixed(1)}
@@ -312,11 +343,36 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
               Редактировать профиль
             </h2>
 
+            {/* Patient type switcher */}
+            <div style={{ marginBottom: 16 }}>
+              <ModalLabel>Тип пациента</ModalLabel>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['pet', 'human'] as PatientType[]).map(pt => {
+                  const active = draft.patient_type === pt
+                  return (
+                    <button
+                      key={pt}
+                      onClick={() => setDraft(d => ({ ...d, patient_type: pt, specialty: '' }))}
+                      style={{
+                        flex: 1, padding: '10px 8px', borderRadius: 'var(--r-sm)', fontFamily: 'inherit',
+                        border: active ? '2px solid var(--coral)' : '1.5px solid var(--surface3)',
+                        background: active ? 'rgba(242,120,75,.08)' : 'var(--surface2)',
+                        color: active ? 'var(--coral)' : 'var(--text2)',
+                        fontWeight: active ? 700 : 500, fontSize: 13, cursor: 'pointer',
+                      }}
+                    >
+                      {PATIENT_TYPE_LABELS[pt].emoji} {PATIENT_TYPE_LABELS[pt].label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
             {/* Avatar */}
             <div style={{ marginBottom: 20 }}>
               <ModalLabel>Аватар</ModalLabel>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {AVATARS.map(a => (
+                {(draft.patient_type === 'human' ? HUMAN_AVATARS : PET_AVATARS).map(a => (
                   <button
                     key={a}
                     onClick={() => setDraft(d => ({ ...d, avatar_emoji: a }))}
@@ -341,10 +397,17 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
 
               {/* Specialty */}
               <Field label="Специальность">
-                <select style={inp} value={draft.specialty}
-                  onChange={e => setDraft(d => ({ ...d, specialty: e.target.value }))}>
-                  {SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                {(() => {
+                  const list = draft.patient_type === 'human' ? HUMAN_SPECIALTIES : PET_SPECIALTIES
+                  const options = list.includes(draft.specialty) ? list : [draft.specialty, ...list].filter(Boolean)
+                  return (
+                    <select style={inp} value={draft.specialty}
+                      onChange={e => setDraft(d => ({ ...d, specialty: e.target.value }))}>
+                      {!list.includes(draft.specialty) && <option value="" disabled>Выберите специальность</option>}
+                      {options.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  )
+                })()}
               </Field>
 
               {/* Bio */}
