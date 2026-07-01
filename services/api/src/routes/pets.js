@@ -243,6 +243,14 @@ router.post('/:id/vaccinations', async (req, res) => {
         document_id || null, verified_by || null,
       ]
     );
+    const vaccTitle = name
+      ? `💉 ${name}${valid_until ? ` · до ${valid_until}` : ''}`
+      : `💉 Вакцинация (${type})${valid_until ? ` · до ${valid_until}` : ''}`;
+    await logHealthEvent(req.params.id, {
+      type: 'vaccination', source: vet_name ? 'vet' : 'owner',
+      refTable: 'vaccinations', refId: vacc.id,
+      title: vaccTitle, occurredAt: new Date(date_administered),
+    });
     res.status(201).json(vacc);
   } catch (e) {
     res.status(500).json({ error: e.message });

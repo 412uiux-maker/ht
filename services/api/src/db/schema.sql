@@ -397,3 +397,7 @@ CREATE TABLE IF NOT EXISTS health_events (
 );
 CREATE INDEX IF NOT EXISTS health_events_pet_time_idx
   ON health_events(pet_id, occurred_at DESC);
+
+-- M2: link consultation back to the triggering health event (optional)
+ALTER TABLE consultations ADD COLUMN IF NOT EXISTS reason_event_id UUID
+  REFERENCES health_events(id) ON DELETE SET NULL;

@@ -136,7 +136,10 @@ function PersonTile({ person, onOpen, onDelete }: { person: Person; onOpen: () =
 }
 
 // ═══════════════════════════════════════════════════════════════
-export default function Family({ lang }: { lang: string }) {
+export default function Family({ lang, onAskVet }: {
+  lang: string
+  onAskVet?: (petId: string, reasonEventId?: string) => void
+}) {
   void lang
   const [section, setSection] = useState<Section>('pets')
   const [petView, setPetView] = useState<PetView>({ t: 'list' })
@@ -228,6 +231,7 @@ export default function Family({ lang }: { lang: string }) {
     <PetHealthCard
       pet={petView.pet}
       onBack={() => setPetView({ t: 'card', pet: petView.pet })}
+      onAskVet={onAskVet ? (reasonEventId) => onAskVet(petView.pet.id, reasonEventId) : undefined}
     />
   )
 

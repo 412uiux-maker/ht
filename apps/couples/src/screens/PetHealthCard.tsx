@@ -207,7 +207,7 @@ function groupByDate(events: HealthEvent[], isRu: boolean) {
 }
 
 // ── HealthTimeline component ──────────────────────────────────
-function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: () => void }) {
+function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId?: string) => void }) {
   const isRu = getLang() !== 'uz'
   const ownerId = getOwnerId()
   const [events, setEvents] = useState<HealthEvent[] | null>(null)
@@ -341,6 +341,21 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: () => void }) 
                     </span>
                   )}
                 </div>
+                {/* Ask vet button on alert-level events */}
+                {onAskVet && (ev.type === 'reminder' || ev.type === 'vaccination') && (
+                  <button
+                    onClick={() => onAskVet(ev.id)}
+                    style={{
+                      marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4,
+                      padding: '4px 10px', borderRadius: 'var(--r-pill)',
+                      border: '1.5px solid var(--primary)', background: 'rgba(242,120,75,.07)',
+                      color: 'var(--primary)', fontSize: 12, fontWeight: 600,
+                      fontFamily: 'inherit', cursor: 'pointer', minHeight: 32,
+                    }}
+                  >
+                    🩺 {isRu ? 'Спросить врача' : "Veterinarga so'rash"}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -418,7 +433,7 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: () => void }) 
 export default function PetHealthCard({ pet, onBack, onAskVet }: {
   pet: Pet
   onBack: () => void
-  onAskVet?: () => void
+  onAskVet?: (reasonEventId?: string) => void
 }) {
   const isRu = getLang() !== 'uz'
   const colors = SPECIES_COLORS[pet.species] ?? SPECIES_COLORS.other

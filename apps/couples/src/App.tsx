@@ -28,7 +28,7 @@ import VideoCall from './screens/VideoCall'
 
 // Flows that cover the full screen (no bottom nav)
 type Flow =
-  | { name: 'booking'; vet: Vet }
+  | { name: 'booking'; vet: Vet; petId?: string; reasonEventId?: string }
   | { name: 'payment'; consultation: Consultation; vet: Vet }
   | { name: 'chat'; consultationId: string; vet: Vet }
   | { name: 'insurance' }
@@ -153,6 +153,8 @@ export default function App() {
       <Wrap>
         <Booking
           lang={lang} vet={flow.vet}
+          prefillPetId={flow.petId}
+          reasonEventId={flow.reasonEventId}
           onBack={() => endFlow('consult')}
           onBooked={consultation => startFlow({ name: 'payment', consultation, vet: flow.vet })}
         />
@@ -314,7 +316,15 @@ export default function App() {
           onInsurance={() => startFlow({ name: 'insurance' })}
         />
       )}
-      {tab === 'family'  && <Family  lang={lang} />}
+      {tab === 'family'  && (
+        <Family
+          lang={lang}
+          onAskVet={(petId, reasonEventId) => {
+            setTab('consult')
+            startFlow({ name: 'booking', vet: STUB_VET, petId, reasonEventId })
+          }}
+        />
+      )}
       {tab === 'learn'   && <LearnHub lang={lang} />}
       {tab === 'profile' && (
         <Profile lang={lang} onSwitchLang={switchLang} onNavigate={setTab} onOrders={() => startFlow({ name: 'orders' })} />

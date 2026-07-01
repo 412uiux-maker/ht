@@ -284,6 +284,7 @@ export const api = {
     pet_species: string
     problem: string
     pet_id?: string
+    reason_event_id?: string
   }) => req<Consultation>('/consultations', { method: 'POST', body: JSON.stringify(body) }),
   petConsultations: (petId: string) =>
     req<PetConsultation[]>(`/pets/${petId}/consultations`),

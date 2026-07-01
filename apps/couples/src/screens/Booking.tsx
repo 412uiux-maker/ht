@@ -9,6 +9,8 @@ interface Props {
   vet: Vet
   onBack: () => void
   onBooked: (consultation: Consultation) => void
+  prefillPetId?: string
+  reasonEventId?: string
 }
 
 const SPECIES = [
@@ -24,7 +26,7 @@ const REMEMBERED_NAME_KEY = 'ht_client_name'
 const PROBLEM_MAX = 800
 const VALID_BOOKING_SPECIES = ['cat', 'dog', 'rabbit', 'parrot', 'hamster', 'other']
 
-export default function Booking({ lang, vet, onBack, onBooked }: Props) {
+export default function Booking({ lang, vet, onBack, onBooked, prefillPetId, reasonEventId }: Props) {
   void lang
   const [form, setForm] = useState({
     client_name: localStorage.getItem(REMEMBERED_NAME_KEY) || '',
@@ -36,18 +38,20 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [err, setErr] = useState('')
   const [pets, setPets] = useState<Pet[] | null>(null)
-  const [selectedPetId, setSelectedPetId] = useState<string>('new')
+  const [selectedPetId, setSelectedPetId] = useState<string>(prefillPetId ?? 'new')
 
   useEffect(() => {
     api.pets(getOwnerId()).then(list => {
       setPets(list)
-      if (list.length > 0) {
-        const first = list[0]
-        setSelectedPetId(first.id)
+      // Prefer prefilled pet; fall back to first pet in list
+      const targetId = prefillPetId && list.find(p => p.id === prefillPetId) ? prefillPetId : list[0]?.id
+      if (targetId) {
+        const pet = list.find(p => p.id === targetId)!
+        setSelectedPetId(pet.id)
         setForm(f => ({
           ...f,
-          pet_name: first.name,
-          pet_species: VALID_BOOKING_SPECIES.includes(first.species) ? first.species : 'other',
+          pet_name: pet.name,
+          pet_species: VALID_BOOKING_SPECIES.includes(pet.species) ? pet.species : 'other',
         }))
       }
     }).catch(() => setPets([]))
@@ -91,6 +95,7 @@ export default function Booking({ lang, vet, onBack, onBooked }: Props) {
         vet_id: vet.id,
         ...form,
         ...(selectedPetId !== 'new' ? { pet_id: selectedPetId } : {}),
+        ...(reasonEventId ? { reason_event_id: reasonEventId } : {}),
       })
       onBooked(c)
     } catch {
