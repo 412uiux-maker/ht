@@ -307,6 +307,7 @@ router.post('/simulate', async (req, res) => {
       [targetOrderId, provider, amount_uzs || 0, extRef]
     );
     await pool.query(`UPDATE orders SET status='paid' WHERE id=$1 AND status='created'`, [targetOrderId]);
+    notify.notifyVetNewOrder(targetOrderId).catch(() => {});
 
     res.json({
       success: true,

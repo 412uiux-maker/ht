@@ -290,33 +290,50 @@ export default function VendorProfile({ session, onSessionUpdate }: Props) {
             }}>
               <IconCheckCircle size={15} color="var(--green)" /> Telegram привязан
             </div>
-            <button onClick={() => setTgLinked(false)} style={{ ...btnGhost, padding: '0 14px', minHeight: 40, fontSize: 12 }}>
-              Изменить
+            <button
+              onClick={async () => {
+                try { await api.unlinkTelegram(); setTgLinked(false) } catch {}
+              }}
+              style={{ ...btnGhost, padding: '0 14px', minHeight: 40, fontSize: 12 }}
+            >
+              Отвязать
             </button>
           </div>
         ) : (
           <>
-            <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 10, lineHeight: 1.5 }}>
-              Узнайте свой Telegram ID через <b>@userinfobot</b> и вставьте его ниже.
+            <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 12, lineHeight: 1.6 }}>
+              Нажмите кнопку ниже — откроется бот. Он сам привяжет ваш аккаунт за один клик.
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input
-                style={{ ...inp, flex: 1 }}
-                type="text"
-                inputMode="numeric"
-                placeholder="Например: 123456789"
-                value={tgId}
-                onChange={e => setTgId(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && linkTelegram()}
-              />
-              <button
-                onClick={linkTelegram}
-                disabled={tgLinking || !tgId.trim()}
-                style={{ ...btnCoral, padding: '0 18px', minWidth: 'unset' }}
-              >
-                {tgLinking ? '…' : 'Привязать'}
-              </button>
-            </div>
+            <button
+              onClick={async () => {
+                setTgLinking(true); setTgError('')
+                try {
+                  const { url } = await api.getTelegramLinkUrl()
+                  window.open(url, '_blank')
+                  // Poll every 3s for up to 2min to detect when linking completes
+                  let attempts = 0
+                  const timer = setInterval(async () => {
+                    attempts++
+                    try {
+                      const profile = await api.getProfile()
+                      if (profile.has_telegram) { setTgLinked(true); clearInterval(timer) }
+                    } catch {}
+                    if (attempts >= 40) { clearInterval(timer); setTgLinking(false) }
+                  }, 3000)
+                } catch (e) {
+                  setTgError((e as Error).message)
+                  setTgLinking(false)
+                }
+              }}
+              disabled={tgLinking}
+              style={{ ...btnCoral, display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}
+            >
+              {tgLinking ? (
+                <><span style={{ opacity: 0.7 }}>Ожидание…</span></>
+              ) : (
+                <>✈️ Привязать через Telegram</>
+              )}
+            </button>
             {tgError && (
               <div style={{
                 marginTop: 8, padding: '8px 12px', borderRadius: 'var(--r-sm)',

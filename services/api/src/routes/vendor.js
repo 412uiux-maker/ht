@@ -91,19 +91,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/vendor/link-telegram  (protected) — stores vet's Telegram chat ID for push notifications
+// POST /api/vendor/link-telegram  (protected) — stores or clears vet's Telegram chat ID
+// Pass telegram_id: null to unlink.
 router.post('/link-telegram', requireVendor, async (req, res) => {
   const { telegram_id } = req.body;
-  if (!telegram_id) return res.status(400).json({ error: 'telegram_id required' });
+  if (telegram_id === undefined) return res.status(400).json({ error: 'telegram_id required (null to unlink)' });
   try {
     await pool.query(
       'UPDATE vendor_credentials SET telegram_id=$1 WHERE vet_id=$2',
-      [String(telegram_id), req.vendor.vet_id]
+      [telegram_id === null ? null : String(telegram_id), req.vendor.vet_id]
     );
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// GET /api/vendor/telegram/link-url  (protected) — generates a one-time deep-link for bot linking
+router.get('/telegram/link-url', requireVendor, (req, res) => {
+  const { createLinkToken } = require('../helpers/linkTokens');
+  const token = createLinkToken(req.vendor.vet_id);
+  const botUsername = process.env.BOT_USERNAME || 'HappyTailsUzBot';
+  const url = `https://t.me/${botUsername}?start=link_${token}`;
+  res.json({ url });
 });
 
 // GET /api/vendor/profile  (protected)

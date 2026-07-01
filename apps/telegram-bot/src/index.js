@@ -34,6 +34,8 @@ const getLang = (ctx) => langStore.get(ctx.from?.id) ?? 'ru'
 
 const T = {
   ru: {
+    tg_linked: '✅ <b>Telegram привязан!</b>\n\nТеперь вы будете получать уведомления о новых заявках прямо здесь.',
+    tg_link_expired: '⚠️ Ссылка устарела или уже использована. Сгенерируйте новую в кабинете ветеринара.',
     welcome: (name) =>
       `Привет, ${name}! 🐾\n\nЯ HappyTails — ваш помощник по здоровью питомцев в Узбекистане.\n\nЗаписывайтесь к ветеринару, подбирайте корм и узнавайте, как ухаживать за питомцем.`,
     choose_lang: 'Выберите язык / Tilni tanlang:',
@@ -84,6 +86,8 @@ const T = {
     already_handled: "Bu so'rov allaqachon ko'rib chiqilgan.",
     error: (msg) => `⚠️ Xato: ${msg}`,
     vet_not_linked: "⚠️ Hisobingiz veterinar kabinetiga bog'lanmagan. Kabinetga kiring va Telegramni ulang.",
+    tg_linked: "✅ <b>Telegram ulandi!</b>\n\nEndi yangi so'rovlar haqida bu yerda xabardor bo'lasiz.",
+    tg_link_expired: "⚠️ Havola eskirgan yoki allaqachon ishlatilgan. Veterinar kabinetida yangisini yarating.",
   },
 }
 
@@ -91,11 +95,33 @@ const T = {
 bot.start(async (ctx) => {
   const payload = ctx.startPayload  // deep-link param from t.me/bot?start=<payload>
   const knownLang = langStore.has(ctx.from?.id)
+  const lang = getLang(ctx)
+  const t = T[lang]
 
-  // If user tapped a deep-link and already has a language set, open that section
+  // Vendor linking flow: ?start=link_<token>
+  if (payload?.startsWith('link_')) {
+    const token = payload.slice(5)
+    try {
+      const result = await botApiCall('POST', '/api/bot/link-vendor', {
+        token,
+        telegram_id: ctx.from?.id,
+      })
+      if (result.error) {
+        const msg = result.error.includes('expired') || result.error.includes('Invalid')
+          ? t.tg_link_expired
+          : t.error(result.error)
+        await ctx.reply(msg, { parse_mode: 'HTML' })
+      } else {
+        await ctx.reply(t.tg_linked, { parse_mode: 'HTML' })
+      }
+    } catch (e) {
+      await ctx.reply(t.error(e.message), { parse_mode: 'HTML' })
+    }
+    return
+  }
+
+  // If user tapped a tab deep-link and already has a language set
   if (payload && knownLang) {
-    const lang = getLang(ctx)
-    const t = T[lang]
     const section = payload.replace(/^tab_/, '')
     const url = MINI_APP_URL ? `${MINI_APP_URL}?tab=${section}` : MINI_APP_URL
     await ctx.reply('👇', Markup.inlineKeyboard([[appButton(t.open_app, url)]]))

@@ -13,6 +13,25 @@ const requireBotAuth = (req, res, next) => {
   next();
 };
 
+// POST /api/bot/link-vendor  { token, telegram_id }
+// Called by the bot when a vet opens the deep-link ?start=link_<token>
+router.post('/link-vendor', requireBotAuth, async (req, res) => {
+  const { token, telegram_id } = req.body;
+  if (!token || !telegram_id) return res.status(400).json({ error: 'token and telegram_id required' });
+  const { consumeLinkToken } = require('../helpers/linkTokens');
+  const vetId = consumeLinkToken(token);
+  if (!vetId) return res.status(400).json({ error: 'Invalid or expired token' });
+  try {
+    await pool.query(
+      'UPDATE vendor_credentials SET telegram_id=$1 WHERE vet_id=$2',
+      [String(telegram_id), vetId]
+    );
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /api/bot/orders/:id/accept  { telegram_id }
 router.post('/orders/:id/accept', requireBotAuth, async (req, res) => {
   const { telegram_id } = req.body;

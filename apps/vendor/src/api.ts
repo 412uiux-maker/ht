@@ -103,6 +103,18 @@ export const api = {
       body: JSON.stringify({ telegram_id }),
     }),
 
+  getTelegramLinkUrl: () =>
+    req<{ url: string }>('/api/vendor/telegram/link-url', { headers: authHeaders() }),
+
+  unlinkTelegram: () =>
+    req<{ ok: boolean }>('/api/vendor/link-telegram', {
+      method: 'POST', headers: authHeaders(),
+      body: JSON.stringify({ telegram_id: null }),
+    }),
+
+  getProfile: () =>
+    req<VendorSession>('/api/vendor/profile', { headers: authHeaders() }),
+
   services: () =>
     req<VendorService[]>('/api/vendor/services', { headers: authHeaders() }),
 

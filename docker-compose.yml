@@ -13,6 +13,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       MINI_APP_URL: ${MINI_APP_URL:-https://t.me/HappyTailsUzBot/app}
+      BOT_USERNAME: ${BOT_USERNAME:-HappyTailsUzBot}
       CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
       PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
       UZUM_MERCHANT_ID: ${UZUM_MERCHANT_ID:-}
@@ -65,6 +66,7 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       API_BASE_URL: http://petplatform-api:8080
       MINI_APP_URL: ${MINI_APP_URL:-https://t.me/HappyTailsUzBot/app}
+      BOT_USERNAME: ${BOT_USERNAME:-HappyTailsUzBot}
     depends_on:
       api:
         condition: service_healthy
