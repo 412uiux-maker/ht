@@ -13,7 +13,8 @@ import VendorProfile from './screens/VendorProfile'
 import Schedule from './screens/Schedule'
 import Clients from './screens/Clients'
 import Layout from './components/Layout'
-import IncomingCall from './components/IncomingCall'
+import IncomingCall, { type IncomingCallInfo } from './components/IncomingCall'
+import VideoCall from './screens/VideoCall'
 
 type Screen =
   | 'login'
@@ -27,7 +28,12 @@ type Screen =
   | 'reviews'
   | 'profile'
 
-function devInitialScreen(session: VendorSession | null): Screen | { name: 'chat'; consultId: string } {
+type AppScreen =
+  | Screen
+  | { name: 'chat'; consultId: string; clientName?: string; petName?: string; petSpecies?: string }
+  | { name: 'video'; consultId: string; clientName: string; petName: string; petSpecies: string }
+
+function devInitialScreen(session: VendorSession | null): AppScreen {
   const p = new URLSearchParams(location.search)
   const chatId = p.get('chat')
   if (session && chatId) return { name: 'chat', consultId: chatId }
@@ -36,9 +42,7 @@ function devInitialScreen(session: VendorSession | null): Screen | { name: 'chat
 
 export default function App() {
   const [session, setSessionState] = useState<VendorSession | null>(() => getSession())
-  const [screen, setScreen] = useState<Screen | { name: 'chat'; consultId: string }>(
-    () => devInitialScreen(getSession())
-  )
+  const [screen, setScreen] = useState<AppScreen>(() => devInitialScreen(getSession()))
 
   const handleLogin = (s: VendorSession) => {
     persistSession(s)
@@ -88,14 +92,43 @@ export default function App() {
     )
   }
 
+  const handleIncomingCall = (info: IncomingCallInfo) => {
+    setScreen({
+      name: 'video',
+      consultId: info.room,
+      clientName: info.client_name,
+      petName: info.pet_name,
+      petSpecies: info.pet_species,
+    })
+  }
+
+  if (typeof screen === 'object' && screen.name === 'video') {
+    return (
+      <VideoCall
+        consultationId={screen.consultId}
+        clientName={screen.clientName}
+        petName={screen.petName}
+        petSpecies={screen.petSpecies}
+        onBack={() => setScreen({ name: 'chat', consultId: screen.consultId, clientName: screen.clientName, petName: screen.petName, petSpecies: screen.petSpecies })}
+      />
+    )
+  }
+
   if (typeof screen === 'object' && screen.name === 'chat') {
     return (
       <>
-        <IncomingCall vetId={session.vet_id} />
+        <IncomingCall vetId={session.vet_id} onAccept={handleIncomingCall} />
         <Chat
           consultId={screen.consultId}
           session={session}
           onBack={() => setScreen('dashboard')}
+          onVideoCall={(info) => setScreen({
+            name: 'video',
+            consultId: screen.consultId,
+            clientName: info.clientName,
+            petName: info.petName,
+            petSpecies: info.petSpecies,
+          })}
         />
       </>
     )
@@ -105,7 +138,7 @@ export default function App() {
 
   return (
     <>
-    <IncomingCall vetId={session.vet_id} />
+    <IncomingCall vetId={session.vet_id} onAccept={handleIncomingCall} />
     <Layout
       session={session}
       activeScreen={activeScreen}

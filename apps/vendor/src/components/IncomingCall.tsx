@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Gateway that serves the video page and the WS signaling endpoint.
-// Matches the hardcoded base used elsewhere in the vendor app.
-const VIDEO_BASE = 'http://localhost:8080'
-const WS_URL = VIDEO_BASE.replace(/^http/, 'ws') + '/ws/signal'
+function wsUrl() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${proto}//${location.host}/ws/signal`
+}
 
 const SPECIES: Record<string, string> = {
   cat: '🐱', dog: '🐶', rabbit: '🐰', parrot: '🦜', hamster: '🐹', fish: '🐟', other: '🐾',
 }
 
-type IncomingCall = {
+type PendingCall = {
   room: string
   client_name?: string
   pet_name?: string
@@ -22,8 +22,22 @@ type IncomingCall = {
  * logged in: keeps a WS connection to the signaling lobby (keyed by vet_id),
  * shows a ringing screen on `incoming-call`, and lets the vet accept or decline.
  */
-export default function IncomingCall({ vetId }: { vetId: number }) {
-  const [call, setCall] = useState<IncomingCall | null>(null)
+export type IncomingCallInfo = {
+  room: string
+  client_name: string
+  pet_name: string
+  pet_species: string
+  problem?: string
+}
+
+export default function IncomingCall({
+  vetId,
+  onAccept,
+}: {
+  vetId: number
+  onAccept?: (info: IncomingCallInfo) => void
+}) {
+  const [call, setCall] = useState<PendingCall | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
   const ringRef = useRef<(() => void) | null>(null)
 
@@ -35,7 +49,7 @@ export default function IncomingCall({ vetId }: { vetId: number }) {
     const connect = () => {
       if (closed) return
       let ws: WebSocket
-      try { ws = new WebSocket(WS_URL) } catch { retry = setTimeout(connect, 3000); return }
+      try { ws = new WebSocket(wsUrl()) } catch { retry = setTimeout(connect, 3000); return }
       wsRef.current = ws
 
       ws.onopen = () => ws.send(JSON.stringify({ type: 'subscribe-vet', vet_id: vetId }))
@@ -96,9 +110,15 @@ export default function IncomingCall({ vetId }: { vetId: number }) {
   if (!call) return null
 
   const accept = () => {
-    const room = call.room
+    const info: IncomingCallInfo = {
+      room: call.room,
+      client_name: call.client_name ?? 'Клиент',
+      pet_name: call.pet_name ?? '',
+      pet_species: call.pet_species ?? 'other',
+      problem: call.problem,
+    }
     setCall(null)
-    window.open(`${VIDEO_BASE}/video.html?id=${room}&role=vet`, '_blank', 'noopener')
+    onAccept?.(info)
   }
 
   const decline = () => {

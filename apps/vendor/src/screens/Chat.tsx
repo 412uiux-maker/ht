@@ -40,11 +40,12 @@ function toMedicalReport(d: ReportDraft): MedicalReport {
 }
 
 export default function Chat({
-  consultId, session, onBack,
+  consultId, session, onBack, onVideoCall,
 }: {
   consultId: string
   session: VendorSession
   onBack: () => void
+  onVideoCall?: (info: { clientName: string; petName: string; petSpecies: string }) => void
 }) {
   void session
   const [consult, setConsult] = useState<Consultation | null>(null)
@@ -220,19 +221,18 @@ export default function Chat({
                 {fmtElapsed(elapsed).text}
               </span>
             )}
-            {!isDone && !isPending && (
-              <a
-                href={`http://localhost:8080/video.html?id=${consultId}&role=vet`}
-                target="_blank"
-                rel="noreferrer"
+            {!isDone && !isPending && onVideoCall && (
+              <button
+                onClick={() => onVideoCall?.({ clientName: consult.client_name, petName: consult.pet_name, petSpecies: consult.pet_species })}
                 style={{
                   background: 'var(--violet)', color: '#fff', borderRadius: 'var(--r-sm)',
-                  padding: '8px 14px', fontSize: '14px', textDecoration: 'none',
+                  padding: '8px 14px', fontSize: '14px', border: 'none', cursor: 'pointer',
                   minHeight: '44px', display: 'flex', alignItems: 'center', gap: '4px',
+                  fontFamily: 'inherit',
                 }}
               >
                 <IconPlay size={14} /> Видео
-              </a>
+              </button>
             )}
           </>
         ) : (
