@@ -186,6 +186,16 @@ const EVENT_COLOR: Record<string, string> = {
   prescription: '#7C82E8', reminder: '#F59E0B', note: 'var(--text-muted)',
 }
 
+type Urgency = 'expired' | 'soon' | null
+
+function getUrgency(ev: HealthEvent): Urgency {
+  if (ev.type !== 'reminder' && ev.type !== 'vaccination') return null
+  const t = ev.title.toLowerCase()
+  if (t.includes('просрочен') || t.includes('muddati') || t.includes('истёк')) return 'expired'
+  if (t.includes('скоро') || t.includes('tez orada') || t.includes('через')) return 'soon'
+  return null
+}
+
 function groupByDate(events: HealthEvent[], isRu: boolean) {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
@@ -207,7 +217,11 @@ function groupByDate(events: HealthEvent[], isRu: boolean) {
 }
 
 // ── HealthTimeline component ──────────────────────────────────
-function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId?: string) => void }) {
+function HealthTimeline({ pet, onAskVet, onWeightLogged }: {
+  pet: Pet
+  onAskVet?: (reasonEventId?: string) => void
+  onWeightLogged?: (kg: number) => void
+}) {
   const isRu = getLang() !== 'uz'
   const ownerId = getOwnerId()
   const [events, setEvents] = useState<HealthEvent[] | null>(null)
@@ -215,7 +229,11 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
   const [showNote, setShowNote] = useState(false)
   const [noteText, setNoteText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showWeight, setShowWeight] = useState(false)
+  const [weightVal, setWeightVal] = useState('')
+  const [savingWeight, setSavingWeight] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const weightRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
     setErr(false)
@@ -232,6 +250,17 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
       await api.createPetEvent(pet.id, { owner_id: ownerId, type: 'note', title: noteText.trim() })
       setNoteText(''); setShowNote(false); load()
     } catch { /* silent */ } finally { setSaving(false) }
+  }
+
+  const saveWeight = async () => {
+    const kg = parseFloat(weightVal.replace(',', '.'))
+    if (!kg || kg <= 0 || kg > 999) return
+    setSavingWeight(true)
+    try {
+      await api.logPetWeight(pet.id, { owner_id: ownerId, value: kg })
+      onWeightLogged?.(kg)
+      setWeightVal(''); setShowWeight(false); load()
+    } catch { /* silent */ } finally { setSavingWeight(false) }
   }
 
   const groups = events ? groupByDate(events, isRu) : []
@@ -300,7 +329,14 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
           }}>
             {g.label}
           </div>
-          {g.items.map((ev, i) => (
+          {g.items.map((ev, i) => {
+            const urgency = getUrgency(ev)
+            const iconBg = urgency === 'expired'
+              ? 'rgba(239,68,68,.12)'
+              : urgency === 'soon'
+              ? 'rgba(245,158,11,.12)'
+              : `${EVENT_COLOR[ev.type] ?? 'var(--text-muted)'}1A`
+            return (
             <div key={ev.id} style={{
               display: 'flex', gap: 10, alignItems: 'flex-start',
               paddingBottom: i < g.items.length - 1 ? 12 : 0,
@@ -309,7 +345,7 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
             }}>
               <div style={{
                 width: 32, height: 32, borderRadius: '50%',
-                background: `${EVENT_COLOR[ev.type] ?? 'var(--text-muted)'}1A`,
+                background: iconBg,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 15, flexShrink: 0,
               }}>
@@ -323,6 +359,24 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
                   <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                     {new Date(ev.occurred_at).toLocaleTimeString(isRu ? 'ru-RU' : 'uz-UZ', { hour: '2-digit', minute: '2-digit' })}
                   </span>
+                  {urgency === 'expired' && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 7px',
+                      borderRadius: 'var(--r-pill)', background: 'rgba(239,68,68,.12)',
+                      color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.04em',
+                    }}>
+                      {isRu ? 'Просрочено' : "Muddati o'tgan"}
+                    </span>
+                  )}
+                  {urgency === 'soon' && (
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: '2px 7px',
+                      borderRadius: 'var(--r-pill)', background: 'rgba(245,158,11,.12)',
+                      color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.04em',
+                    }}>
+                      {isRu ? 'Скоро' : 'Tez orada'}
+                    </span>
+                  )}
                   {ev.source === 'vet' && (
                     <span style={{
                       fontSize: 10, fontWeight: 700, padding: '2px 7px',
@@ -348,8 +402,10 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
                     style={{
                       marginTop: 6, display: 'inline-flex', alignItems: 'center', gap: 4,
                       padding: '4px 10px', borderRadius: 'var(--r-pill)',
-                      border: '1.5px solid var(--primary)', background: 'rgba(242,120,75,.07)',
-                      color: 'var(--primary)', fontSize: 12, fontWeight: 600,
+                      border: `1.5px solid ${urgency === 'expired' ? 'var(--danger)' : urgency === 'soon' ? '#D97706' : 'var(--primary)'}`,
+                      background: urgency === 'expired' ? 'rgba(239,68,68,.07)' : urgency === 'soon' ? 'rgba(245,158,11,.07)' : 'rgba(242,120,75,.07)',
+                      color: urgency === 'expired' ? 'var(--danger)' : urgency === 'soon' ? '#D97706' : 'var(--primary)',
+                      fontSize: 12, fontWeight: 600,
                       fontFamily: 'inherit', cursor: 'pointer', minHeight: 32,
                     }}
                   >
@@ -358,7 +414,8 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
                 )}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       ))}
 
@@ -402,22 +459,80 @@ function HealthTimeline({ pet, onAskVet }: { pet: Pet; onAskVet?: (reasonEventId
         </div>
       )}
 
-      {/* Add note trigger */}
-      {!showNote && events !== null && (
-        <button
-          onClick={() => setShowNote(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
-            width: '100%', marginTop: hasEvents ? 14 : 8,
-            padding: '10px', borderRadius: 'var(--r-pill)',
-            border: '1.5px dashed var(--border)',
-            background: 'transparent', color: 'var(--text-muted)',
-            fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', minHeight: 44,
-          }}
-        >
-          <IconPlus size={14} />
-          {isRu ? 'Добавить заметку' : "Izoh qo'shish"}
-        </button>
+      {/* Weight form */}
+      {showWeight && (
+        <div style={{
+          marginTop: hasEvents ? 14 : 0,
+          borderTop: hasEvents ? '1px solid var(--border)' : 'none',
+          paddingTop: hasEvents ? 12 : 0,
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+            ⚖️ {isRu ? 'Записать вес' : "Og'irlikni yozish"}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              ref={weightRef}
+              type="number"
+              inputMode="decimal"
+              value={weightVal}
+              onChange={e => setWeightVal(e.target.value)}
+              placeholder={isRu ? 'кг (напр. 4.5)' : 'kg (mas. 4.5)'}
+              style={{ ...inp, flex: 1 }}
+              autoFocus
+              onKeyDown={e => e.key === 'Enter' && saveWeight()}
+            />
+            <button
+              onClick={() => { setShowWeight(false); setWeightVal('') }}
+              style={{ padding: '10px 14px', borderRadius: 'var(--r-pill)', border: '1.5px solid var(--border)', background: 'transparent', fontFamily: 'inherit', fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 44, color: 'var(--text)' }}
+            >
+              {isRu ? 'Отмена' : 'Bekor'}
+            </button>
+            <button
+              onClick={saveWeight}
+              disabled={!weightVal || savingWeight}
+              style={{
+                padding: '10px 16px', borderRadius: 'var(--r-pill)',
+                background: weightVal && !savingWeight ? '#7C82E8' : 'var(--border)',
+                color: weightVal && !savingWeight ? '#fff' : 'var(--text-muted)',
+                border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
+                cursor: weightVal && !savingWeight ? 'pointer' : 'not-allowed', minHeight: 44,
+              }}
+            >
+              {savingWeight ? '…' : (isRu ? 'Сохранить' : 'Saqlash')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Action buttons row */}
+      {!showNote && !showWeight && events !== null && (
+        <div style={{ display: 'flex', gap: 8, marginTop: hasEvents ? 14 : 8 }}>
+          <button
+            onClick={() => setShowWeight(true)}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
+              padding: '10px', borderRadius: 'var(--r-pill)',
+              border: '1.5px dashed var(--border)',
+              background: 'transparent', color: 'var(--text-muted)',
+              fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', minHeight: 44,
+            }}
+          >
+            ⚖️ {isRu ? 'Вес' : "Og'irlik"}
+          </button>
+          <button
+            onClick={() => setShowNote(true)}
+            style={{
+              flex: 2, display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center',
+              padding: '10px', borderRadius: 'var(--r-pill)',
+              border: '1.5px dashed var(--border)',
+              background: 'transparent', color: 'var(--text-muted)',
+              fontSize: 13, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer', minHeight: 44,
+            }}
+          >
+            <IconPlus size={14} />
+            {isRu ? 'Добавить заметку' : "Izoh qo'shish"}
+          </button>
+        </div>
       )}
 
       <style>{`
@@ -442,6 +557,7 @@ export default function PetHealthCard({ pet, onBack, onAskVet }: {
   const [health, setHealth] = useState<PetHealthData>(() => loadHealth(pet.id))
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<Pick<PetHealthData, 'chronic' | 'notes'>>(health)
+  const [localWeight, setLocalWeight] = useState<number | null>(null)
 
   // Vaccination add form
   const [addVax, setAddVax] = useState(false)
@@ -555,9 +671,9 @@ export default function PetHealthCard({ pet, onBack, onAskVet }: {
           <div style={{ fontSize: 13, color: colors.text, fontWeight: 600, marginTop: 2 }}>
             {speciesEmoji(pet.species)} {isRu ? 'Медкарта' : 'Tibbiy karta'}
           </div>
-          {pet.weight_kg && (
+          {(localWeight ?? pet.weight_kg) && (
             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-              ⚖️ {pet.weight_kg} {isRu ? 'кг' : 'kg'}
+              ⚖️ {localWeight ?? pet.weight_kg} {isRu ? 'кг' : 'kg'}
             </div>
           )}
         </div>
@@ -816,7 +932,7 @@ export default function PetHealthCard({ pet, onBack, onAskVet }: {
             </Section>
 
             {/* ── Health event timeline (API-backed) ─────────────── */}
-            <HealthTimeline pet={pet} onAskVet={onAskVet} />
+            <HealthTimeline pet={pet} onAskVet={onAskVet} onWeightLogged={kg => setLocalWeight(kg)} />
           </>
         )}
       </div>
