@@ -136,9 +136,10 @@ function PersonTile({ person, onOpen, onDelete }: { person: Person; onOpen: () =
 }
 
 // ═══════════════════════════════════════════════════════════════
-export default function Family({ lang, onAskVet }: {
+export default function Family({ lang, onAskVet, initialHealthPetId }: {
   lang: string
   onAskVet?: (petId: string, reasonEventId?: string) => void
+  initialHealthPetId?: string
 }) {
   void lang
   const [section, setSection] = useState<Section>('pets')
@@ -162,7 +163,15 @@ export default function Family({ lang, onAskVet }: {
   const loadPets = () => {
     setPetsLoading(true)
     api.pets(getOwnerId())
-      .then(list => { setPets(list); setPetsLoading(false) })
+      .then(list => {
+        setPets(list)
+        setPetsLoading(false)
+        // Deep-link: open health card of the specified pet after pets are loaded
+        if (initialHealthPetId) {
+          const target = list.find(p => p.id === initialHealthPetId)
+          if (target) setPetView({ t: 'health', pet: target })
+        }
+      })
       .catch(() => setPetsLoading(false))
   }
   useEffect(() => { loadPets() }, [])

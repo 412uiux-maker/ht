@@ -94,13 +94,22 @@ export default function App() {
         }
       })
       .catch(() => { /* dev mode without bot token — continue unauthenticated */ })
-      .finally(() => setTgAuthDone(true))
+      .finally(() => {
+        setTgAuthDone(true)
+        // Handle deep-link: ?startapp=pet_<uuid> opens that pet's health card
+        const startParam = (window as any).Telegram?.WebApp?.initDataUnsafe?.start_param ?? ''
+        if (startParam.startsWith('pet_')) {
+          const petId = startParam.slice(4)
+          if (petId) { setDeepLinkPetId(petId); setTab('family') }
+        }
+      })
   }, [tgAuthDone])
 
   const [onboarded, setOnboarded] = useState(() => !!localStorage.getItem('ht_onboarded'))
   const [tab, setTab] = useState<Tab>(devInitialTab)
   const [flow, setFlow] = useState<Flow | null>(devInitialFlow)
   const [lang, setLangState] = useState(localStorage.getItem('ht_lang') || 'ru')
+  const [deepLinkPetId, setDeepLinkPetId] = useState<string | null>(null)
 
   const switchLang = () => {
     const next = lang === 'ru' ? 'uz' : 'ru'
@@ -319,6 +328,7 @@ export default function App() {
       {tab === 'family'  && (
         <Family
           lang={lang}
+          initialHealthPetId={deepLinkPetId ?? undefined}
           onAskVet={(petId, reasonEventId) => {
             setTab('consult')
             startFlow({ name: 'booking', vet: STUB_VET, petId, reasonEventId })

@@ -2,8 +2,9 @@ const pool = require('../db');
 const { logHealthEvent } = require('../helpers/healthEvents');
 const { sendTelegramMessage } = require('../notifications');
 
-const WARN_DAYS  = 30;  // window: create reminder if expires within 30 days
-const DEDUP_DAYS = 25;  // skip if a reminder for this vaccination was already sent within 25 days
+const WARN_DAYS   = 30;  // window: create reminder if expires within 30 days
+const DEDUP_DAYS  = 25;  // skip if a reminder for this vaccination was already sent within 25 days
+const MINI_APP_URL = process.env.MINI_APP_URL || 'https://t.me/HappyTailsUzBot/app';
 
 async function runVaccineReminders() {
   try {
@@ -59,7 +60,15 @@ async function runVaccineReminders() {
           const msg = isExpired
             ? `${emoji} <b>Прививка просрочена!</b>\n🐾 <b>${vacc.pet_name}</b>: ${vaccName}\nСрок истёк ${Math.abs(daysLeft)} дн. назад. Обратитесь к ветеринару.`
             : `${emoji} <b>Прививка скоро!</b>\n🐾 <b>${vacc.pet_name}</b>: ${vaccName}\nОсталось ${daysLeft} дн. Не забудьте записаться к врачу.`;
-          await sendTelegramMessage(user.telegram_id, msg);
+          // Deep-link into the pet's health card in the mini-app
+          const deepLink = `${MINI_APP_URL}?startapp=pet_${vacc.pet_id}`;
+          await sendTelegramMessage(user.telegram_id, msg, {
+            reply_markup: {
+              inline_keyboard: [[
+                { text: '🐾 Открыть медкарту', url: deepLink },
+              ]],
+            },
+          });
         }
       } catch {}
     }

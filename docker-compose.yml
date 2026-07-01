@@ -12,6 +12,7 @@ services:
       DATABASE_URL: postgresql://petplatform:petplatform@db:5432/petplatform
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      MINI_APP_URL: ${MINI_APP_URL:-https://t.me/HappyTailsUzBot/app}
       CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
       PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
       UZUM_MERCHANT_ID: ${UZUM_MERCHANT_ID:-}
