@@ -306,6 +306,29 @@ export const api = {
         provider, amount_uzs, owner_id: getOwnerId(),
       }),
     }),
+  aiChat: (
+    messages: { role: 'user' | 'assistant'; content: string }[],
+    pet: Pet | null,
+    lang: string,
+  ): Promise<Response> => {
+    const BASE = (import.meta as unknown as { env: { VITE_API_URL?: string } }).env.VITE_API_URL ?? ''
+    return fetch(`${BASE}/api/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages,
+        pet: pet ? {
+          name: pet.name, species: pet.species, sex: pet.sex,
+          age: pet.birth_date
+            ? `${Math.floor((Date.now() - new Date(pet.birth_date).getTime()) / 31557600000)} лет`
+            : undefined,
+          weight_kg: pet.weight_kg,
+        } : undefined,
+        lang,
+      }),
+    })
+  },
+
   validatePromo: (code: string) =>
     req<PromoResult>('/promos/validate', { method: 'POST', body: JSON.stringify({ code }) }),
   usePromo: (code: string) =>

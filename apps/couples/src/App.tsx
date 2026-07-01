@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { Vet, Consultation } from './api'
+import type { Vet, Consultation, Pet } from './api'
 import { api, setJwt, getJwt } from './api'
 import { setLang } from './i18n'
 import { WebApp } from './twa'
@@ -24,6 +24,7 @@ import ClinicList, { type Clinic } from './screens/ClinicList'
 import ClinicDetail from './screens/ClinicDetail'
 import Places from './screens/Places'
 import SymptomChecker from './screens/SymptomChecker'
+import AiVetChat from './screens/AiVetChat'
 import VideoCall from './screens/VideoCall'
 
 // Flows that cover the full screen (no bottom nav)
@@ -42,6 +43,7 @@ type Flow =
   | { name: 'places' }
   | { name: 'deeds' }
   | { name: 'symptoms' }
+  | { name: 'ai-chat'; pet?: Pet; initialMessage?: string }
   | { name: 'video'; consultationId: string; vet: Vet }
 
 const STUB_VET: Vet = {
@@ -296,6 +298,18 @@ export default function App() {
           lang={lang}
           onBookVet={() => endFlow('consult')}
           onBack={() => endFlow('home')}
+          onAskAi={(msg?: string) => startFlow({ name: 'ai-chat', initialMessage: msg })}
+        />
+      </Wrap>
+    )
+
+    if (flow.name === 'ai-chat') return (
+      <Wrap>
+        <AiVetChat
+          initialPet={flow.pet}
+          initialMessage={flow.initialMessage}
+          onBack={() => endFlow('home')}
+          onBookVet={() => endFlow('consult')}
         />
       </Wrap>
     )
@@ -315,6 +329,7 @@ export default function App() {
           onPlaces={() => startFlow({ name: 'places' })}
           onDeeds={() => startFlow({ name: 'deeds' })}
           onSymptoms={() => startFlow({ name: 'symptoms' })}
+          onAiChat={() => startFlow({ name: 'ai-chat' })}
         />
       )}
       {tab === 'consult' && (

@@ -59,6 +59,7 @@ app.use('/api/orders',        require('./routes/orders'));
 app.use('/api/bot',            require('./routes/bot'));
 app.use('/api/places',         require('./routes/places'));
 app.use('/api/symptom-check',  require('./routes/symptoms'));
+app.use('/api/ai',             require('./routes/ai'));
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', service: 'petplatform-api', time: new Date().toISOString() }));
 app.get('/api/hello',  (_req, res) => res.json({ message: 'Salom, dunyo! / Привет, мир!', from: 'petplatform-api' }));

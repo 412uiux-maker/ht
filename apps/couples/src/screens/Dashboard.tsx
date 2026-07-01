@@ -27,6 +27,7 @@ interface Props {
   onPlaces:     () => void
   onDeeds:      () => void
   onSymptoms:   () => void
+  onAiChat:     () => void
 }
 
 // ── Horizontal scroll cards data
@@ -92,7 +93,7 @@ const PERSON_COLORS: Record<'adult' | 'child', { bg: string; text: string }> = {
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces, onDeeds, onSymptoms }: Props) {
+export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance, onFood, onClinics, onPlaces, onDeeds, onSymptoms, onAiChat }: Props) {
   const [pets, setPets] = useState<Pet[] | null>(null)
   const [persons] = useState<Person[]>(loadPersons)
   const [topicFilter, setTopicFilter] = useState<'cats' | 'dogs'>('cats')
@@ -342,6 +343,47 @@ export default function Dashboard({ lang, onSwitchLang, onNavigate, onInsurance,
           <div style={{
             width: 30, height: 30, borderRadius: 'var(--r-md)',
             background: 'rgba(255,255,255,0.22)', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <IconChevronRight size={15} color="#fff" />
+          </div>
+        </button>
+      </div>
+
+      {/* ─────────────────────────────── AI VET CHAT BANNER */}
+      <div style={{ padding: '12px 16px 0' }}>
+        <button
+          onClick={onAiChat}
+          style={{
+            width: '100%', border: 'none', borderRadius: 'var(--r-xl)',
+            background: 'linear-gradient(135deg, #6B6FE4 0%, #9B59B6 100%)',
+            padding: '16px 18px', cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+            boxShadow: '0 4px 16px rgba(124,130,232,0.35)',
+            position: 'relative', overflow: 'hidden',
+          }}
+        >
+          <div aria-hidden style={{
+            position: 'absolute', top: -20, right: -20,
+            width: 90, height: 90, borderRadius: '50%',
+            background: 'rgba(255,255,255,.10)', pointerEvents: 'none',
+          }} />
+          <div style={{
+            width: 46, height: 46, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,0.18)', fontSize: 24, flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>🤖</div>
+          <div style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#fff', lineHeight: 1.3 }}>
+              {uz ? 'AI-veterinar' : 'Спросить AI-ветеринара'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 3 }}>
+              {uz ? 'Savolga tezkor javob — bepul' : 'Быстрый ответ на вопрос — бесплатно'}
+            </div>
+          </div>
+          <div style={{
+            width: 30, height: 30, borderRadius: 'var(--r-md)',
+            background: 'rgba(255,255,255,0.18)', flexShrink: 0,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <IconChevronRight size={15} color="#fff" />

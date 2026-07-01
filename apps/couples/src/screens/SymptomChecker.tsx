@@ -165,10 +165,11 @@ interface Props {
   lang: string
   onBookVet: () => void
   onBack: () => void
+  onAskAi?: (initialMessage?: string) => void
 }
 
 // ── Main component ────────────────────────────────────────────
-export default function SymptomChecker({ lang: _lang, onBookVet, onBack }: Props) {
+export default function SymptomChecker({ lang: _lang, onBookVet, onBack, onAskAi }: Props) {
   const isRu = getLang() !== 'uz'
   const [mode, setMode] = useState<Mode>('pick')
 
@@ -505,6 +506,20 @@ export default function SymptomChecker({ lang: _lang, onBookVet, onBack }: Props
                     {currentNode.result === 'not_urgent' && (
                       <button onClick={onBack} style={{ padding: '16px', borderRadius: 'var(--r-pill)', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', fontWeight: 700, fontSize: 16, minHeight: 56, fontFamily: 'inherit', cursor: 'pointer' }}>
                         {isRu ? 'Понятно' : 'Tushunarli'}
+                      </button>
+                    )}
+                    {onAskAi && (
+                      <button
+                        onClick={() => onAskAi(L(currentNode.message))}
+                        style={{
+                          padding: '14px', borderRadius: 'var(--r-pill)',
+                          background: 'linear-gradient(135deg,rgba(107,111,228,.12),rgba(155,89,182,.12))',
+                          color: '#6B6FE4', border: '1.5px solid rgba(107,111,228,.3)',
+                          fontWeight: 700, fontSize: 14, fontFamily: 'inherit',
+                          cursor: 'pointer', minHeight: 48,
+                        }}
+                      >
+                        🤖 {isRu ? 'Спросить AI-ветеринара' : "AI-veterinarga so'rash"}
                       </button>
                     )}
                     <button onClick={() => { setHistory([startKey]) }} style={{ padding: '14px', borderRadius: 'var(--r-pill)', background: 'transparent', color: 'var(--text-muted)', border: '1.5px solid var(--border)', fontWeight: 600, fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', minHeight: 48 }}>
@@ -849,6 +864,20 @@ export default function SymptomChecker({ lang: _lang, onBookVet, onBack }: Props
                         }}
                       >
                         {isRu ? '🩺 Записаться к ветеринару' : '🩺 Veterinarga yozilish'}
+                      </button>
+                    )}
+                    {onAskAi && (
+                      <button
+                        onClick={() => onAskAi(aiResult.summary)}
+                        style={{
+                          padding: '14px', borderRadius: 'var(--r-pill)',
+                          background: 'linear-gradient(135deg,rgba(107,111,228,.12),rgba(155,89,182,.12))',
+                          color: '#6B6FE4', border: '1.5px solid rgba(107,111,228,.3)',
+                          fontWeight: 700, fontSize: 14, fontFamily: 'inherit',
+                          cursor: 'pointer', minHeight: 48,
+                        }}
+                      >
+                        🤖 {isRu ? 'Спросить AI-ветеринара' : "AI-veterinarga so'rash"}
                       </button>
                     )}
                     <button
