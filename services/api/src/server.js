@@ -13,6 +13,34 @@ if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
   process.exit(1);
 }
 
+// ── Telegram webhook proxy ────────────────────────────────────────────────────
+// Must sit BEFORE express.json() so the raw body stream is not consumed.
+// In polling mode (no WEBHOOK_URL) the route still exists but the bot won't
+// be listening on 8443, so requests just get a 502 — that's harmless.
+app.post('/bot', (req, res) => {
+  const botUrl = process.env.BOT_INTERNAL_URL || 'http://petplatform-telegram-bot:8443';
+  const parsed = new URL('/bot', botUrl);
+  const opts = {
+    hostname: parsed.hostname,
+    port:     parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+    path:     '/bot',
+    method:   'POST',
+    headers:  {
+      'content-type':   req.headers['content-type'] || 'application/json',
+      'content-length': req.headers['content-length'] || '',
+    },
+  };
+  const proxy = http.request(opts, (proxyRes) => {
+    res.status(proxyRes.statusCode || 200);
+    proxyRes.pipe(res, { end: true });
+  });
+  proxy.on('error', (err) => {
+    console.error('[bot-proxy]', err.message);
+    if (!res.headersSent) res.status(502).end();
+  });
+  req.pipe(proxy, { end: true });
+});
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
