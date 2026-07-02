@@ -2,17 +2,21 @@ import { useEffect, useMemo, useState } from 'react'
 import { IconShield, IconSearch, IconAlertCircle, IconStarFilled } from '@ht/shared'
 import type { Vet, VetReview } from '../api'
 import { api } from '../api'
-import { t } from '../i18n'
+import { t, getLang } from '../i18n'
 
 interface Props {
   lang: string
   onSwitchLang: () => void
   onSelectVet: (vet: Vet) => void
   onInsurance: () => void
+  onAiChat: () => void
 }
 
-export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: Props) {
+const QUICK_KEYS = ['ai.q1', 'ai.q2', 'ai.q3'] as const
+
+export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance, onAiChat }: Props) {
   void lang
+  const isRu = getLang() !== 'uz'
   const [vets, setVets] = useState<Vet[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -23,7 +27,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
     setLoading(true)
     setError(false)
     api.vets()
-      .then((data) => setVets(data.filter((v) => v.is_available)))
+      .then(data => setVets(data.filter(v => v.is_available)))
       .catch(() => setError(true))
       .finally(() => setLoading(false))
   }
@@ -33,25 +37,24 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
   const specialties = useMemo(() => {
     const seen = new Set<string>()
     const result: string[] = []
-    vets.forEach((v) => {
+    vets.forEach(v => {
       const key = v.specialty.split(' (')[0].trim()
       if (!seen.has(key)) { seen.add(key); result.push(key) }
     })
     return result
   }, [vets])
 
-  const filtered = useMemo(() => {
-    return vets.filter((v) => {
-      const q = search.toLowerCase()
-      const matchSearch = !q || v.name.toLowerCase().includes(q) || v.specialty.toLowerCase().includes(q)
-      const matchSpec = !activeSpec || v.specialty.startsWith(activeSpec)
-      return matchSearch && matchSpec
-    })
-  }, [vets, search, activeSpec])
+  const filtered = useMemo(() => vets.filter(v => {
+    const q = search.toLowerCase()
+    const matchSearch = !q || v.name.toLowerCase().includes(q) || v.specialty.toLowerCase().includes(q)
+    const matchSpec = !activeSpec || v.specialty.startsWith(activeSpec)
+    return matchSearch && matchSpec
+  }), [vets, search, activeSpec])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      {/* Header */}
+
+      {/* ── Header ────────────────────────────────────────────────── */}
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '14px 20px', background: 'var(--surface)',
@@ -73,36 +76,139 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
         </button>
       </header>
 
-      {/* Hero */}
-      <div style={{
-        margin: '16px 16px 0', borderRadius: 'var(--r-xl)',
-        background: 'var(--grad-warm)', padding: '24px 24px 20px', color: '#fff',
-      }}>
-        <div style={{ fontSize: 36, marginBottom: 8 }}>🐶🐱</div>
-        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{t('home.title')}</div>
-        <div style={{ fontSize: 14, opacity: 0.85 }}>{t('home.subtitle')}</div>
+      {/* ── AI Consultation Card ───────────────────────────────────── */}
+      <div style={{ padding: '16px 16px 0' }}>
+        <button
+          onClick={onAiChat}
+          style={{
+            width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left',
+            background: 'none', padding: 0, fontFamily: 'inherit',
+          }}
+        >
+          <div style={{
+            borderRadius: 'var(--r-xl)',
+            background: 'linear-gradient(135deg, #5B3BDB 0%, #7C82E8 45%, #F2784B 100%)',
+            padding: '20px 20px 16px',
+            boxShadow: '0 6px 24px rgba(92,58,220,.28)',
+            position: 'relative', overflow: 'hidden',
+          }}>
+            {/* Decorative circle */}
+            <div style={{
+              position: 'absolute', right: -24, top: -24,
+              width: 120, height: 120, borderRadius: '50%',
+              background: 'rgba(255,255,255,.08)',
+              pointerEvents: 'none',
+            }} />
+            <div style={{
+              position: 'absolute', right: 20, bottom: -32,
+              width: 80, height: 80, borderRadius: '50%',
+              background: 'rgba(255,255,255,.06)',
+              pointerEvents: 'none',
+            }} />
+
+            {/* Top row */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 14 }}>
+              {/* Avatar */}
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
+                background: 'rgba(255,255,255,.18)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, backdropFilter: 'blur(4px)',
+                border: '1.5px solid rgba(255,255,255,.25)',
+              }}>
+                🤖
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 800, fontSize: 18, color: '#fff', marginBottom: 3, lineHeight: 1.2 }}>
+                  {t('ai.title')}
+                </div>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,.8)', lineHeight: 1.4 }}>
+                  {t('ai.subtitle')}
+                </div>
+                {/* Badges */}
+                <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+                  {[
+                    isRu ? 'Бесплатно' : 'Bepul',
+                    isRu ? 'Сразу' : 'Darhol',
+                    '24/7',
+                  ].map(label => (
+                    <span key={label} style={{
+                      background: 'rgba(255,255,255,.18)',
+                      color: '#fff', fontSize: 11, fontWeight: 700,
+                      padding: '2px 9px', borderRadius: 'var(--r-pill)',
+                      border: '1px solid rgba(255,255,255,.25)',
+                      backdropFilter: 'blur(4px)',
+                    }}>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick-question chips */}
+            <div style={{
+              display: 'flex', gap: 7, overflowX: 'auto', scrollbarWidth: 'none',
+              marginBottom: 16, paddingBottom: 2,
+            }}>
+              {QUICK_KEYS.map(k => (
+                <span key={k} style={{
+                  whiteSpace: 'nowrap', background: 'rgba(255,255,255,.14)',
+                  backdropFilter: 'blur(4px)', color: 'rgba(255,255,255,.9)',
+                  fontSize: 12, fontWeight: 500,
+                  padding: '5px 12px', borderRadius: 'var(--r-pill)',
+                  border: '1px solid rgba(255,255,255,.2)',
+                }}>
+                  {t(k)}
+                </span>
+              ))}
+            </div>
+
+            {/* CTA button */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ fontSize: 12, color: 'rgba(255,255,255,.65)' }}>
+                ⚠️ {isRu ? 'Не заменяет врача' : 'Shifokorni almashtirmaydi'}
+              </div>
+              <div style={{
+                background: '#fff',
+                color: '#5B3BDB',
+                padding: '10px 20px', borderRadius: 'var(--r-pill)',
+                fontSize: 14, fontWeight: 800,
+                boxShadow: '0 2px 10px rgba(0,0,0,.12)',
+                flexShrink: 0,
+              }}>
+                {isRu ? 'Спросить AI →' : 'AI ga so\'rash →'}
+              </div>
+            </div>
+          </div>
+        </button>
       </div>
 
-      {/* Insurance banner */}
-      <div style={{ padding: '12px 16px 0' }}>
+      {/* ── Insurance banner ─────────────────────────────────────── */}
+      <div style={{ padding: '10px 16px 0' }}>
         <button
           onClick={onInsurance}
           style={{
             width: '100%', borderRadius: 'var(--r-xl)',
             background: 'linear-gradient(135deg, #7C3AED, #A78BFA)',
-            padding: '16px 20px', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+            padding: '14px 18px', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
             boxShadow: '0 4px 16px rgba(124,58,237,.25)',
+            fontFamily: 'inherit',
           }}
         >
           <div style={{
-            width: 48, height: 48, borderRadius: 'var(--r-md)',
+            width: 40, height: 40, borderRadius: 'var(--r-md)',
             background: 'rgba(255,255,255,.2)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
-          }}><IconShield size={24} color="rgba(255,255,255,.9)" /></div>
+          }}>
+            <IconShield size={20} color="rgba(255,255,255,.9)" />
+          </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 2 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: '#fff', marginBottom: 1 }}>
               {t('ins.banner_title')}
             </div>
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,.8)' }}>
@@ -111,7 +217,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
           </div>
           <div style={{
             background: 'rgba(255,255,255,.9)', color: '#7C3AED',
-            padding: '6px 14px', borderRadius: 'var(--r-pill)',
+            padding: '5px 12px', borderRadius: 'var(--r-pill)',
             fontSize: 12, fontWeight: 700, flexShrink: 0,
           }}>
             {t('ins.more')} →
@@ -119,35 +225,47 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
         </button>
       </div>
 
-      {/* Search */}
-      <div style={{ padding: '12px 16px 0' }}>
+      {/* ── Section title ────────────────────────────────────────── */}
+      <div style={{ padding: '20px 16px 4px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '.4px', whiteSpace: 'nowrap' }}>
+          {isRu ? 'ИЛИ ЗАПИШИТЕСЬ К ВЕТЕРИНАРУ' : 'YOKI VETERINARGA YOZILING'}
+        </span>
+        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+      </div>
+
+      {/* ── Search ────────────────────────────────────────────────── */}
+      <div style={{ padding: '8px 16px 0' }}>
         <div style={{ position: 'relative' }}>
           <span style={{
             position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
             color: 'var(--text-muted)', pointerEvents: 'none',
             display: 'flex', alignItems: 'center',
-          }}><IconSearch size={16} /></span>
+          }}>
+            <IconSearch size={16} />
+          </span>
           <input
             type="search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             placeholder={t('home.search')}
             style={{
               width: '100%', padding: '11px 14px 11px 40px', borderRadius: 'var(--r-pill)',
               border: '1.5px solid var(--border)', background: 'var(--surface)',
               fontSize: 15, color: 'var(--text)', outline: 'none', minHeight: 44,
+              boxSizing: 'border-box',
             }}
           />
         </div>
       </div>
 
-      {/* Specialty tabs */}
+      {/* ── Specialty tabs ───────────────────────────────────────── */}
       {!loading && !error && specialties.length > 1 && (
         <div style={{
           display: 'flex', gap: 8, padding: '10px 16px 2px',
           overflowX: 'auto', scrollbarWidth: 'none',
         }}>
-          {['', ...specialties].map((spec) => (
+          {['', ...specialties].map(spec => (
             <button
               key={spec || '__all'}
               onClick={() => setActiveSpec(spec)}
@@ -157,7 +275,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
                 background: activeSpec === spec ? 'var(--primary)' : 'var(--surface)',
                 color: activeSpec === spec ? 'var(--on-primary)' : 'var(--text-muted)',
                 borderColor: activeSpec === spec ? 'var(--primary)' : 'var(--border)',
-                transition: 'all .15s',
+                transition: 'all .15s', fontFamily: 'inherit',
               }}
             >
               {spec || t('home.filter_all')}
@@ -166,7 +284,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
         </div>
       )}
 
-      {/* List */}
+      {/* ── Vet list ─────────────────────────────────────────────── */}
       <div style={{ flex: 1, padding: '12px 16px 32px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {loading && (
           <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '48px 0', fontSize: 15 }}>
@@ -183,6 +301,7 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
                 padding: '10px 24px', borderRadius: 'var(--r-pill)',
                 background: 'var(--primary)', color: 'var(--on-primary)',
                 border: 'none', fontWeight: 600, fontSize: 14, minHeight: 44,
+                fontFamily: 'inherit', cursor: 'pointer',
               }}
             >
               {t('retry')}
@@ -194,13 +313,15 @@ export default function Home({ lang, onSwitchLang, onSelectVet, onInsurance }: P
             {t('home.no_vets')}
           </div>
         )}
-        {!loading && !error && filtered.map((vet) => (
+        {!loading && !error && filtered.map(vet => (
           <VetCard key={vet.id} vet={vet} onSelect={onSelectVet} />
         ))}
       </div>
     </div>
   )
 }
+
+// ── VetCard ─────────────────────────────────────────────────────────────────
 
 function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
   const [bioExpanded, setBioExpanded] = useState(false)
@@ -229,7 +350,6 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
     }}>
       <div style={{ padding: '16px' }}>
         <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-          {/* Avatar */}
           <div style={{
             fontSize: 40, width: 64, height: 64, borderRadius: 'var(--r-md)',
             background: 'var(--surface-2)', display: 'flex', alignItems: 'center',
@@ -243,7 +363,6 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
             }} />
           </div>
 
-          {/* Info */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>{vet.name}</div>
@@ -278,14 +397,16 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
                 background: '#dcfce7', color: '#15803d',
                 borderRadius: 'var(--r-pill)', padding: '1px 8px', fontSize: 12, fontWeight: 600,
               }}>
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#15803d', marginRight: 4, verticalAlign: 'middle' }} />
+                <span style={{
+                  display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                  background: '#15803d', marginRight: 4, verticalAlign: 'middle',
+                }} />
                 {t('home.available')}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Bio */}
         {vet.bio && (
           <div style={{ marginTop: 10 }}>
             <div style={{
@@ -311,7 +432,6 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
           </div>
         )}
 
-        {/* Footer */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)',
@@ -336,7 +456,6 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
         </div>
       </div>
 
-      {/* Reviews panel */}
       {reviewsOpen && (
         <div style={{ borderTop: '1px solid var(--border)', background: 'var(--surface-2)' }}>
           {reviewsLoading && (
@@ -388,3 +507,4 @@ function VetCard({ vet, onSelect }: { vet: Vet; onSelect: (v: Vet) => void }) {
     </div>
   )
 }
+

@@ -345,6 +345,7 @@ export default function App() {
             startFlow({ name: 'booking', vet, petId: ctx?.petId, reasonEventId: ctx?.reasonEventId })
           }}
           onInsurance={() => startFlow({ name: 'insurance' })}
+          onAiChat={() => startFlow({ name: 'ai-chat' })}
         />
       )}
       {tab === 'family'  && (
