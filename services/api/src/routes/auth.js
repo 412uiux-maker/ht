@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const { Router } = require('express');
 const crypto = require('crypto');
 const pool = require('../db');
@@ -84,7 +85,7 @@ router.post('/telegram', async (req, res) => {
 
     res.json({ token, user });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 

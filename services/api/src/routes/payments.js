@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const { Router } = express;
 const crypto = require('crypto');
@@ -65,7 +66,7 @@ router.post('/checkout', async (req, res) => {
 
     res.json({ payment_id: payment.id, checkout_url: checkoutUrl, amount_uzs: order.price_uzs, provider });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -318,7 +319,7 @@ router.post('/webhook/uzum', express.json(), async (req, res) => {
     // Unknown event — acknowledge silently
     return res.json({ received: true });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -365,7 +366,7 @@ router.post('/simulate', async (req, res) => {
       provider,
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 

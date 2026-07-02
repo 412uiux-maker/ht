@@ -1,3 +1,5 @@
+const { serverError } = require('../helpers/respond');
+const { validate, body, param } = require('../middleware/validate');
 const express = require('express');
 const pool = require('../db');
 const { requireVendor } = require('../middleware/auth');
@@ -46,9 +48,14 @@ async function triggerRefund(orderId) {
 }
 
 // POST /api/orders/insurance  — create insurance order
-router.post('/insurance', async (req, res) => {
+router.post('/insurance',
+  validate([
+    body('owner_id').required().string(),
+    body('price_uzs').required().number().positive(),
+    body('plan_id').required().string(),
+  ]),
+  async (req, res) => {
   const { owner_id, pet_id, plan_id, addons = [], price_uzs, provider } = req.body;
-  if (!owner_id || !price_uzs) return res.status(400).json({ error: 'owner_id and price_uzs required' });
   try {
     const { rows: [order] } = await pool.query(
       `INSERT INTO orders (owner_id, pet_id, service_type, status, price_uzs, provider)
@@ -63,14 +70,17 @@ router.post('/insurance', async (req, res) => {
     );
     await pool.query(`UPDATE orders SET status='paid' WHERE id=$1`, [order.id]);
     res.json({ id: order.id, status: 'paid', plan_id, addons });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/orders  — create a new order for a consultation
-router.post('/', async (req, res) => {
+router.post('/',
+  validate([
+    body('consultation_id').required().int().positive(),
+    body('owner_id').required().string(),
+  ]),
+  async (req, res) => {
   const { consultation_id, owner_id } = req.body;
-  if (!consultation_id || !owner_id)
-    return res.status(400).json({ error: 'consultation_id and owner_id required' });
   try {
     const { rows: [c] } = await pool.query(
       'SELECT vet_id FROM consultations WHERE id=$1', [consultation_id]
@@ -92,7 +102,7 @@ router.post('/', async (req, res) => {
     );
     res.json(order);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -117,7 +127,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -136,7 +146,7 @@ router.get('/:id', async (req, res) => {
     if (!order) return res.status(404).json({ error: 'Not found' });
     res.json(order);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -158,7 +168,7 @@ router.post('/:id/accept', requireVendor, async (req, res) => {
       `✅ Ветеринар принял вашу заявку. Ожидайте начала консультации.`
     );
     res.json(updated);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/orders/:id/reject  (vendor JWT required)
@@ -183,7 +193,7 @@ router.post('/:id/reject', requireVendor, async (req, res) => {
       `❌ Ветеринар отклонил вашу заявку${reasonText}. Возврат будет обработан автоматически.`
     );
     res.json(final);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/orders/:id/start  (vendor JWT required)
@@ -200,7 +210,7 @@ router.post('/:id/start', requireVendor, async (req, res) => {
     );
     await syncConsultation(req.params.id, 'in_progress');
     res.json(updated);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/orders/:id/complete  (vendor JWT required)
@@ -223,7 +233,7 @@ router.post('/:id/complete', requireVendor, async (req, res) => {
       `🎉 Консультация завершена! Оставьте отзыв в приложении.`
     );
     res.json(updated);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/orders/:id/cancel  (client or admin; no JWT required — uses owner_id body param)
@@ -246,7 +256,7 @@ router.post('/:id/cancel', async (req, res) => {
     }
     const { rows: [final] } = await pool.query('SELECT * FROM orders WHERE id=$1', [req.params.id]);
     res.json(final);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/orders/:id/review  (client; no JWT — uses owner_id body param)
@@ -269,7 +279,7 @@ router.post('/:id/review', async (req, res) => {
       );
     }
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 module.exports = router;

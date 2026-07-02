@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const router = express.Router();
@@ -27,7 +28,7 @@ router.post('/validate', async (req, res) => {
       discount_type: promo.discount_type,
       discount_value: promo.discount_value,
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/promos/use  { code }  — increment used_count after successful payment
@@ -40,7 +41,7 @@ router.post('/use', async (req, res) => {
       [code.toUpperCase().trim()]
     );
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 module.exports = router;

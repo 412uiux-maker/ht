@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const { logHealthEvent } = require('../helpers/healthEvents');
@@ -26,7 +27,7 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json(consult);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -50,7 +51,7 @@ router.get('/:id', async (req, res) => {
     );
     res.json({ consultation, messages });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -88,7 +89,7 @@ router.post('/:id/messages', async (req, res) => {
     }
     res.status(201).json(msg);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -142,7 +143,7 @@ router.patch('/:id/status', async (req, res) => {
 
     res.json(consult);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -178,7 +179,7 @@ router.post('/:id/reject', async (req, res) => {
     }
     res.json(consult);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -201,7 +202,7 @@ router.post('/:id/call/start', async (req, res) => {
       now: new Date().toISOString(),
     });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -238,7 +239,7 @@ router.post('/:id/review', async (req, res) => {
       [rating, order.vet_id]
     );
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/consultations/:id/dispute  { owner_id, reason }
@@ -259,7 +260,7 @@ router.post('/:id/dispute', async (req, res) => {
       [req.params.id, owner_id || '', reason.trim().slice(0, 500)]
     );
     res.json(dispute);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/consultations/disputes?owner_id=
@@ -274,7 +275,7 @@ router.get('/disputes', async (req, res) => {
       [owner_id]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 module.exports = router;

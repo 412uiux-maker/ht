@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const router = express.Router();
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
 
     res.json(items.map(i => ({ ...i, progress: null })));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -47,7 +48,7 @@ router.get('/:id', async (req, res) => {
     }
     res.json({ ...item, progress });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -71,7 +72,7 @@ router.post('/:id/progress', async (req, res) => {
     );
     res.json(prog);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 

@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const router = express.Router();
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
       : await pool.query('SELECT * FROM foods WHERE is_active ORDER BY rating DESC');
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -81,7 +82,7 @@ router.post('/quiz', async (req, res) => {
 
     res.json(results);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 

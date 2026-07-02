@@ -1,3 +1,5 @@
+const { serverError } = require('../helpers/respond');
+const { validate, body, param } = require('../middleware/validate');
 const { Router } = require('express');
 const bcrypt = require('bcrypt');
 const pool = require('../db');
@@ -16,9 +18,13 @@ async function writeAudit(actorId, actorRole, action, targetType, targetId, deta
 }
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
-router.post('/login', async (req, res) => {
+router.post('/login',
+  validate([
+    body('email').required().email().maxLen(255),
+    body('password').required().string().minLen(6).maxLen(128),
+  ]),
+  async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'email and password required' });
   try {
     const r = await pool.query(
       'SELECT * FROM admin_users WHERE email=$1 AND is_active=true',
@@ -39,7 +45,7 @@ router.post('/login', async (req, res) => {
     }, '8h');
 
     res.json({ id: user.id, email: user.email, name: user.name, role: user.role, token });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── VENDORS / VERIFICATION ──────────────────────────────────────────────────
@@ -58,7 +64,7 @@ router.get('/vendors', requireAdmin('admin', 'moderator'), async (req, res) => {
       [status]
     );
     res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 router.get('/vendors/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
@@ -73,7 +79,7 @@ router.get('/vendors/:id', requireAdmin('admin', 'moderator'), async (req, res) 
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 router.post('/vendors/:id/verify', requireAdmin('admin', 'moderator'), async (req, res) => {
@@ -92,7 +98,7 @@ router.post('/vendors/:id/verify', requireAdmin('admin', 'moderator'), async (re
     }
     await writeAudit(req.adminUser.id, req.adminUser.role, `vendor.${action}`, 'vendor', req.params.id, { comment });
     res.json({ success: true, status });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── ORDERS ──────────────────────────────────────────────────────────────────
@@ -116,7 +122,7 @@ router.get('/orders', requireAdmin('admin', 'support'), async (req, res) => {
     );
     const tot = await pool.query(`SELECT COUNT(*) FROM orders o WHERE ${where}`, params);
     res.json({ orders: r.rows, total: parseInt(tot.rows[0].count) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 router.get('/orders/:id', requireAdmin('admin', 'support'), async (req, res) => {
@@ -127,7 +133,7 @@ router.get('/orders/:id', requireAdmin('admin', 'support'), async (req, res) => 
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 router.post('/orders/:id/refund', requireAdmin('admin', 'support'), async (req, res) => {
@@ -140,7 +146,7 @@ router.post('/orders/:id/refund', requireAdmin('admin', 'support'), async (req, 
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'order.refund', 'order', req.params.id, { reason });
     res.json({ success: true, order: r.rows[0] });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── AUDIT LOG ───────────────────────────────────────────────────────────────
@@ -160,7 +166,7 @@ router.get('/audit', requireAdmin('admin'), async (req, res) => {
     );
     const tot = await pool.query(`SELECT COUNT(*) FROM audit_log al WHERE ${where}`, action ? [action] : []);
     res.json({ entries: r.rows, total: parseInt(tot.rows[0].count) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── DASHBOARD STATS ─────────────────────────────────────────────────────────
@@ -188,7 +194,7 @@ router.get('/stats', requireAdmin('admin', 'moderator', 'support'), async (req, 
       users_total:       parseInt(users.rows[0].cnt),
       disputes_open:     parseInt(disputes.rows[0].cnt),
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── CONSULTATIONS ────────────────────────────────────────────────────────────
@@ -214,7 +220,7 @@ router.get('/consultations', requireAdmin('admin', 'support'), async (req, res) 
     );
     const tot = await pool.query(`SELECT COUNT(*) FROM consultations c LEFT JOIN vets v ON v.id=c.vet_id WHERE ${where}`, params);
     res.json({ consultations: r.rows, total: parseInt(tot.rows[0].count) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── PROMO CODES ─────────────────────────────────────────────────────────────
@@ -222,7 +228,7 @@ router.get('/promos', requireAdmin('admin', 'moderator'), async (req, res) => {
   try {
     const r = await pool.query('SELECT * FROM promo_codes ORDER BY created_at DESC');
     res.json(r.rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 router.post('/promos', requireAdmin('admin'), async (req, res) => {
@@ -240,7 +246,7 @@ router.post('/promos', requireAdmin('admin'), async (req, res) => {
     res.status(201).json(r.rows[0]);
   } catch (e) {
     if (e.code === '23505') return res.status(409).json({ error: 'Такой код уже существует' });
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -253,7 +259,7 @@ router.patch('/promos/:id', requireAdmin('admin'), async (req, res) => {
     );
     if (!r.rows[0]) return res.status(404).json({ error: 'Not found' });
     res.json(r.rows[0]);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── МОДЕРАЦИЯ ОТЗЫВОВ ────────────────────────────────────────────────────────
@@ -272,7 +278,7 @@ router.get('/reviews', requireAdmin('admin', 'moderator'), async (req, res) => {
       args
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/reviews/:id/moderate  { action: 'publish' | 'hide' }
@@ -288,7 +294,7 @@ router.post('/reviews/:id/moderate', requireAdmin('admin', 'moderator'), async (
     if (!row) return res.status(404).json({ error: 'Not found' });
     await writeAudit(req.adminUser.id, req.adminUser.role, `review.${action}`, 'review', req.params.id, {});
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── CRUD ДОБРЫХ ДЕЛ ──────────────────────────────────────────────────────────
@@ -298,7 +304,7 @@ router.get('/deeds', requireAdmin('admin', 'moderator'), async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM good_deeds ORDER BY sort_order, created_at DESC');
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/deeds
@@ -314,7 +320,7 @@ router.post('/deeds', requireAdmin('admin', 'moderator'), async (req, res) => {
     );
     await writeAudit(req.adminUser.id, req.adminUser.role, 'deed.create', 'good_deed', String(row.id), { title });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // PATCH /api/admin/deeds/:id
@@ -331,7 +337,7 @@ router.patch('/deeds/:id', requireAdmin('admin', 'moderator'), async (req, res) 
     if (!row) return res.status(404).json({ error: 'Not found' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'deed.update', 'good_deed', req.params.id, { title });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // DELETE /api/admin/deeds/:id
@@ -341,7 +347,7 @@ router.delete('/deeds/:id', requireAdmin('admin', 'moderator'), async (req, res)
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'deed.delete', 'good_deed', req.params.id, {});
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ── Content (learn_items) CRUD ────────────────────────────────────────────────
@@ -358,7 +364,7 @@ router.get('/content', requireAdmin('admin', 'moderator'), async (req, res) => {
     q += ' ORDER BY li.sort_order, li.id DESC';
     const { rows } = await pool.query(q, params);
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/content
@@ -376,7 +382,7 @@ router.post('/content', requireAdmin('admin', 'moderator'), async (req, res) => 
     );
     await writeAudit(req.adminUser.id, req.adminUser.role, 'content.create', 'learn_item', String(row.id), { title });
     res.json({ ...row, views: 0 });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // PATCH /api/admin/content/:id
@@ -397,7 +403,7 @@ router.patch('/content/:id', requireAdmin('admin', 'moderator'), async (req, res
     await writeAudit(req.adminUser.id, req.adminUser.role, 'content.update', 'learn_item', req.params.id, { title });
     const views = await pool.query('SELECT COUNT(*)::int AS v FROM learn_progress WHERE item_id=$1', [row.id]);
     res.json({ ...row, views: views.rows[0]?.v ?? 0 });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // DELETE /api/admin/content/:id
@@ -407,7 +413,7 @@ router.delete('/content/:id', requireAdmin('admin', 'moderator'), async (req, re
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'content.delete', 'learn_item', req.params.id, {});
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── USERS ───────────────────────────────────────────────────────────────────
@@ -458,7 +464,7 @@ router.get('/users', requireAdmin('admin', 'moderator', 'support'), async (req, 
 
     const total = all.length;
     res.json({ users: all.slice(offset, offset + limit), total });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/users/:id/block  { blocked: boolean }
@@ -494,7 +500,7 @@ router.post('/users/:id/block', requireAdmin('admin'), async (req, res) => {
       return res.json({ ok: true });
     }
     res.status(404).json({ error: 'User not found' });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/users/:id/role  { role }
@@ -510,7 +516,7 @@ router.post('/users/:id/role', requireAdmin('admin'), async (req, res) => {
     if (!rowCount) return res.status(404).json({ error: 'Admin user not found' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'user.role_change', 'admin_user', req.params.id, { role });
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── FINANCE (admin only) ─────────────────────────────────────────────────────
@@ -540,7 +546,7 @@ router.get('/finance/stats', requireAdmin('admin'), async (req, res) => {
       pending_payouts:  Number(pend.pending_payouts),
       pending_count:    Number(pend.pending_count),
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/admin/finance/transactions?page=1&limit=50
@@ -567,7 +573,7 @@ router.get('/finance/transactions', requireAdmin('admin'), async (req, res) => {
     `, [limit, offset]);
     const { rows: [ct] } = await pool.query('SELECT COUNT(*) FROM payments');
     res.json({ transactions: rows, total: Number(ct.count) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/admin/finance/payouts?status=pending
@@ -584,7 +590,7 @@ router.get('/finance/payouts', requireAdmin('admin'), async (req, res) => {
       LIMIT 200
     `, params);
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/finance/payouts/:id/approve  { admin_note? }
@@ -600,7 +606,7 @@ router.post('/finance/payouts/:id/approve', requireAdmin('admin'), async (req, r
     if (!row) return res.status(404).json({ error: 'Payout not found or already resolved' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'payout.approve', 'vendor_payout', req.params.id, { amount: row.amount_uzs });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/finance/payouts/:id/reject  { reason }
@@ -616,7 +622,7 @@ router.post('/finance/payouts/:id/reject', requireAdmin('admin'), async (req, re
     if (!row) return res.status(404).json({ error: 'Payout not found or already resolved' });
     await writeAudit(req.adminUser.id, req.adminUser.role, 'payout.reject', 'vendor_payout', req.params.id, { reason: req.body.reason });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── DISPUTES ────────────────────────────────────────────────────────────────
@@ -642,7 +648,7 @@ router.get('/disputes', requireAdmin('admin', 'support'), async (req, res) => {
       `SELECT COUNT(*) FROM disputes WHERE ($1 = 'all' OR status = $1)`, [status]
     );
     res.json({ disputes: rows, total: parseInt(cnt.count) });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/admin/disputes/:id  → dispute + messages[]
@@ -665,7 +671,7 @@ router.get('/disputes/:id', requireAdmin('admin', 'support'), async (req, res) =
       [req.params.id]
     );
     res.json({ dispute: d, messages });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/disputes/:id/messages  { text }
@@ -680,7 +686,7 @@ router.post('/disputes/:id/messages', requireAdmin('admin', 'support'), async (r
     );
     await writeAudit(req.adminUser.id, req.adminUser.role, 'dispute.message', 'disputes', String(req.params.id), { text: text.trim() });
     res.json(msg);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/disputes/:id/resolve  { status: 'resolved'|'closed', resolution? }
@@ -706,7 +712,7 @@ router.post('/disputes/:id/resolve', requireAdmin('admin', 'support'), async (re
     }
     await writeAudit(req.adminUser.id, req.adminUser.role, 'dispute.resolve', 'disputes', String(req.params.id), { status, resolution });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── SETTINGS (admin only) ────────────────────────────────────────────────────
@@ -717,7 +723,7 @@ router.get('/settings', requireAdmin('admin'), async (req, res) => {
     const { rows } = await pool.query('SELECT key, value FROM platform_settings ORDER BY key');
     // Return as flat object { key: value }
     res.json(Object.fromEntries(rows.map(r => [r.key, r.value])));
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ── Places management ─────────────────────────────────────────────────────────
@@ -727,7 +733,7 @@ router.get('/places', requireAdmin('admin', 'moderator'), async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM places ORDER BY sort_order, name_ru');
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/admin/places
@@ -752,7 +758,7 @@ router.post('/places', requireAdmin('admin', 'moderator'), async (req, res) => {
     );
     await writeAudit(req.adminUser.id, req.adminUser.role, 'place.upsert', 'places', newId, { name_ru });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // PATCH /api/admin/places/:id
@@ -773,7 +779,7 @@ router.patch('/places/:id', requireAdmin('admin', 'moderator'), async (req, res)
     );
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // DELETE /api/admin/places/:id
@@ -782,7 +788,7 @@ router.delete('/places/:id', requireAdmin('admin'), async (req, res) => {
     await pool.query('DELETE FROM places WHERE id=$1', [req.params.id]);
     await writeAudit(req.adminUser.id, req.adminUser.role, 'place.delete', 'places', req.params.id, {});
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/admin/analytics?days=30
@@ -830,7 +836,7 @@ router.get('/analytics', requireAdmin('admin', 'support'), async (req, res) => {
       topVets: topVets.rows,
       newUsers: newUsers.rows,
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // PUT /api/admin/settings  { key, value }
@@ -845,7 +851,7 @@ router.put('/settings', requireAdmin('admin'), async (req, res) => {
     );
     await writeAudit(req.adminUser.id, req.adminUser.role, 'settings.update', 'platform_settings', key, { value });
     res.json({ ok: true, key, value });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 module.exports = router;

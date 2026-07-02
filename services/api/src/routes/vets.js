@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const router = express.Router();
@@ -16,7 +17,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -36,7 +37,7 @@ router.get('/:id/reviews', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 

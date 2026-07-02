@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const { logHealthEvent } = require('../helpers/healthEvents');
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -67,7 +68,7 @@ router.post('/', async (req, res) => {
     if (e.constraint === 'pets_microchip_uidx') {
       return res.status(422).json({ error: 'chip_duplicate', message: 'Этот чип уже зарегистрирован' });
     }
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -79,7 +80,7 @@ router.get('/:id', async (req, res) => {
     if (owner_id && pet.owner_id !== owner_id) return res.status(403).json({ error: 'Forbidden' });
     res.json(pet);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -121,7 +122,7 @@ router.put('/:id', async (req, res) => {
     if (e.constraint === 'pets_microchip_uidx') {
       return res.status(422).json({ error: 'chip_duplicate', message: 'Этот чип уже зарегистрирован' });
     }
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -133,7 +134,7 @@ router.delete('/:id', async (req, res) => {
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     res.status(204).end();
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -154,7 +155,7 @@ router.get('/:id/consultations', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -171,7 +172,7 @@ router.get('/:id/documents', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -189,7 +190,7 @@ router.post('/:id/documents', async (req, res) => {
     );
     res.status(201).json(doc);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -205,7 +206,7 @@ router.delete('/:id/documents/:docId', async (req, res) => {
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     res.status(204).end();
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -222,7 +223,7 @@ router.get('/:id/vaccinations', async (req, res) => {
     );
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -253,7 +254,7 @@ router.post('/:id/vaccinations', async (req, res) => {
     });
     res.status(201).json(vacc);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -269,7 +270,7 @@ router.delete('/:id/vaccinations/:vId', async (req, res) => {
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     res.status(204).end();
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -299,7 +300,7 @@ router.get('/:id/events', async (req, res) => {
       params
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 router.post('/:id/events', async (req, res) => {
@@ -317,7 +318,7 @@ router.post('/:id/events', async (req, res) => {
       [req.params.id, type, title.trim(), note?.trim() ?? null, occurred_at ?? new Date()]
     );
     res.status(201).json(event);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // ─── Weight update (updates pets.weight_kg + logs event) ─────────────────────
@@ -340,7 +341,7 @@ router.post('/:id/weight', async (req, res) => {
       [req.params.id, `⚖️ ${kg} кг`, measured_at ?? new Date()]
     );
     res.status(201).json({ pet, event });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 module.exports = router;

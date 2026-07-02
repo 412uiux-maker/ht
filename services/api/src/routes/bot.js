@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const { Router } = require('express');
 const pool = require('../db');
 const notify = require('../notifications');
@@ -28,7 +29,7 @@ router.post('/link-vendor', requireBotAuth, async (req, res) => {
     );
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -58,7 +59,7 @@ router.post('/orders/:id/accept', requireBotAuth, async (req, res) => {
     notify.notifyClientOrderStatus(req.params.id, '✅ Ваша заявка принята. Врач скоро выйдет на связь.').catch(() => {});
     res.json(updated);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -97,7 +98,7 @@ router.post('/orders/:id/reject', requireBotAuth, async (req, res) => {
     notify.notifyClientOrderStatus(req.params.id, '❌ Заявка отклонена. Средства вернутся в течение 1–2 рабочих дней.').catch(() => {});
     res.json(final);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 

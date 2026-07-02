@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const pool = require('../db');
 const router = express.Router();
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
 
     res.json(deeds.map(d => ({ ...d, my_types: [] })));
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -52,7 +53,7 @@ router.get('/:id', async (req, res) => {
 
     res.json({ ...deed, my_types, recent_participations: recent });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -93,7 +94,7 @@ router.post('/:id/participate', async (req, res) => {
   } catch (e) {
     await client.query('ROLLBACK');
     if (e.code === '23505') return res.status(409).json({ error: 'Already participated with this type' });
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   } finally {
     client.release();
   }

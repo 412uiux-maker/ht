@@ -1,3 +1,4 @@
+const { serverError } = require('../helpers/respond');
 const express = require('express');
 const bcrypt = require('bcrypt');
 const pool = require('../db');
@@ -28,7 +29,7 @@ router.post('/auth/send-code', async (req, res) => {
     if (DEV) resp._dev_code = code;  // Never expose OTP in production
     res.json(resp);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -59,7 +60,7 @@ router.post('/auth/verify-code', async (req, res) => {
     const token = signToken({ sub: row.vet_id, type: 'vendor', email: row.email || '' }, '7d');
     res.json({ ...row, token });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -87,7 +88,7 @@ router.post('/login', async (req, res) => {
     const token = signToken({ sub: cred.vet_id, type: 'vendor', email: cred.email || '' }, '7d');
     res.json({ ...rest, token });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -103,7 +104,7 @@ router.post('/link-telegram', requireVendor, async (req, res) => {
     );
     res.json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -126,7 +127,7 @@ router.get('/profile', requireVendor, async (req, res) => {
     if (!vet) return res.status(404).json({ error: 'Not found' });
     res.json(vet);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -143,7 +144,7 @@ router.get('/consultations', requireVendor, async (req, res) => {
     const { rows } = await pool.query(q, params);
     res.json(rows);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -169,7 +170,7 @@ router.get('/stats', requireVendor, async (req, res) => {
     const income = parseInt(counts.completed) * (vet?.price_uzs || 0);
     res.json({ ...counts, income, rating: vet?.rating || 5.0, review_count: reviewRow.rows[0].review_count });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    serverError(res, e);
   }
 });
 
@@ -183,7 +184,7 @@ router.get('/services', requireVendor, async (req, res) => {
       [req.vendor.vet_id]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/vendor/services  (protected)
@@ -199,7 +200,7 @@ router.post('/services', requireVendor, async (req, res) => {
        format || 'online', is_active !== false]
     );
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // PATCH /api/vendor/services/:id  (protected)
@@ -218,7 +219,7 @@ router.patch('/services/:id', requireVendor, async (req, res) => {
     );
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // DELETE /api/vendor/services/:id  (protected)
@@ -230,7 +231,7 @@ router.delete('/services/:id', requireVendor, async (req, res) => {
     );
     if (!rowCount) return res.status(404).json({ error: 'Not found' });
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/vendor/register  { name, specialty, phone, password, bio?, email?, price_uzs?, experience_yr?, avatar_emoji? }
@@ -270,7 +271,7 @@ router.post('/register', async (req, res) => {
       avatar_emoji: avatar_emoji || '👨‍⚕️', experience_yr: Number(experience_yr) || 1,
       token, verification_status: 'pending',
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/me  (protected) — profile + current verification status
@@ -289,7 +290,7 @@ router.get('/me', requireVendor, async (req, res) => {
     );
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // PATCH /api/vendor/me  (protected) — update editable profile fields
@@ -307,7 +308,7 @@ router.patch('/me', requireVendor, async (req, res) => {
     );
     if (!row) return res.status(404).json({ error: 'Not found' });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/slots?week=YYYY-MM-DD  (week = Monday date)
@@ -325,7 +326,7 @@ router.get('/slots', requireVendor, async (req, res) => {
       [req.vendor.vet_id, monday.toISOString(), weekEnd.toISOString()]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/vendor/slots/toggle  { slot_at: ISO string }
@@ -347,7 +348,7 @@ router.post('/slots/toggle', requireVendor, async (req, res) => {
       [req.vendor.vet_id, slot_at]
     );
     res.json({ action: 'added', ...slot });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/reviews  (protected)
@@ -365,7 +366,7 @@ router.get('/reviews', requireVendor, async (req, res) => {
       [req.vendor.vet_id]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/vendor/reviews/:id/reply  { text }  (protected)
@@ -379,7 +380,7 @@ router.post('/reviews/:id/reply', requireVendor, async (req, res) => {
     );
     if (!row) return res.status(404).json({ error: 'Review not found' });
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/orders  — full order history (protected)
@@ -398,7 +399,7 @@ router.get('/orders', requireVendor, async (req, res) => {
       [req.vendor.vet_id]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/finance  (protected)
@@ -432,7 +433,7 @@ router.get('/finance', requireVendor, async (req, res) => {
         amount: ['cancelled', 'refunded'].includes(o.status) ? -(o.price_uzs || 0) : payout(o),
       })),
     });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/clients — unique clients with their consultation history summary
@@ -463,7 +464,7 @@ router.get('/clients', requireVendor, async (req, res) => {
       [req.vendor.vet_id]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // POST /api/vendor/payouts  { amount_uzs, method, requisites }
@@ -481,7 +482,7 @@ router.post('/payouts', requireVendor, async (req, res) => {
       [req.vendor.vet_id, amount_uzs, validMethod, requisites.trim()]
     );
     res.json(row);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 // GET /api/vendor/payouts  — history of payout requests
@@ -492,7 +493,7 @@ router.get('/payouts', requireVendor, async (req, res) => {
       [req.vendor.vet_id]
     );
     res.json(rows);
-  } catch (e) { res.status(500).json({ error: e.message }); }
+  } catch (e) { serverError(res, e); }
 });
 
 module.exports = router;

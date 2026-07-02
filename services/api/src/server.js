@@ -2,14 +2,22 @@ const http = require('http');
 const path = require('path');
 const express = require('express');
 const { WebSocketServer } = require('ws');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const initDb = require('./db/init');
 const { startVaccineReminders } = require('./jobs/vaccineReminders');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const PROD = process.env.NODE_ENV === 'production';
 
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+// ── Startup env validation ────────────────────────────────────────────────────
+if (PROD && !process.env.JWT_SECRET) {
   console.error('FATAL: JWT_SECRET env var is required in production');
+  process.exit(1);
+}
+if (PROD && process.env.JWT_SECRET === 'change-me-in-production') {
+  console.error('FATAL: JWT_SECRET must be changed from default value');
   process.exit(1);
 }
 
@@ -41,7 +49,56 @@ app.post('/bot', (req, res) => {
   req.pipe(proxy, { end: true });
 });
 
-app.use(express.json());
+// ── Security headers ──────────────────────────────────────────────────────────
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false, // handled by nginx in prod
+}));
+
+// ── CORS ──────────────────────────────────────────────────────────────────────
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin || '';
+  const allowed = !PROD || ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin);
+  if (allowed && origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+    res.setHeader('Vary', 'Origin');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+// ── Rate limiting ─────────────────────────────────────────────────────────────
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+});
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many auth attempts, please try again later.' },
+});
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'AI rate limit exceeded, please wait a moment.' },
+});
+
+app.use('/api/', limiter);
+app.use('/api/auth', authLimiter);
+app.use('/api/admin/login', authLimiter);
+app.use('/api/vendor/auth', authLimiter);
+app.use('/api/ai', aiLimiter);
+
+// ── Body parsing ──────────────────────────────────────────────────────────────
+app.use(express.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use('/api/auth',          require('./routes/auth'));
@@ -170,9 +227,51 @@ wss.on('connection', (ws) => {
   ws.on('error', () => {});
 });
 
+// ── Global error handler ──────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, _next) => {
+  const status = err.status || err.statusCode || 500;
+  console.error(`[${new Date().toISOString()}] ${req.method} ${req.path} → ${status}`, err.message);
+  res.status(status).json({
+    error: PROD && status === 500 ? 'Internal server error' : (err.message || 'Internal server error'),
+  });
+});
+
+// ── 404 handler ───────────────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// ── Startup ───────────────────────────────────────────────────────────────────
 initDb()
   .then(() => {
     server.listen(PORT, () => console.log(`petplatform-api running at http://localhost:${PORT}`));
     startVaccineReminders();
   })
   .catch(err => { console.error('DB init failed:', err); process.exit(1); });
+
+// ── Graceful shutdown ─────────────────────────────────────────────────────────
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`[${signal}] Graceful shutdown…`);
+  server.close(() => {
+    console.log('HTTP server closed');
+    const pool = require('./db');
+    pool.end().then(() => {
+      console.log('DB pool closed');
+      process.exit(0);
+    }).catch(() => process.exit(1));
+  });
+  setTimeout(() => { console.error('Forced shutdown after timeout'); process.exit(1); }, 10000);
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  shutdown('uncaughtException');
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason);
+});
