@@ -329,6 +329,9 @@ export const api = {
     })
   },
 
+  createInsuranceOrder: (body: { owner_id: string; pet_id: string; plan_id: string; addons: string[]; price_uzs: number; provider: string }) =>
+    req<{ id: string; status: string }>('/orders/insurance', { method: 'POST', body: JSON.stringify(body) }),
+
   validatePromo: (code: string) =>
     req<PromoResult>('/promos/validate', { method: 'POST', body: JSON.stringify({ code }) }),
   usePromo: (code: string) =>

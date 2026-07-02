@@ -340,6 +340,44 @@ CREATE TABLE IF NOT EXISTS disputes (
 );
 CREATE INDEX IF NOT EXISTS disputes_status_idx ON disputes(status);
 
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolution TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolved_by TEXT;
+ALTER TABLE disputes ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
+
+CREATE TABLE IF NOT EXISTS dispute_messages (
+  id         SERIAL PRIMARY KEY,
+  dispute_id INTEGER NOT NULL REFERENCES disputes(id) ON DELETE CASCADE,
+  sender     TEXT NOT NULL CHECK (sender IN ('admin','system')),
+  sender_name TEXT,
+  text       TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS dispute_messages_dispute_idx ON dispute_messages(dispute_id);
+
+-- Pet-friendly places directory
+CREATE TABLE IF NOT EXISTS places (
+  id           TEXT PRIMARY KEY,
+  type         TEXT NOT NULL CHECK (type IN ('park','cafe','shop','grooming','hotel','clinic','other')),
+  name_ru      TEXT NOT NULL,
+  name_uz      TEXT NOT NULL DEFAULT '',
+  address_ru   TEXT NOT NULL DEFAULT '',
+  address_uz   TEXT NOT NULL DEFAULT '',
+  desc_ru      TEXT DEFAULT '',
+  desc_uz      TEXT DEFAULT '',
+  emoji        TEXT NOT NULL DEFAULT '📍',
+  color        TEXT NOT NULL DEFAULT '#E8911A',
+  rating       NUMERIC(3,1) DEFAULT 4.5,
+  reviews_cnt  INTEGER DEFAULT 0,
+  pets_allowed TEXT[] DEFAULT '{}',
+  working_hours TEXT DEFAULT '',
+  phone        TEXT DEFAULT '',
+  tags         TEXT[] DEFAULT '{}',
+  is_active    BOOLEAN DEFAULT true,
+  sort_order   INTEGER DEFAULT 0,
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS places_type_idx ON places(type);
+
 -- M1: Pet passport, chip, colour, documents
 ALTER TABLE pets ADD COLUMN IF NOT EXISTS color            TEXT;
 ALTER TABLE pets ADD COLUMN IF NOT EXISTS sterilized       BOOLEAN;

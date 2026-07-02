@@ -45,6 +45,27 @@ async function triggerRefund(orderId) {
   );
 }
 
+// POST /api/orders/insurance  — create insurance order
+router.post('/insurance', async (req, res) => {
+  const { owner_id, pet_id, plan_id, addons = [], price_uzs, provider } = req.body;
+  if (!owner_id || !price_uzs) return res.status(400).json({ error: 'owner_id and price_uzs required' });
+  try {
+    const { rows: [order] } = await pool.query(
+      `INSERT INTO orders (owner_id, pet_id, service_type, status, price_uzs, provider)
+       VALUES ($1, $2, 'insurance', 'created', $3, $4) RETURNING *`,
+      [owner_id, pet_id || null, Math.round(price_uzs), provider || null]
+    );
+    // Simulate payment immediately (no real gateway for insurance yet)
+    await pool.query(
+      `INSERT INTO payments (order_id, provider, amount_uzs, status, paid_at)
+       VALUES ($1, $2, $3, 'paid', NOW())`,
+      [order.id, provider || 'simulate', Math.round(price_uzs)]
+    );
+    await pool.query(`UPDATE orders SET status='paid' WHERE id=$1`, [order.id]);
+    res.json({ id: order.id, status: 'paid', plan_id, addons });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // POST /api/orders  — create a new order for a consultation
 router.post('/', async (req, res) => {
   const { consultation_id, owner_id } = req.body;

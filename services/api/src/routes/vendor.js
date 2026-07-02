@@ -382,6 +382,25 @@ router.post('/reviews/:id/reply', requireVendor, async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+// GET /api/vendor/orders  — full order history (protected)
+router.get('/orders', requireVendor, async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT o.id, o.status, o.price_uzs, o.payout_amount, o.commission_rate,
+              o.created_at, o.service_type, o.scheduled_at, o.rejected_reason,
+              c.client_name, c.pet_name, c.pet_species, c.problem,
+              c.id AS consultation_id, c.summary
+       FROM orders o
+       LEFT JOIN consultations c ON c.id = o.consultation_id
+       WHERE o.vet_id = $1
+       ORDER BY o.created_at DESC
+       LIMIT 200`,
+      [req.vendor.vet_id]
+    );
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // GET /api/vendor/finance  (protected)
 router.get('/finance', requireVendor, async (req, res) => {
   try {

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   IconConsultation, IconSettings, IconMoney,
-  IconStar, IconUser, IconMoon, IconSun, IconLogOut, IconCalendar, IconUsers,
+  IconStar, IconUser, IconMoon, IconSun, IconLogOut, IconCalendar, IconUsers, IconOrders,
 } from '@ht/shared'
 import type { VendorSession } from '../types'
 
@@ -13,6 +13,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { id: 'dashboard', label: 'Консультации', Icon: IconConsultation },
+  { id: 'orders',    label: 'Заказы',       Icon: IconOrders       },
   { id: 'clients',   label: 'Клиенты',      Icon: IconUsers        },
   { id: 'services',  label: 'Услуги',       Icon: IconSettings     },
   { id: 'schedule',  label: 'Расписание',   Icon: IconCalendar     },

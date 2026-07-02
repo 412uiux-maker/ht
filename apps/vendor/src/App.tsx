@@ -12,6 +12,7 @@ import Reviews from './screens/Reviews'
 import VendorProfile from './screens/VendorProfile'
 import Schedule from './screens/Schedule'
 import Clients from './screens/Clients'
+import Orders from './screens/Orders'
 import Layout from './components/Layout'
 import IncomingCall, { type IncomingCallInfo } from './components/IncomingCall'
 import VideoCall from './screens/VideoCall'
@@ -21,6 +22,7 @@ type Screen =
   | 'register'
   | 'verification_pending'
   | 'dashboard'
+  | 'orders'
   | 'clients'
   | 'services'
   | 'schedule'
@@ -151,6 +153,9 @@ export default function App() {
           onLogout={handleLogout}
           onOpenChat={(id) => setScreen({ name: 'chat', consultId: id })}
         />
+      )}
+      {activeScreen === 'orders'    && (
+        <Orders onOpenChat={(id) => setScreen({ name: 'chat', consultId: id })} />
       )}
       {activeScreen === 'clients'   && <Clients />}
       {activeScreen === 'services'  && <Services />}

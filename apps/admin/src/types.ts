@@ -63,13 +63,26 @@ export interface AdminDispute {
   id: number
   reason: string
   status: 'open' | 'resolved' | 'closed'
+  resolution: string | null
+  resolved_by: string | null
+  resolved_at: string | null
   created_at: string
   owner_id: string
   client_name: string | null
   pet_name: string | null
   pet_species: string | null
   consultation_id: string | null
+  problem: string | null
   vet_name: string | null
+}
+
+export interface DisputeMessage {
+  id: number
+  dispute_id: number
+  sender: 'admin' | 'system'
+  sender_name: string | null
+  text: string
+  created_at: string
 }
 
 export interface ConsultationRow {
@@ -178,6 +191,36 @@ export interface FinanceStats {
 }
 
 export type PlatformSettings = Record<string, string>
+
+export interface AnalyticsDay {
+  day: string
+  orders: number
+  gmv: number
+}
+
+export interface AnalyticsStatus {
+  status: string
+  cnt: number
+}
+
+export interface AnalyticsVet {
+  name: string
+  avatar_emoji: string
+  order_count: number
+  revenue: number
+}
+
+export interface AnalyticsNewUser {
+  day: string
+  cnt: number
+}
+
+export interface Analytics {
+  daily: AnalyticsDay[]
+  byStatus: AnalyticsStatus[]
+  topVets: AnalyticsVet[]
+  newUsers: AnalyticsNewUser[]
+}
 
 export interface PromoCode {
   id: number

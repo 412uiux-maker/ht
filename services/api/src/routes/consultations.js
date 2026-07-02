@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db');
 const { logHealthEvent } = require('../helpers/healthEvents');
+const { notifyClientNewMessage } = require('../notifications');
 const router = express.Router();
 
 router.post('/', async (req, res) => {
@@ -76,6 +77,15 @@ router.post('/:id/messages', async (req, res) => {
       `INSERT INTO messages (consultation_id, sender, text) VALUES ($1,$2,$3) RETURNING *`,
       [req.params.id, sender, text]
     );
+    // Notify client when vet sends a message
+    if (sender === 'vet') {
+      const { rows: [vet] } = await pool.query(
+        `SELECT v.name FROM vets v
+         JOIN consultations c ON c.vet_id = v.id
+         WHERE c.id = $1`, [req.params.id]
+      );
+      notifyClientNewMessage(req.params.id, vet?.name, text).catch(() => {});
+    }
     res.status(201).json(msg);
   } catch (e) {
     res.status(500).json({ error: e.message });

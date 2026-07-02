@@ -1,4 +1,4 @@
-import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser, FinanceTx, FinancePayout, FinanceStats, PlatformSettings, AdminDispute } from './types'
+import type { AdminSession, VendorVerification, Order, AuditEntry, DashboardStats, ConsultationRow, PromoCode, LearnItem, Review, GoodDeed, AppUser, FinanceTx, FinancePayout, FinanceStats, PlatformSettings, AdminDispute, DisputeMessage, Analytics } from './types'
 
 let _session: AdminSession | null = (() => {
   try { const s = localStorage.getItem('ht_admin'); return s ? JSON.parse(s) : null } catch { return null }
@@ -166,11 +166,33 @@ export const adminApi = {
       method: 'PUT', body: JSON.stringify({ key, value }),
     }),
 
+  getAnalytics: (days = 30) =>
+    req<Analytics>(`/analytics?days=${days}`),
+
   getDisputes: (status: string = 'open', page: number = 1) =>
     req<{ disputes: AdminDispute[]; total: number }>(`/disputes?status=${status}&page=${page}`),
 
-  resolveDispute: (id: number, status: 'resolved' | 'closed') =>
-    req<AdminDispute>(`/disputes/${id}/resolve`, {
-      method: 'POST', body: JSON.stringify({ status }),
+  getDispute: (id: number) =>
+    req<{ dispute: AdminDispute; messages: DisputeMessage[] }>(`/disputes/${id}`),
+
+  sendDisputeMessage: (id: number, text: string) =>
+    req<DisputeMessage>(`/disputes/${id}/messages`, {
+      method: 'POST', body: JSON.stringify({ text }),
     }),
+
+  resolveDispute: (id: number, status: 'resolved' | 'closed', resolution?: string) =>
+    req<AdminDispute>(`/disputes/${id}/resolve`, {
+      method: 'POST', body: JSON.stringify({ status, resolution }),
+    }),
+
+  getPlaces: () => req<unknown[]>('/places'),
+
+  createPlace: (data: Record<string, unknown>) =>
+    req<unknown>('/places', { method: 'POST', body: JSON.stringify(data) }),
+
+  updatePlace: (id: string, data: Record<string, unknown>) =>
+    req<unknown>(`/places/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+
+  deletePlace: (id: string) =>
+    req<{ ok: boolean }>(`/places/${id}`, { method: 'DELETE' }),
 }

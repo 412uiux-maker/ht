@@ -645,18 +645,66 @@ router.get('/disputes', requireAdmin('admin', 'support'), async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// POST /api/admin/disputes/:id/resolve  { status: 'resolved'|'closed', note? }
+// GET /api/admin/disputes/:id  → dispute + messages[]
+router.get('/disputes/:id', requireAdmin('admin', 'support'), async (req, res) => {
+  try {
+    const { rows: [d] } = await pool.query(
+      `SELECT d.id, d.reason, d.status, d.resolution, d.resolved_by, d.resolved_at, d.created_at, d.owner_id,
+              c.client_name, c.pet_name, c.pet_species, c.id AS consultation_id, c.problem,
+              v.name AS vet_name
+       FROM disputes d
+       LEFT JOIN consultations c ON c.id = d.consultation_id
+       LEFT JOIN vets v ON v.id = c.vet_id
+       WHERE d.id = $1`,
+      [req.params.id]
+    );
+    if (!d) return res.status(404).json({ error: 'Not found' });
+    const { rows: messages } = await pool.query(
+      `SELECT id, sender, sender_name, text, created_at
+       FROM dispute_messages WHERE dispute_id = $1 ORDER BY created_at ASC`,
+      [req.params.id]
+    );
+    res.json({ dispute: d, messages });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/disputes/:id/messages  { text }
+router.post('/disputes/:id/messages', requireAdmin('admin', 'support'), async (req, res) => {
+  const { text } = req.body;
+  if (!text?.trim()) return res.status(400).json({ error: 'text required' });
+  try {
+    const { rows: [msg] } = await pool.query(
+      `INSERT INTO dispute_messages (dispute_id, sender, sender_name, text)
+       VALUES ($1, 'admin', $2, $3) RETURNING *`,
+      [req.params.id, req.adminUser.name || 'Поддержка', text.trim()]
+    );
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'dispute.message', 'disputes', String(req.params.id), { text: text.trim() });
+    res.json(msg);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/disputes/:id/resolve  { status: 'resolved'|'closed', resolution? }
 router.post('/disputes/:id/resolve', requireAdmin('admin', 'support'), async (req, res) => {
-  const { status = 'resolved' } = req.body;
+  const { status = 'resolved', resolution = '' } = req.body;
   if (!['resolved', 'closed'].includes(status))
     return res.status(400).json({ error: 'status must be resolved or closed' });
   try {
     const { rows: [row] } = await pool.query(
-      `UPDATE disputes SET status = $1 WHERE id = $2 RETURNING *`,
-      [status, req.params.id]
+      `UPDATE disputes
+       SET status=$1, resolution=$2, resolved_by=$3, resolved_at=NOW()
+       WHERE id=$4 RETURNING *`,
+      [status, resolution.trim() || null, req.adminUser.name || req.adminUser.id, req.params.id]
     );
     if (!row) return res.status(404).json({ error: 'Not found' });
-    await writeAudit(req.adminUser.id, req.adminUser.role, 'dispute.resolve', 'disputes', String(req.params.id), { status });
+    // Post resolution as system message so it appears in thread
+    if (resolution?.trim()) {
+      await pool.query(
+        `INSERT INTO dispute_messages (dispute_id, sender, sender_name, text)
+         VALUES ($1, 'system', 'Решение', $2)`,
+        [req.params.id, resolution.trim()]
+      );
+    }
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'dispute.resolve', 'disputes', String(req.params.id), { status, resolution });
     res.json(row);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -669,6 +717,119 @@ router.get('/settings', requireAdmin('admin'), async (req, res) => {
     const { rows } = await pool.query('SELECT key, value FROM platform_settings ORDER BY key');
     // Return as flat object { key: value }
     res.json(Object.fromEntries(rows.map(r => [r.key, r.value])));
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── Places management ─────────────────────────────────────────────────────────
+
+// GET /api/admin/places
+router.get('/places', requireAdmin('admin', 'moderator'), async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM places ORDER BY sort_order, name_ru');
+    res.json(rows);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// POST /api/admin/places
+router.post('/places', requireAdmin('admin', 'moderator'), async (req, res) => {
+  const { id, type, name_ru, name_uz, address_ru, address_uz, desc_ru, desc_uz,
+          emoji, color, rating, pets_allowed, working_hours, phone, tags } = req.body;
+  if (!name_ru || !type) return res.status(400).json({ error: 'name_ru and type required' });
+  try {
+    const newId = id || ('p' + Date.now());
+    const { rows: [row] } = await pool.query(
+      `INSERT INTO places (id, type, name_ru, name_uz, address_ru, address_uz, desc_ru, desc_uz,
+         emoji, color, rating, pets_allowed, working_hours, phone, tags)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+       ON CONFLICT (id) DO UPDATE SET
+         type=$2, name_ru=$3, name_uz=$4, address_ru=$5, address_uz=$6,
+         desc_ru=$7, desc_uz=$8, emoji=$9, color=$10, rating=$11,
+         pets_allowed=$12, working_hours=$13, phone=$14, tags=$15
+       RETURNING *`,
+      [newId, type, name_ru, name_uz || '', address_ru || '', address_uz || '',
+       desc_ru || '', desc_uz || '', emoji || '📍', color || '#E8911A',
+       rating || 4.5, pets_allowed || [], working_hours || '', phone || '', tags || []]
+    );
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'place.upsert', 'places', newId, { name_ru });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// PATCH /api/admin/places/:id
+router.patch('/places/:id', requireAdmin('admin', 'moderator'), async (req, res) => {
+  try {
+    const sets = Object.entries(req.body)
+      .filter(([k]) => ['type','name_ru','name_uz','address_ru','address_uz','desc_ru','desc_uz',
+        'emoji','color','rating','pets_allowed','working_hours','phone','tags','is_active','sort_order'].includes(k))
+      .map(([k], i) => `${k}=$${i + 2}`)
+    if (!sets.length) return res.status(400).json({ error: 'nothing to update' });
+    const vals = Object.entries(req.body)
+      .filter(([k]) => ['type','name_ru','name_uz','address_ru','address_uz','desc_ru','desc_uz',
+        'emoji','color','rating','pets_allowed','working_hours','phone','tags','is_active','sort_order'].includes(k))
+      .map(([, v]) => v)
+    const { rows: [row] } = await pool.query(
+      `UPDATE places SET ${sets.join(',')} WHERE id=$1 RETURNING *`,
+      [req.params.id, ...vals]
+    );
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// DELETE /api/admin/places/:id
+router.delete('/places/:id', requireAdmin('admin'), async (req, res) => {
+  try {
+    await pool.query('DELETE FROM places WHERE id=$1', [req.params.id]);
+    await writeAudit(req.adminUser.id, req.adminUser.role, 'place.delete', 'places', req.params.id, {});
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// GET /api/admin/analytics?days=30
+router.get('/analytics', requireAdmin('admin', 'support'), async (req, res) => {
+  const days = Math.min(parseInt(req.query.days) || 30, 90);
+  try {
+    const [daily, byStatus, topVets, newUsers] = await Promise.all([
+      pool.query(
+        `SELECT
+           DATE(created_at AT TIME ZONE 'Asia/Tashkent') AS day,
+           COUNT(*) AS orders,
+           COALESCE(SUM(CASE WHEN status NOT IN ('cancelled','rejected','refunded') THEN price_uzs ELSE 0 END), 0) AS gmv
+         FROM orders
+         WHERE created_at >= NOW() - ($1 || ' days')::interval
+         GROUP BY 1 ORDER BY 1`,
+        [days]
+      ),
+      pool.query(
+        `SELECT status, COUNT(*) AS cnt FROM orders
+         WHERE created_at >= NOW() - ($1 || ' days')::interval
+         GROUP BY status`,
+        [days]
+      ),
+      pool.query(
+        `SELECT v.name, v.avatar_emoji,
+                COUNT(o.id) AS order_count,
+                COALESCE(SUM(o.price_uzs),0) AS revenue
+         FROM orders o JOIN vets v ON v.id = o.vet_id
+         WHERE o.created_at >= NOW() - ($1 || ' days')::interval
+           AND o.status NOT IN ('cancelled','rejected','refunded')
+         GROUP BY v.id ORDER BY revenue DESC LIMIT 5`,
+        [days]
+      ),
+      pool.query(
+        `SELECT DATE(created_at AT TIME ZONE 'Asia/Tashkent') AS day, COUNT(*) AS cnt
+         FROM users
+         WHERE created_at >= NOW() - ($1 || ' days')::interval
+         GROUP BY 1 ORDER BY 1`,
+        [days]
+      ),
+    ]);
+    res.json({
+      daily: daily.rows,
+      byStatus: byStatus.rows,
+      topVets: topVets.rows,
+      newUsers: newUsers.rows,
+    });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 

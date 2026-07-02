@@ -17,8 +17,10 @@ import Learning from './screens/Learning'
 import Reviews from './screens/Reviews'
 import Deeds from './screens/Deeds'
 import Disputes from './screens/Disputes'
+import Analytics from './screens/Analytics'
+import Places from './screens/Places'
 
-type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'disputes' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings' | 'reviews' | 'deeds'
+type Screen = 'dashboard' | 'verification' | 'consultations' | 'orders' | 'disputes' | 'promos' | 'audit' | 'finances' | 'content' | 'learning' | 'users' | 'settings' | 'reviews' | 'deeds' | 'analytics' | 'places'
 
 export default function App() {
   const [session, setSession] = useState<AdminSession | null>(() => {
@@ -70,6 +72,8 @@ export default function App() {
       {screen === 'promos'         && <Promos session={session} />}
       {screen === 'settings'       && <Settings />}
       {screen === 'audit'          && <Audit />}
+      {screen === 'analytics'      && <Analytics />}
+      {screen === 'places'         && <Places />}
     </Layout>
   )
 }

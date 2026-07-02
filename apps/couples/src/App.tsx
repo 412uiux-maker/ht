@@ -46,16 +46,17 @@ type Flow =
   | { name: 'ai-chat'; pet?: Pet; initialMessage?: string }
   | { name: 'video'; consultationId: string; vet: Vet }
 
-const STUB_VET: Vet = {
-  id: 1, name: 'Азиз Каримов', specialty: 'Терапевт (кошки, собаки)',
-  avatar_emoji: '🐕', rating: 4.9, experience_yr: 8, price_uzs: 120000,
+// Used only for dev deep-link (?chat=<id>) when no vet context is available
+const DEV_STUB_VET: Vet = {
+  id: 1, name: 'Ветеринар', specialty: 'Терапевт',
+  avatar_emoji: '🐕', rating: 5.0, experience_yr: 1, price_uzs: 0,
   is_available: true, bio: '', review_count: 0,
 }
 
 function devInitialFlow(): Flow | null {
   const p = new URLSearchParams(location.search)
   const chatId = p.get('chat')
-  if (chatId) return { name: 'chat', consultationId: chatId, vet: STUB_VET }
+  if (chatId) return { name: 'chat', consultationId: chatId, vet: DEV_STUB_VET }
   return null
 }
 
@@ -112,6 +113,8 @@ export default function App() {
   const [flow, setFlow] = useState<Flow | null>(devInitialFlow)
   const [lang, setLangState] = useState(localStorage.getItem('ht_lang') || 'ru')
   const [deepLinkPetId, setDeepLinkPetId] = useState<string | null>(null)
+  // Pending booking context from health card / symptom checker "Ask vet" — filled before vet selection
+  const [pendingBooking, setPendingBooking] = useState<{ petId?: string; reasonEventId?: string } | null>(null)
 
   const switchLang = () => {
     const next = lang === 'ru' ? 'uz' : 'ru'
@@ -234,9 +237,9 @@ export default function App() {
           onOpenChat={(consultationId, vetInfo) => startFlow({
             name: 'chat',
             consultationId,
-            vet: { ...STUB_VET, ...vetInfo },
+            vet: { ...DEV_STUB_VET, ...vetInfo },
           })}
-          onRebook={(vet) => startFlow({ name: 'booking', vet: { ...STUB_VET, ...vet } })}
+          onRebook={(vet) => startFlow({ name: 'booking', vet: { ...DEV_STUB_VET, ...vet } })}
         />
       </Wrap>
     )
@@ -336,7 +339,11 @@ export default function App() {
         <Home
           lang={lang}
           onSwitchLang={switchLang}
-          onSelectVet={vet => startFlow({ name: 'booking', vet })}
+          onSelectVet={vet => {
+            const ctx = pendingBooking
+            setPendingBooking(null)
+            startFlow({ name: 'booking', vet, petId: ctx?.petId, reasonEventId: ctx?.reasonEventId })
+          }}
           onInsurance={() => startFlow({ name: 'insurance' })}
         />
       )}
@@ -345,8 +352,8 @@ export default function App() {
           lang={lang}
           initialHealthPetId={deepLinkPetId ?? undefined}
           onAskVet={(petId, reasonEventId) => {
+            setPendingBooking({ petId, reasonEventId })
             setTab('consult')
-            startFlow({ name: 'booking', vet: STUB_VET, petId, reasonEventId })
           }}
         />
       )}

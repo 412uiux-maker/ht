@@ -1,4 +1,4 @@
-import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData, VendorReview, VendorClient, PatientType } from './types'
+import type { VendorSession, VendorService, VendorSlot, Consultation, Message, Stats, MedicalReport, FinanceData, VendorReview, VendorClient, PatientType, VendorOrder } from './types'
 import { getSession } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
@@ -162,4 +162,7 @@ export const api = {
 
   clients: () =>
     req<VendorClient[]>('/api/vendor/clients', { headers: authHeaders() }),
+
+  orders: () =>
+    req<VendorOrder[]>('/api/vendor/orders', { headers: authHeaders() }),
 }

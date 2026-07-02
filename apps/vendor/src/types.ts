@@ -131,6 +131,24 @@ export type FinanceData = {
   transactions: FinanceTx[]
 }
 
+export type VendorOrder = {
+  id: string
+  status: string
+  price_uzs: number | null
+  payout_amount: number | null
+  commission_rate: number | null
+  created_at: string
+  service_type: string
+  scheduled_at: string | null
+  rejected_reason: string | null
+  client_name: string | null
+  pet_name: string | null
+  pet_species: string | null
+  problem: string | null
+  consultation_id: string | null
+  summary: string | null
+}
+
 const VENDOR_KEY = 'ht_vendor'
 export const getSession = (): VendorSession | null => {
   const s = localStorage.getItem(VENDOR_KEY)

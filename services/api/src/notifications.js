@@ -63,4 +63,21 @@ async function notifyClientOrderStatus(orderId, message) {
   } catch {}
 }
 
-module.exports = { sendTelegramMessage, notifyVetNewOrder, notifyClientOrderStatus };
+async function notifyClientNewMessage(consultationId, vetName, messageText) {
+  try {
+    const { rows: [consult] } = await pool.query(
+      'SELECT owner_id, client_name, pet_name FROM consultations WHERE id=$1',
+      [consultationId]
+    );
+    if (!consult?.owner_id) return;
+    const { rows: [user] } = await pool.query(
+      'SELECT telegram_id FROM users WHERE id::text=$1', [consult.owner_id]
+    );
+    if (!user?.telegram_id) return;
+    const preview = messageText?.length > 180 ? messageText.slice(0, 180) + '…' : messageText;
+    const text = `💬 <b>Ответ ветеринара</b>\n\nДоктор <b>${vetName || 'Ветеринар'}</b> написал по питомцу <b>${consult.pet_name || ''}</b>:\n\n«${preview}»`;
+    await sendTelegramMessage(user.telegram_id, text);
+  } catch {}
+}
+
+module.exports = { sendTelegramMessage, notifyVetNewOrder, notifyClientOrderStatus, notifyClientNewMessage };
