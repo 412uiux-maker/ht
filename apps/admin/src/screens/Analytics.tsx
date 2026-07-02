@@ -125,18 +125,12 @@ export default function Analytics() {
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Аналитика</h1>
           <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>Динамика за выбранный период</div>
         </div>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="filter-tabs" style={{ marginBottom: 0 }}>
           {PERIOD_OPTIONS.map(p => (
             <button
               key={p}
+              className={`filter-tab${period === p ? ' active' : ''}`}
               onClick={() => setPeriod(p)}
-              style={{
-                padding: '5px 12px', borderRadius: 'var(--r-pill)', fontSize: 12, fontWeight: 600,
-                border: '1px solid var(--border)',
-                background: period === p ? 'var(--primary)' : 'var(--surface)',
-                color: period === p ? '#fff' : 'var(--text-muted)',
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
             >
               {p}д
             </button>

@@ -88,14 +88,7 @@ export default function Places() {
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>Места с питомцем</h1>
           {!loading && <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{places.length} мест</div>}
         </div>
-        <button
-          onClick={() => setEditing({ ...EMPTY })}
-          style={{
-            padding: '9px 18px', borderRadius: 'var(--r-sm)', border: 'none',
-            background: 'var(--primary)', color: '#fff', fontSize: 13, fontWeight: 700,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
+        <button className="btn btn-primary btn-sm" onClick={() => setEditing({ ...EMPTY })}>
           + Добавить
         </button>
       </div>
@@ -205,24 +198,10 @@ export default function Places() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 6 }}>
-              <button
-                onClick={() => setEditing(null)}
-                style={{
-                  padding: '9px 20px', borderRadius: 'var(--r-sm)',
-                  border: '1px solid var(--border)', background: 'var(--surface)',
-                  color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
+              <button className="btn btn-ghost" onClick={() => setEditing(null)}>
                 Отмена
               </button>
-              <button
-                onClick={save} disabled={saving || !editing.name_ru}
-                style={{
-                  padding: '9px 20px', borderRadius: 'var(--r-sm)', border: 'none',
-                  background: 'var(--primary)', color: '#fff', fontSize: 13,
-                  fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
+              <button className="btn btn-primary" onClick={save} disabled={saving || !editing.name_ru}>
                 {saving ? 'Сохраняем…' : 'Сохранить'}
               </button>
             </div>
@@ -254,34 +233,13 @@ export default function Places() {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-                <button
-                  onClick={() => toggleActive(p)}
-                  style={{
-                    padding: '6px 12px', borderRadius: 'var(--r-sm)', fontSize: 12,
-                    border: '1px solid var(--border)', background: 'var(--surface)',
-                    color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
+                <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(p)}>
                   {p.is_active ? 'Скрыть' : 'Показать'}
                 </button>
-                <button
-                  onClick={() => setEditing({ ...p })}
-                  style={{
-                    padding: '6px 12px', borderRadius: 'var(--r-sm)', fontSize: 12,
-                    border: '1px solid var(--border)', background: 'var(--surface)',
-                    color: 'var(--text)', cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
+                <button className="btn btn-ghost btn-sm" onClick={() => setEditing({ ...p })}>
                   Редактировать
                 </button>
-                <button
-                  onClick={() => del(p.id)}
-                  style={{
-                    padding: '6px 12px', borderRadius: 'var(--r-sm)', fontSize: 12,
-                    border: '1px solid rgba(239,68,68,.3)', background: 'rgba(239,68,68,.06)',
-                    color: '#ef4444', cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                >
+                <button className="btn btn-danger btn-sm" onClick={() => del(p.id)}>
                   Удалить
                 </button>
               </div>

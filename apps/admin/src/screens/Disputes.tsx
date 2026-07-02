@@ -174,15 +174,10 @@ function DisputePanel({
           }}
         />
         <button
+          className="btn btn-primary btn-sm"
           onClick={sendMsg}
           disabled={!isOpen || !msgText.trim() || sending}
-          style={{
-            padding: '0 18px', borderRadius: 'var(--r-sm)', border: 'none',
-            background: msgText.trim() && isOpen ? 'var(--primary, #E8911A)' : 'var(--border)',
-            color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'inherit', alignSelf: 'flex-end', height: 44,
-            transition: 'background .15s',
-          }}
+          style={{ alignSelf: 'flex-end' }}
         >
           {sending ? '…' : '↑'}
         </button>
@@ -207,29 +202,10 @@ function DisputePanel({
             }}
           />
           <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            <button
-              disabled={resolving}
-              onClick={() => resolve('closed')}
-              style={{
-                padding: '8px 16px', borderRadius: 'var(--r-sm)',
-                border: '1px solid var(--border)', background: 'var(--surface)',
-                color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
-                fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
+            <button className="btn btn-ghost btn-sm" disabled={resolving} onClick={() => resolve('closed')}>
               <IconClose size={14} /> Закрыть без решения
             </button>
-            <button
-              disabled={resolving}
-              onClick={() => resolve('resolved')}
-              style={{
-                padding: '8px 18px', borderRadius: 'var(--r-sm)',
-                border: 'none', background: 'var(--success, #2BB673)',
-                color: '#fff', fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', gap: 6,
-              }}
-            >
+            <button className="btn btn-success btn-sm" disabled={resolving} onClick={() => resolve('resolved')}>
               <IconCheckCircle size={14} color="#fff" />
               {resolving ? 'Обрабатываем…' : 'Отметить решённой'}
             </button>
@@ -293,18 +269,12 @@ export default function Disputes() {
       </div>
 
       {/* Filter tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
+      <div className="filter-tabs">
         {STATUS_FILTERS.map(s => (
           <button
             key={s}
+            className={`filter-tab${filter === s ? ' active' : ''}`}
             onClick={() => { setFilter(s); setExpanded(null) }}
-            style={{
-              padding: '6px 14px', borderRadius: 'var(--r-pill)', fontSize: 13, fontWeight: 600,
-              border: '1px solid var(--border)',
-              background: filter === s ? 'var(--primary)' : 'var(--surface)',
-              color: filter === s ? '#fff' : 'var(--text-muted)',
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}
           >
             {{ open: 'Открытые', resolved: 'Решённые', closed: 'Закрытые', all: 'Все' }[s]}
           </button>
